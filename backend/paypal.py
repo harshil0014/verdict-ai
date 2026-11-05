@@ -1,0 +1,140 @@
+import os, time, json, re
+from urllib.parse import urlparse, quote
+import httpx
+
+BASE = "https://api-m.sandbox.paypal.com"
+
+
+class PayPalError(Exception):
+    def __init__(self, status, uncertain=False):
+        self.status = status
+        self.uncertain = uncertain
+        super().__init__(f"PayPal sandbox returned {status}")
+
+
+class PayPal:
+    def __init__(self):
+        self.token = None
+        self.expires = 0
+
+    async def request(self, method, path, payload=None, key=None, files=None, raw=None):
+        if not path.startswith("/v1/") and not path.startswith("/v2/"):
+            raise ValueError("Unapproved PayPal path")
+        async with httpx.AsyncClient(timeout=35, follow_redirects=False) as c:
+            if not self.token or self.expires < time.time():
+                r = await c.post(
+                    BASE + "/v1/oauth2/token",
+                    auth=(
+                        os.getenv("PAYPAL_CLIENT_ID", ""),
+                        os.getenv("PAYPAL_CLIENT_SECRET", ""),
+                    ),
+                    data={"grant_type": "client_credentials"},
+                )
+                if r.status_code != 200:
+                    raise PayPalError(r.status_code)
+                d = r.json()
+                self.token = d["access_token"]
+                self.expires = time.time() + d.get("expires_in", 300) - 60
+            h = {"Authorization": "Bearer " + self.token}
+            if key:
+                h["PayPal-Request-Id"] = key
+            if raw is not None:
+                h["Content-Type"] = "application/json"
+            try:
+                r = await c.request(
+                    method,
+                    BASE + path,
+                    headers=h,
+                    json=payload if files is None and raw is None else None,
+                    files=files,
+                    content=raw,
+                )
+            except httpx.HTTPError:
+                raise PayPalError("network_error", method != "GET") from None
+            if r.status_code >= 300:
+                raise PayPalError(
+                    r.status_code,
+                    method != "GET"
+                    and r.status_code not in {400, 401, 403, 404, 405, 415, 422},
+                )
+            return r.json() if r.content else {}
+
+    async def disputes(self):
+        result = []
+        path = "/v1/customer/disputes"
+        seen = set()
+        for _ in range(20):
+            if path in seen:
+                raise ValueError(
+                    "PayPal pagination loop; no incomplete import accepted"
+                )
+            seen.add(path)
+            d = await self.request("GET", path)
+            result.extend(d.get("items", []))
+            next_link = next(
+                (l["href"] for l in d.get("links", []) if l.get("rel") == "next"), None
+            )
+            if not next_link:
+                return result
+            parsed = urlparse(next_link)
+            if (
+                parsed.scheme != "https"
+                or parsed.netloc != "api-m.sandbox.paypal.com"
+                or parsed.path != "/v1/customer/disputes"
+            ):
+                raise ValueError("Unsafe PayPal pagination link")
+            path = parsed.path + ("?" + parsed.query if parsed.query else "")
+        raise ValueError(
+            "PayPal pagination exceeded 20 pages; no incomplete import accepted"
+        )
+
+    async def detail(self, id):
+        if not re.fullmatch(r"[A-Za-z0-9-]{1,80}", id):
+            raise ValueError("Invalid dispute id")
+        return await self.request("GET", "/v1/customer/disputes/" + quote(id, safe=""))
+
+    async def verify(self, headers, raw):
+        if not os.getenv("PAYPAL_WEBHOOK_ID"):
+            return False
+        keys = {
+            "auth_algo": "paypal-auth-algo",
+            "cert_url": "paypal-cert-url",
+            "transmission_id": "paypal-transmission-id",
+            "transmission_sig": "paypal-transmission-sig",
+            "transmission_time": "paypal-transmission-time",
+        }
+        fields = {k: headers.get(v) for k, v in keys.items()}
+        if not all(fields.values()):
+            return False
+        fields["webhook_id"] = os.environ["PAYPAL_WEBHOOK_ID"]
+        # Preserve raw JSON event bytes inside the verification request.
+        body = json.dumps(fields)[:-1].encode() + b',"webhook_event":' + raw + b"}"
+        d = await self.request(
+            "POST", "/v1/notifications/verify-webhook-signature", raw=body
+        )
+        return d.get("verification_status") == "SUCCESS"
+
+
+def allowed(detail):
+    id = detail["dispute_id"]
+    result = []
+    for l in detail.get("links", []):
+        p = urlparse(l.get("href", ""))
+        for action in ["send-message", "provide-evidence", "accept-claim"]:
+            if (
+                l.get("method", "").upper() == "POST"
+                and p.scheme == "https"
+                and p.netloc == "api-m.sandbox.paypal.com"
+                and p.path == f"/v1/customer/disputes/{id}/{action}"
+                and not p.query
+            ):
+                result.append(action)
+    return sorted(set(result))
+
+
+def state(detail):
+    # Bind all provider detail, not merely status; any changed evidence invalidates approval.
+    return detail
+
+
+client = PayPal()

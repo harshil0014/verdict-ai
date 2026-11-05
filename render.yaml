@@ -1,0 +1,35 @@
+# Preparation only. No service has been created or deployed.
+# Free-tier disk is ephemeral: PayPal writes MUST remain disabled.
+services:
+  - type: web
+    name: verdict-investigation
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: VERDICT_PUBLIC_HOST
+        sync: false
+      - key: VERDICT_OPERATOR_PASSWORD
+        sync: false
+      - key: VERDICT_DEMO_ACCESS_CODE
+        sync: false
+      - key: VERDICT_SECURE_COOKIES
+        value: "true"
+      - key: VERDICT_LOCAL_BOOTSTRAP
+        value: "false"
+      - key: VERDICT_ALLOW_SANDBOX_ACTIONS
+        value: "false"
+      - key: VERDICT_SUPABASE_MIRROR
+        value: "true"
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
