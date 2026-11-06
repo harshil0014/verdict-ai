@@ -1,5 +1,7 @@
 # VERDICT — The Missing Witness
 
+[Public source](https://github.com/harshil0014/verdict-ai) · [Verified publication](docs/PUBLICATION.md)
+
 **Don't automate the argument. Find the missing evidence.**
 
 VERDICT investigates disputed payments by comparing competing accounts, identifying the next useful witness, acquiring a targeted response and updating a source-linked investigation. It assists human judgment; it does not decide who is telling the truth or predict dispute wins.
@@ -65,7 +67,7 @@ See [backend/.env.example](backend/.env.example). Credentials stay server-side. 
 
 ## PayPal integration and limits
 
-Actual OAuth and dispute listing returned **200**, with **zero disputes**. No available eligible sandbox dispute existed for detail retrieval or an evidence submission test. Code and mock-transport tests cover detail import, capture/order linkage, message/evidence/accept-claim preparation and dispatch, safe HATEOAS checking, duplicate reservation, signature verification and uncertain outcomes. These are **not** claimed as completed external lifecycle tests. See [the capability ledger and sandbox walkthrough](docs/PAYPAL.md).
+Actual OAuth and dispute listing returned **200**, with **zero disputes**. No available eligible sandbox dispute existed for detail retrieval or an evidence submission test. Code and mock-transport tests cover detail import, capture/order linkage, message/evidence/accept-claim preparation and dispatch, safe HATEOAS checking, duplicate reservation, signature verification and uncertain outcomes. These are **not** claimed as completed external lifecycle tests. See [the capability ledger and sandbox walkthrough](docs/PAYPAL.md). A genuine USD 1.00 sandbox checkout helper is documented in [SANDBOX_CHECKOUT.md](docs/SANDBOX_CHECKOUT.md); buyer approval is a real provider step and no completed transaction is invented.
 
 `VERDICT_ALLOW_SANDBOX_ACTIONS=false` is the default. The UI cannot send a fictional/manual case to PayPal. Only an operator reviewing an imported sandbox dispute can prepare an action. Enable sandbox writes only after reviewing that operation and using durable primary storage. No live PayPal endpoints, automatic refunds, mass payouts or forced adjudication are exposed. Register a public HTTPS webhook and privately configure `PAYPAL_WEBHOOK_ID` to test deliveries; an unconfigured endpoint fails closed.
 

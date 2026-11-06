@@ -27,7 +27,7 @@ The working build uses React Flow, FastAPI, SQLite, a private Supabase snapshot 
 
 ## Before publication
 
-- Fill verified public repository and functioning demo/setup links. The repository and YouTube video have not been published.
+- Fill verified public repository and functioning demo/setup links. The [public repository](https://github.com/harshil0014/verdict-ai) is verified. The YouTube video has not been published.
 - Include the exact evaluated build and disclose reused dependencies/prior art. Do not call the implementation the first dispute AI or a novel approval protocol.
 - Provide judge access privately and free of charge; never publish operator credentials or API keys.
 - Use only fictional records and permitted graphics/music. The VERDICT interface/wordmark were authored locally; React Flow attribution is retained.

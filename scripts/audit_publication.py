@@ -33,6 +33,17 @@ def main():
         known['private_supabase_project']=urlparse(private['SUPABASE_URL']).hostname.split('.')[0].encode()
     local_url=ROOT/'runtime/local-access.url'
     if local_url.exists():known['local_bootstrap']=local_url.read_text().split('bootstrap=')[-1].strip().encode()
+    checkout=ROOT/'runtime/sandbox-checkout.json'
+    if checkout.exists():
+        def private_fields(value):
+            if isinstance(value,dict):
+                for key,item in value.items():
+                    if key in ('order_id','email_address','merchant_id','payer_id') and isinstance(item,str) and len(item)>=8:
+                        known['private_checkout_'+str(len(known))]=item.encode()
+                    private_fields(item)
+            elif isinstance(value,list):
+                for item in value:private_fields(item)
+        private_fields(json.loads(checkout.read_text(encoding='utf-8')))
     findings=[]
     def check(label,content):
         for name,value in known.items():
