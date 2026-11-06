@@ -123,3 +123,9 @@ Python dependencies are installed from PyPI according to backend/requirements.lo
 | typing-inspection | 0.4.5 | MIT |
 | typing_extensions | 4.16.0 | PSF-2.0 |
 | uvicorn | 0.54.0 | BSD-3-Clause |
+
+## Publication license review
+
+All 90 installed npm packages were inspected: 71 MIT, 14 ISC, 2 Apache-2.0, 2 BSD-3-Clause and 1 CC-BY-4.0 data package. The 86 upstream license files available at package roots are preserved above, with generated-bundle dependencies retaining their package notices. The CC-BY-4.0 data belongs to caniuse-lite; credit the [caniuse-lite contributors and upstream data](https://github.com/browserslist/caniuse-lite). No vendor UI assets or competitor application source were copied.
+
+Python distributions use MIT/BSD/Apache/PSF-compatible licenses, plus the unmodified certifi certificate bundle under MPL-2.0. These dependency licenses retain their own scope; the project MIT license does not replace them. [Certifi upstream source](https://github.com/certifi/python-certifi) supplies the certificate-bundle source. Installed Python license and notice texts are retained in [third_party/python](third_party/python). Packaging is dual Apache-2.0/BSD-2-Clause; typing_extensions uses PSF-2.0. Dependencies are unmodified and installed through the lockfile.

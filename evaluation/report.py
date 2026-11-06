@@ -10,8 +10,8 @@ from store import digest
 
 
 def main():
-    report = json.loads((ROOT / "evaluation/results.json").read_text())
-    labels = json.loads((ROOT / "evaluation/labels.json").read_text())
+    report = json.loads((ROOT / "evaluation/results.json").read_text(encoding="utf-8"))
+    labels = json.loads((ROOT / "evaluation/labels.json").read_text(encoding="utf-8"))
     data = report["results"]
     normalized = copy.deepcopy(report)
     for cid, runs in normalized["results"].items():
@@ -24,7 +24,7 @@ def main():
         "description": "Reapplied source value, timezone and currency checks to frozen claims; no model findings or requests changed.",
     }
     (ROOT / "evaluation/postprocessed-results.json").write_text(
-        json.dumps(normalized, indent=2), encoding="utf-8"
+        json.dumps(normalized, indent=2), encoding="utf-8", newline="\n"
     )
     names = [
         "A_initial",
@@ -97,7 +97,7 @@ def main():
         ),
     }
     (ROOT / "evaluation/summary.json").write_text(
-        json.dumps(summary, indent=2), encoding="utf-8"
+        json.dumps(summary, indent=2), encoding="utf-8", newline="\n"
     )
     text = f"""# Evaluation: 30-case fictional development pilot
 
@@ -142,7 +142,7 @@ Labels SHA-256: `{report["labels_sha256"]}`
 
 Keep the active investigation workflow as a useful, working product capability. Describe its pilot result as stronger topic targeting on authored fictional cases, with comparable initial conclusion accuracy to a checklist and a small, inconclusive matched-evidence difference. Next evidence needed: independently labeled cases, realistic recipient availability/cost, multiple model seeds and blinded human usability review. Do not claim real PayPal win-rate improvement, production accuracy or superiority over commercial systems.
 """
-    (ROOT / "docs/EVALUATION.md").write_text(text, encoding="utf-8")
+    (ROOT / "docs/EVALUATION.md").write_text(text, encoding="utf-8", newline="\n")
     print(json.dumps(summary, indent=2))
 
 

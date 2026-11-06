@@ -72,8 +72,8 @@ async def main():
     args.add_argument("--limit", type=int, default=30)
     args.add_argument("--output", default="evaluation/results.json")
     opts = args.parse_args()
-    cases = json.loads((ROOT / "evaluation/cases.json").read_text())
-    labels = json.loads((ROOT / "evaluation/labels.json").read_text())
+    cases = json.loads((ROOT / "evaluation/cases.json").read_text(encoding="utf-8"))
+    labels = json.loads((ROOT / "evaluation/labels.json").read_text(encoding="utf-8"))
     output = ROOT / opts.output
     expected = {
         "dataset_sha256": digest(cases),
@@ -83,7 +83,7 @@ async def main():
         "started_at": now(),
         "results": {},
     }
-    report = json.loads(output.read_text()) if output.exists() else expected
+    report = json.loads(output.read_text(encoding="utf-8")) if output.exists() else expected
     if any(
         report[k] != expected[k]
         for k in ["dataset_sha256", "labels_sha256", "model", "protocol"]
@@ -93,7 +93,7 @@ async def main():
 
     def checkpoint():
         temp = output.with_suffix(".tmp")
-        temp.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        temp.write_text(json.dumps(report, indent=2), encoding="utf-8", newline="\n")
         temp.replace(output)
 
     for case in cases[: opts.limit]:

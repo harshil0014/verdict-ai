@@ -547,8 +547,8 @@ def main():
             "unnecessary_request_case": follow is None,
             "injection": i in (27, 28),
         }
-    (ROOT / "cases.json").write_text(json.dumps(inputs, indent=2), encoding="utf-8")
-    (ROOT / "labels.json").write_text(json.dumps(labels, indent=2), encoding="utf-8")
+    (ROOT / "cases.json").write_text(json.dumps(inputs, indent=2), encoding="utf-8", newline="\n")
+    (ROOT / "labels.json").write_text(json.dumps(labels, indent=2), encoding="utf-8", newline="\n")
     print(
         f"{len(inputs)} distinct fictional development cases written; labels isolated from investigator input."
     )

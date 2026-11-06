@@ -17,12 +17,19 @@ React/React Flow interface + FastAPI backend + transactional SQLite persistence 
 
 The browser-tested centerpiece began with a reception delivery scan and insufficient evidence. A restricted carrier response reported a different destination postcode. Real model reassessment changed the finding to buyer account supported and updated the graph and timeline. These records are explicitly fictional; they are not PayPal disputes.
 
+## Application capture
+
+![VERDICT investigating a fictional delivery dispute](docs/screenshots/fictional-investigation.png)
+
+Actual browser capture using fictional records and a real Gemini reassessment. The captured frame has extra whitespace and does not show the complete page. It is not a rendered product mockup. See [architecture and trust boundaries](docs/ARCHITECTURE.md) and [the complete verification status](docs/STATUS.md).
+
 ## Run locally on Windows
 
-Python 3.13 and Node 22 were used. The original setup at `C:\Users\Harshil\Desktop\verdict-ai\backend\.env` is retained, ignored by Git and never included in a release.
+Python 3.13 and Node 22 were used. Existing local credentials in `backend/.env` are retained, ignored by Git and never included in a release.
 
 ```powershell
-cd C:\Users\Harshil\Desktop\verdict-ai
+git clone https://github.com/harshil0014/verdict-ai.git
+cd verdict-ai
 python -m venv backend/.venv
 backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.lock.txt
 cd frontend
@@ -108,7 +115,7 @@ This is an authored development pilot, not a held-out real-case benchmark. Regex
 
 ## Deployment and judge access
 
-There is **no remote deployment yet**. The running localhost service is not described as deployed. The functional local build plus complete setup satisfies the official alternative to a hosted demo, subject to providing the required public repository and testing access. [Dockerfile](Dockerfile), [Render blueprint](render.yaml) and [deployment notes](docs/DEPLOYMENT.md) prepare a real host; deployment/account/publication actions require the owner's final approval. The cloud snapshot mirror is live and verified, but it is not application hosting.
+There is **no remote deployment yet**. The running localhost service is not described as deployed. The functional local build plus complete setup satisfies the official alternative to a hosted demo, subject to providing the required public repository and testing access. [Dockerfile](Dockerfile), [Render blueprint](render.yaml) and [deployment notes](docs/DEPLOYMENT.md) prepare a real host; public source publication has been authorized; no paid hosting activation is authorized. The cloud snapshot mirror is live and verified, but it is not application hosting.
 
 ## Attribution, originality and next work
 

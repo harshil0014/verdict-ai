@@ -13,3 +13,14 @@ frontend/dist/
 *.db
 *.sqlite*
 *.tsbuildinfo
+.ruff_cache/
+.coverage
+htmlcov/
+*.log
+*.pem
+*.key
+*.p12
+*.pfx
+*.bak
+supabase/.temp/
+supabase/.branches/

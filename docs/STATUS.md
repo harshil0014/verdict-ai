@@ -32,7 +32,7 @@ The six sample workspace cases, 30 evaluation cases and carrier witness record i
 
 ## External steps pending
 
-1. Owner approval to publish the reviewed sanitized source under `harshil0014` and to create the selected demo hosting resource. The mandate explicitly reserves publication/account decisions for approval. No repository creation, push, service deployment or visibility change has been performed.
+1. Public source publication under `harshil0014` was explicitly approved on 6 November 2026. Final publication/anonymous verification is recorded separately. Hosted application deployment remains outstanding; no paid resource activation has occurred.
 2. A buyer-approved sandbox transaction and an eligible sandbox dispute, followed by actual provider detail/evidence/action tests. The account's zero-dispute response is the current evidence; API creation scope alone does not establish the full flow.
 3. Public HTTPS host verification, optional webhook registration/delivery, and a hosting continuity decision through judging. No paid service activation has occurred.
 4. Record and owner-approve a genuine sub-three-minute video, publish it on YouTube, and complete final Devpost submission. Description/storyboard/checklist are drafted; no video or submission was published.

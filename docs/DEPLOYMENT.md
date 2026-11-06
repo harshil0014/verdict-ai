@@ -1,6 +1,6 @@
 # Deployment preparation and operational contract
 
-No application host was created, no repository was pushed and no service was published during this build. Docker is not installed on the execution host; the image was not built here. Local backend tests and the frontend production build are separate validation evidence, not remote deployment certification.
+No application host has been deployed. Public source publication was explicitly authorized; this document is about the separate application host. Docker is not installed on the execution host; the image was not built here. Local backend tests and the frontend production build are separate validation evidence, not remote deployment certification.
 
 ## Hosting choice
 
@@ -10,7 +10,7 @@ The available Sites platform runs Cloudflare Workers, not the existing Python ba
 
 ## Concrete publication sequence
 
-1. Review the sanitized release, evaluation report and known limitations. Obtain final owner approval for a public repository under `harshil0014` and the chosen hosting audience/provider. The mandate explicitly reserves public publication and sensitive account actions for approval.
+1. Review the sanitized release, evaluation report and known limitations. The owner approved public source publication under `harshil0014` on 6 November 2026. Use the audited source state; do not activate paid resources without explicit authorization.
 2. Create/push only the sanitized source with MIT license, lockfiles, CI workflow, docs and dataset. Never upload runtime or `.env`. Run the release secret scanner immediately before pushing.
 3. Deploy the container with private environment variables: PayPal sandbox client credentials, Gemini key, existing Supabase server key/URL, operator password (16+ characters) and a separate judge demo access code (16+ characters). Do not put them in source, Docker arguments, screenshots, public README or logs.
 4. Set `VERDICT_PUBLIC_HOST` to the exact host, `VERDICT_SECURE_COOKIES=true`, `VERDICT_LOCAL_BOOTSTRAP=false`, `VERDICT_ALLOW_SANDBOX_ACTIONS=false`, `VERDICT_SUPABASE_MIRROR=true`. A public host without a valid judge code refuses guest demo sessions. Share the judge code only through the approved private judging channel.
