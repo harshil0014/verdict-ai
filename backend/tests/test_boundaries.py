@@ -119,6 +119,7 @@ def test_other_evidence_notes_use_exact_approval_without_fabricated_tracking(env
     body = case_for_actions()
     detail_body = provider_detail()
     detail_body["links"][0]["href"] = detail_body["links"][0]["href"].replace("send-message", "provide-evidence")
+    detail_body["evidences"] = [{"source": "REQUESTED_FROM_SELLER", "evidence_type": "OTHER"}]
     async def detail(identifier):
         return detail_body
     sent = []
@@ -141,6 +142,9 @@ def test_other_evidence_notes_use_exact_approval_without_fabricated_tracking(env
     assert env.post(path + "execute", json=params).json()["status"] == "succeeded"
     assert len(sent) == 1
     assert env.post(path + "prepare", json={"action": "provide-evidence", "evidence_type": "OTHER", "note": note, "tracking_number": "invented"}).status_code == 422
+    detail_body["evidences"][0]["evidence_type"] = "PROOF_OF_FULFILLMENT"
+    assert env.post(path + "prepare", json={"action": "provide-evidence", "evidence_type": "OTHER", "note": note}).status_code == 409
+    assert len(sent) == 1
 
 
 def test_demo_tenant_cannot_read_operator_or_other_demo(env):

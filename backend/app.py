@@ -24,7 +24,7 @@ from store import now, uid, digest, canon, connect
 from domain import EvidenceInput, CaseInput, AnalyzeInput, ActionInput, ExecuteInput
 from investigator import investigate, ModelError, MODEL
 from fixtures import seed, evidence
-from paypal import client as paypal, PayPalError, allowed
+from paypal import client as paypal, PayPalError, allowed, requested_seller_evidence
 import cloud
 
 BOOTSTRAP = secrets.token_urlsafe(32)
@@ -757,6 +757,8 @@ async def prepare(id: str, data: ActionInput, s=Depends(operator)):
         {"message": data.note} if data.action == "send-message" else {"note": data.note}
     )
     if data.action == "provide-evidence":
+        if data.evidence_type not in requested_seller_evidence(detail):
+            raise HTTPException(409, "This evidence type is not currently requested from the seller by PayPal. Refresh the case and use the requested type; do not invent missing proof.")
         if data.evidence_type == "PROOF_OF_FULFILLMENT" and (not data.carrier or not data.tracking_number):
             raise HTTPException(
                 422, "Review and supply the actual carrier and tracking number"

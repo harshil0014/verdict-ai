@@ -154,6 +154,13 @@ def allowed(detail):
     return sorted(set(result))
 
 
+def requested_seller_evidence(detail):
+    return sorted({e["evidence_type"] for e in detail.get("evidences", [])
+        if e.get("source") == "REQUESTED_FROM_SELLER"
+        and e.get("evidence_type") in ("PROOF_OF_FULFILLMENT", "OTHER")
+        and (e.get("action_info") or {}).get("action") in (None, "PROVIDE_EVIDENCE")})
+
+
 def state(detail):
     # Bind all provider detail, not merely status; any changed evidence invalidates approval.
     return detail

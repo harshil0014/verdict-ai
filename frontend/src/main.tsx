@@ -137,6 +137,11 @@ async function api(path: string, method = "GET", body?: any, token?: string) {
   return d;
 }
 const readable = (s: string) => s.replaceAll("_", " ").replaceAll("-", " ");
+const sellerEvidenceTypes = (c: Case | null): string[] =>
+  ["PROOF_OF_FULFILLMENT", "OTHER"].filter(type =>
+    c?.paypal_snapshot?.evidences?.some((e: any) =>
+      e.source === "REQUESTED_FROM_SELLER" && e.evidence_type === type &&
+      (!e.action_info?.action || e.action_info.action === "PROVIDE_EVIDENCE")));
 const date = (s: string) =>
   new Date(s).toLocaleString(undefined, {
     month: "short",
@@ -1980,7 +1985,7 @@ function App() {
                           {
                             action: field(f, "action"),
                             note: field(f, "note"),
-                            evidence_type: field(f, "evidence_type"),
+                            evidence_type: field(f, "evidence_type") || "PROOF_OF_FULFILLMENT",
                             carrier: field(f, "carrier"),
                             tracking_number: field(f, "tracking_number"),
                           },
@@ -2005,8 +2010,9 @@ function App() {
                   <label>
                     Evidence type (for evidence submission)
                     <select name="evidence_type">
-                      <option value="PROOF_OF_FULFILLMENT">Actual fulfillment tracking</option>
-                      <option value="OTHER">Other evidence notes</option>
+                      {sellerEvidenceTypes(current).length ? sellerEvidenceTypes(current).map(type => (
+                        <option key={type} value={type}>{type === "OTHER" ? "Other evidence notes" : "Actual fulfillment tracking"}</option>
+                      )) : <option value="">No supported evidence type requested</option>}
                     </select>
                   </label>
                   <label>

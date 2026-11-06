@@ -1,6 +1,6 @@
 # Submission preparation — not submitted
 
-Source: [official rules](https://paypalaihackathon.devpost.com/rules), reviewed 2026-11-05. Deadline: **12 November 2026, noon PST = 13 November 2026, 01:30 IST**. The rules allow complete runnable instructions instead of remote hosting, require public open-source source code and an English description, and require a public YouTube demonstration shorter than three minutes. Keep testing access available through the stated judging period. Re-read the rules immediately before submission.
+Source: [official rules](https://paypalaihackathon.devpost.com/rules), rechecked 6 November 2026. Deadline: **12 November 2026, noon PST = 13 November 2026, 01:30 IST**. Complete runnable instructions may satisfy functional access; public open-source source, English description and a public YouTube video shorter than three minutes are required. Testing access must remain available through the judging period ending 15 December 2026. Recheck immediately before submission. [Timed recording script](DEMO_SCRIPT.md).
 
 ## Draft description
 
@@ -10,7 +10,7 @@ Payment disputes begin with conflicting stories and incomplete records. A delive
 
 VERDICT reconstructs a source-linked case, compares reported claims, identifies a targeted witness, accepts a restricted response and updates the investigation. It supports either party when the evidence warrants it and preserves uncertainty when no defensible conclusion exists. A human reviews every recommendation; sandbox PayPal actions are separated from model reasoning by current-state and exact-payload approval checks.
 
-The working build uses React Flow, FastAPI, SQLite, an optional private Supabase snapshot mirror and Gemini. Real PayPal sandbox checkout approval, one capture, dispute detail/import and capture/order linkage are verified. One user-approved factual evidence-notes attempt was rejected, so successful evidence submission and webhook delivery are not claimed. The public Render demo uses only fictional records, actual model calls and actual state changes; payment credentials remain local.
+The working build uses React Flow, FastAPI, SQLite, an optional private Supabase snapshot mirror and Gemini. Real sandbox checkout approval, one capture, dispute detail/import and capture/order linkage are verified. Two individually approved factual notes attempts were rejected; PayPal requires fulfillment proof for this case. No proof was invented. Successful evidence submission and webhook delivery are not claimed. The Render demo uses fictional records, actual model calls and actual state changes; payment credentials remain local. Its 22 HTTPS lifecycle checks passed; free-host sleep/ephemeral storage remain disclosed limitations.
 
 ## Three-minute video storyboard (target 2:45)
 

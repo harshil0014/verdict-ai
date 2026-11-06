@@ -1,0 +1,44 @@
+{
+  "verified_date": "2026-11-06",
+  "environment": "sandbox",
+  "capture": {
+    "order_get_http": 200,
+    "order_status": "COMPLETED",
+    "capture_get_http": 200,
+    "capture_status": "COMPLETED",
+    "capture_count": 1,
+    "amount": {
+      "currency_code": "USD",
+      "value": "1.00"
+    },
+    "order_linkage_verified": true,
+    "disputes_http": 200,
+    "dispute_count": 0,
+    "environment": "sandbox"
+  },
+  "dispute": {
+    "detail_http": 200,
+    "status": "WAITING_FOR_SELLER_RESPONSE",
+    "stage": "INQUIRY",
+    "capture_link_matches": true,
+    "imported": true,
+    "linked_provider_records": 3,
+    "update_window_list_http": 200,
+    "update_window_list_count": 1
+  },
+  "evidence_attempts": {
+    "user_approved_attempt_count": 2,
+    "accepted_count": 0,
+    "latest_result": "rejected",
+    "latest_http": 400,
+    "latest_issue_codes": [
+      "EVIDENCE_TYPE_IS_NOT_ALLOWED"
+    ],
+    "exact_note_records_on_fresh_get": 0,
+    "automatic_retries": 0,
+    "writes_restored_disabled": true
+  },
+  "limits": "OTHER notes were not requested by this case. No physical goods shipped and no fulfillment/tracking evidence fabricated. No refund, acceptance, forced adjudication, webhook delivery or dispute win claimed. Private provider bodies and identifiers excluded.",
+  "local_unrequested_type_prepare_http": 409,
+  "capture_probe_preceded_dispute_creation": true
+}
