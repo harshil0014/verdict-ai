@@ -141,7 +141,11 @@ async function api(path: string, method = "GET", body?: any, token?: string) {
   });
   const d = await r.json();
   if (generation !== authGeneration) throw new Error("Your session changed. Please open the case again.");
-  if (!r.ok) throw new Error(typeof d.detail === 'string' ? d.detail : "The request could not be completed");
+  if (!r.ok) {
+    const failure = Object.assign(new Error(typeof d.detail === 'string' ? d.detail : "The request could not be completed"), {status:r.status});
+    if (r.status === 401 && ((!path.startsWith('/auth/') && path !== '/me' && path !== '/portal') || path === '/auth/logout')) window.dispatchEvent(new Event('verdict-session-ended'));
+    throw failure;
+  }
   return d;
 }
 const readable = (s: string) => s.replaceAll("_", " ").replaceAll("-", " ");
@@ -197,9 +201,15 @@ function App() {
   }
   async function authenticated() {
     clearPrivateState();
-    setMe(await api('/me'));
+    const profile = await api('/me');
     await load();
+    setMe(profile);
   }
+  useEffect(() => {
+    const ended = () => { authGeneration++; clearPrivateState(); setMe(null); setError('Your session has ended. Sign in to return to your workspace.'); };
+    window.addEventListener('verdict-session-ended', ended);
+    return () => window.removeEventListener('verdict-session-ended', ended);
+  }, []);
   async function run(label: string, fn: () => Promise<any>) {
     setBusy(label);
     setError("");
@@ -247,8 +257,9 @@ function App() {
         try {
           setMe(await api("/me"));
           await load();
-        } catch {
+        } catch (e: any) {
           setMe(null);
+          if (e.status !== 401) throw e;
         }
       } catch (e: any) {
         setError(e.message);
