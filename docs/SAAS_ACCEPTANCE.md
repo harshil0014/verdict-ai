@@ -4,6 +4,8 @@ The requested lifecycle is tested with **two independent automated actors**. Thi
 
 **Acceptance passed at 2026-11-06 17:16:19 UTC / 22:46:19 IST**, after a completed replacement deployment. Both fresh public accounts retained original and witness-file bytes, analysis digests, audit tails and request state; foreign operations remained denied. [Forty post-redeploy checks](saas-redeploy-acceptance.json). A separate browser session also remained valid across server replacement.
 
+The same accounts then passed **all 40 checks at the original public URL at 17:22:55 UTC / 22:52:55 IST**, after promotion to [VERDICT](https://verdict-ai-harshil0014.onrender.com). [Primary-service verification](saas-primary-acceptance.json). The previously created browser account also signed in there and recovered its earlier investigation.
+
 | Phase | Result | Evidence |
 |---|---|---|
 | Independent normal registration, empty workspace | Passed, no admin-confirmed/shared accounts | Cloud smoke and [security probe](saas-cloud-security.json) |
@@ -16,6 +18,7 @@ The requested lifecycle is tested with **two independent automated actors**. Thi
 | Forced-RLS foreign rows/updates/inserts; anonymous grants | Passed on actual database role | [Security](SECURITY.md) |
 | Fresh registrations and full lifecycle over public HTTPS | Passed for both accounts | [Public lifecycle](saas-public-acceptance.json) |
 | Public replacement deploy, then sign in and compare saved records | Passed, 2026-11-06 17:16:19 UTC | [Post-redeploy report](saas-redeploy-acceptance.json) |
+| Original URL promotion and both-account isolation/persistence | Passed, 2026-11-06 17:22:55 UTC | [Primary report](saas-primary-acceptance.json) |
 | Browser registration, recovery acknowledgement, case/upload, real investigation, manual request, logout/login | Passed through actual UI with synthetic records | [Landing](screenshots/account-landing-desktop.jpg), [investigation](screenshots/account-investigation-desktop.jpg) |
 | Responsive workspace and landing | Checked at 390×844 and 1440×1000; no horizontal document overflow | Actual browser DOM, mobile sign-out and screenshots |
 | Two-human usability | Not completed | Automated API actors and an automated browser walkthrough are not human usability testing |

@@ -1,6 +1,6 @@
 {
   "checked_at": "2026-11-06T17:13:53.549887+00:00",
-  "public_url": "https://verdict-saas-harshil0014.onrender.com",
+  "public_url": "https://verdict-ai-harshil0014.onrender.com",
   "initial_deployed_commit": "e7c4aa3ac21276093abc32375f91b2fd34e908fb",
   "initial_deploy_live": true,
   "plan": "free",
@@ -19,11 +19,19 @@
     "A later client GET failed with Windows connection reset after an investigation committed. Fresh reads confirmed the committed analysis.",
     "The runner resumed against stored case/request state with HTTP keep-alive disabled; the completed public lifecycle passed. Root cause of the initial 502 is not established."
   ],
-  "operator_service_untouched": true,
   "platform_health_check": "Default TCP probe; application startup verifies cloud RPC, and /api/health was separately tested over HTTPS. Blueprint declares /api/health for HTTP readiness.",
   "replacement_deploy_finished_at": "2026-11-06T17:14:20.303691Z",
   "acceptance_passed_at": "2026-11-06T17:16:19.972764+00:00",
   "replacement_checks": 40,
   "legacy_recovery_source_preserved": true,
-  "primary_url_promotion": "in_progress"
+  "primary_url_promotion": "passed",
+  "validation_service_url": "https://verdict-saas-harshil0014.onrender.com",
+  "legacy_service_untouched_until_validation": true,
+  "primary_deployed_commit": "bb510160665f152fb809605e3de8bd51177613ef",
+  "primary_deploy_live_at": "2026-11-06T17:21:31.693652Z",
+  "primary_acceptance_passed_at": "2026-11-06T17:22:55.221708+00:00",
+  "primary_checks": 40,
+  "primary_free_plan_verified": true,
+  "production_commit_ci": "https://github.com/harshil0014/verdict-ai/actions/runs/42260739446",
+  "browser_original_url_signin_and_saved_case_verified": true
 }

@@ -28,6 +28,8 @@ All user cases, originals, responses, sessions, jobs and audits are cloud-primar
 
 The separate free service passed replacement-deploy acceptance at 17:16:19 UTC on 6 November 2026. [Recorded checks and incidents](SAAS_ACCEPTANCE.md). The Blueprint declares HTTP readiness; the direct service-creation tool currently leaves Render's platform probe at TCP. Startup checks cloud RPC, and HTTPS `/api/health` is verified separately. No continuous monitoring or paid SLA is claimed.
 
+The original URL was promoted only after that pass. It became live at 17:21:31 UTC and passed the same two-account persistence/isolation checks at 17:22:55 UTC. [Primary application](https://verdict-ai-harshil0014.onrender.com) · [Independent validation service](https://verdict-saas-harshil0014.onrender.com). Both use the same durable primary database and remain on free compute; no paid resources were activated. Legacy source and a private recovery environment are retained separately. These source/configuration recovery artifacts are not a backup of volatile legacy demo cases or a certified database restore procedure.
+
 The compatibility Docker default is `app:app`; legacy source and private configuration remain recoverable. That SQLite application cannot read SaaS account tables. Do not route user accounts there as if it provided their workspaces. Rolling back an application does not delete or roll back cloud data; avoid destructive down migrations. A retained source branch is not a database backup.
 
 Operational references: [Render deploy lifecycle](https://render.com/docs/deploys), [database-aware HTTP health checks](https://render.com/docs/health-checks). A successful deploy trigger alone is not a live verification.
