@@ -4,7 +4,7 @@
 
 The new `saas_app:app` application has individual username/password registration, private empty workspaces and PostgreSQL as primary storage for cases, originals, investigations, witness responses and audits. The legacy single-instance operator release described below remains separate and recoverable. Its SQLite/ephemeral limits do not describe account mode. [Current architecture](ARCHITECTURE.md) · [Exact SaaS acceptance phases](SAAS_ACCEPTANCE.md).
 
-Two normal account sessions passed actual cloud lifecycle/isolation and process-restart persistence. Recovery rotation, revoked sessions, transaction rollback and stale revisions passed real cloud probes. The original 83 tests and 19 new account/stream-boundary contracts pass locally. Actual browser onboarding, upload, investigation and return sign-in were exercised. Public deploy/replacement verification is pending; no completion claim is made yet.
+Two fresh public accounts passed the full cloud lifecycle and replacement-deploy persistence at **17:16:19 UTC on 6 November 2026**. Original and witness files, investigations and audit hashes survived; foreign operations remained denied. Recovery rotation, revoked sessions, rollback and stale revisions also passed real cloud probes. All **102 tests**, remote application/container CI and actual browser onboarding/investigation checks passed. [Exact evidence and observed transient failures](SAAS_ACCEPTANCE.md). This verifies an automated two-account lifecycle, not a two-human usability study or an uptime guarantee.
 
 ## Verified continuation after public release
 

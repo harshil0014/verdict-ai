@@ -4,7 +4,7 @@
 
 VERDICT is a multi-user investigation workspace. Create a private case, preserve original records, compare competing accounts with Gemini, inspect the source graph and collect targeted witness responses. Human decisions stay with the investigator.
 
-[Source](https://github.com/harshil0014/verdict-ai) · [Architecture](docs/ARCHITECTURE.md) · [Security](docs/SECURITY.md) · [Setup and deployment](docs/DEPLOYMENT.md) · [Acceptance evidence](docs/SAAS_ACCEPTANCE.md)
+[Open VERDICT](https://verdict-ai-harshil0014.onrender.com) · [Source](https://github.com/harshil0014/verdict-ai) · [Architecture](docs/ARCHITECTURE.md) · [Security](docs/SECURITY.md) · [Setup and deployment](docs/DEPLOYMENT.md) · [Acceptance evidence](docs/SAAS_ACCEPTANCE.md)
 
 ## The account application
 
@@ -55,15 +55,15 @@ The separate `app:app` operator build retains the PayPal sandbox adapter, read-o
 
 An actual USD 1.00 sandbox order was approved and captured once; its buyer-created inquiry was imported with verified payment linkage. Unchanged snapshots deduplicate and changed snapshots preserve history. Two individually approved notes submissions were rejected with `EVIDENCE_TYPE_IS_NOT_ALLOWED`; successful submission remains unverified. No fulfillment evidence was invented. [Capability ledger](docs/PAYPAL.md) · [Acquisition](docs/PAYMENT_ACQUISITION.md).
 
-**Merchant connections and financial actions are not enabled for public accounts.** No live merchant capability, automatic refund or delivery verification is claimed. The old working deployment is preserved while the account service is validated.
+**Merchant connections and financial actions are not enabled for public accounts.** No live merchant capability, automatic refund or delivery verification is claimed. The legacy release branch and private configuration remain recoverable; the upgrade was validated on a separate free service before promotion.
 
 ## Evaluation and capture
 
 The frozen authored 30-case pilot tied the checklist baseline at **28/30**. The custody set also tied. These small synthetic evaluations do not establish superiority or real dispute outcomes. [Evaluation](docs/EVALUATION.md) · [Custody evaluation](docs/CUSTODY_EVALUATION.md).
 
-![Account landing page](docs/screenshots/account-landing-desktop.jpg)
+![Account landing page on the public SaaS service](docs/screenshots/account-landing-public.jpg)
 
-![Private account investigation using synthetic test evidence](docs/screenshots/account-investigation-desktop.jpg)
+![Private account investigation using synthetic test evidence](docs/screenshots/account-investigation-public.jpg)
 
 Actual browser captures of the account application. The investigation uses explicitly synthetic user-authored evidence and real Gemini calls. [Mobile landing](docs/screenshots/account-landing-mobile.jpg) · [Earlier operator capture](docs/screenshots/fictional-investigation.png). Browser checks and remaining acceptance phases are recorded in the ledger.
 

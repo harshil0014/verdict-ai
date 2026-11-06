@@ -24,6 +24,9 @@ All user cases, originals, responses, sessions, jobs and audits are cloud-primar
 2. Run tests, frontend build, real cloud lifecycle/restart checks, secret/history scans and attribution review before public source pushes.
 3. Deploy `saas` to a separate **free** account service. Wait for its named deploy to be live; check health/config and both accounts against persisted originals, investigation digests, witnesses and audit hashes.
 4. Replace the application with a subsequent deploy and repeat checks. Only then designate it as the public product/update links. Source promotion does not itself change the manually deployed legacy service.
+5. After acceptance, promote the reviewed source to `main`, preserve the legacy environment privately, and switch the original service to `saas_app:app` with the same cloud database. Repeat account/original/audit/isolation verification at the original URL. Keep the independently validated account service available during this promotion.
+
+The separate free service passed replacement-deploy acceptance at 17:16:19 UTC on 6 November 2026. [Recorded checks and incidents](SAAS_ACCEPTANCE.md). The Blueprint declares HTTP readiness; the direct service-creation tool currently leaves Render's platform probe at TCP. Startup checks cloud RPC, and HTTPS `/api/health` is verified separately. No continuous monitoring or paid SLA is claimed.
 
 The compatibility Docker default is `app:app`; legacy source and private configuration remain recoverable. That SQLite application cannot read SaaS account tables. Do not route user accounts there as if it provided their workspaces. Rolling back an application does not delete or roll back cloud data; avoid destructive down migrations. A retained source branch is not a database backup.
 

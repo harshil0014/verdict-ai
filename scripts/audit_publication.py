@@ -38,8 +38,7 @@ def main():
         for key,value in json.loads(hosted.read_text(encoding='utf-8')).items():
             if value:known['hosted_'+key]=value.encode()
     dispute=ROOT/'runtime/private-dispute-id.json'
-    for name in ('saas-deploy-private.json','saas-acceptance-private.json','saas-security-private.json','saas-ui-private.json'):
-        path=ROOT/'runtime'/name
+    for path in (ROOT/'runtime').glob('saas*-private.json'):
         if path.exists():
             def collect_saas(value):
                 if isinstance(value,dict):

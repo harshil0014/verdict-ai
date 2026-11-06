@@ -1,0 +1,29 @@
+{
+  "checked_at": "2026-11-06T17:13:53.549887+00:00",
+  "public_url": "https://verdict-saas-harshil0014.onrender.com",
+  "initial_deployed_commit": "e7c4aa3ac21276093abc32375f91b2fd34e908fb",
+  "initial_deploy_live": true,
+  "plan": "free",
+  "new_paid_resources": 0,
+  "health_http": 200,
+  "storage_primary": "postgres",
+  "authentication_mode": "account",
+  "exact_frontend_asset_verified": true,
+  "judge_route_absent": true,
+  "fresh_public_accounts": 2,
+  "real_hosted_investigations": 2,
+  "public_lifecycle_passed": true,
+  "replacement_deploy_persistence": "passed",
+  "observed_incidents": [
+    "Initial investigation request returned HTTP 502; detailed response was not retained. No substitute analysis was used.",
+    "A later client GET failed with Windows connection reset after an investigation committed. Fresh reads confirmed the committed analysis.",
+    "The runner resumed against stored case/request state with HTTP keep-alive disabled; the completed public lifecycle passed. Root cause of the initial 502 is not established."
+  ],
+  "operator_service_untouched": true,
+  "platform_health_check": "Default TCP probe; application startup verifies cloud RPC, and /api/health was separately tested over HTTPS. Blueprint declares /api/health for HTTP readiness.",
+  "replacement_deploy_finished_at": "2026-11-06T17:14:20.303691Z",
+  "acceptance_passed_at": "2026-11-06T17:16:19.972764+00:00",
+  "replacement_checks": 40,
+  "legacy_recovery_source_preserved": true,
+  "primary_url_promotion": "in_progress"
+}

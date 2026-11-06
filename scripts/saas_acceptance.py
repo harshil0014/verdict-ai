@@ -28,13 +28,20 @@ def run(base, phase, state_path, report_path):
     def ok(response):
         # Do not log provider bodies or account details on failure.
         if response.status_code != 200:
+            try: detail = response.json().get('detail','')
+            except ValueError: detail = 'Non-JSON service response'
+            state['last_failure']={'status':response.status_code,'detail':detail if isinstance(detail,str) else 'Validation failed'}
+            save()
+            if isinstance(detail,str) and detail.startswith(('Gemini ', 'The model returned', 'Cloud database', 'Non-JSON')):
+                print(json.dumps({'acceptance_failure_status':response.status_code,'safe_service_diagnostic':detail}))
             raise AssertionError("Unexpected HTTP status: " + str(response.status_code))
         return response.json()
     clients = []
     try:
         for i in range(2):
             label = f"actor_{i+1}"
-            c = httpx.Client(base_url=base, timeout=240, follow_redirects=False)
+            c = httpx.Client(base_url=base, timeout=240, follow_redirects=False,
+                             limits=httpx.Limits(max_keepalive_connections=0))
             clients.append(c)
             if len(state["actors"]) <= i:
                 if phase != "prepare": raise AssertionError("Missing prepared accounts")
@@ -66,7 +73,7 @@ def run(base, phase, state_path, report_path):
                 witness = next(r for r in case["requests"] if r["id"]==actor["witness_id"])
                 header = {"Authorization":"Bearer "+actor["portal_token"]}
                 if witness["status"]=="open":
-                    with httpx.Client(base_url=base,timeout=60) as recipient:
+                    with httpx.Client(base_url=base,timeout=60,limits=httpx.Limits(max_keepalive_connections=0)) as recipient:
                         portal = ok(recipient.get("/api/portal",headers=header))
                         check(label+"_portal_minimal_projection", set(portal)=={"id","title","question","recipient","expires_at"})
                         response = b"Synthetic carrier response: recipient and delivery destination are unavailable. No fulfillment is established."
