@@ -1,5 +1,7 @@
 # Persistent multi-user acceptance
 
+**Public research regression, 7 November 2026:** application commit `9a3ae66` passed 148 tests and remote application/container CI. After promotion to the main URL, the same two independent account actors passed all 40 persistence/isolation/logout checks at **01:10:41 IST**, including original and witness-file bytes, analyses and audit hashes. [Latest primary regression](public-research-primary-account-regression.json). A separate research account then created its own case, retrieved/approved real public legislation and ran Gemini on the primary service; all 12 checks, including private originals and logout/return, passed at **01:12:32 IST**. [Actual primary writes](public-research-primary-write-verification.json). These are automated actors, not two human usability testers. [Research acceptance and visual limits](PUBLIC_RESEARCH.md).
+
 The requested lifecycle is tested with **two independent automated actors**. This does not claim two humans completed usability sessions. Records are synthetic user-authored data; persistence and Gemini calls are real. No payment/dispute writes occur.
 
 **Acceptance passed at 2026-11-06 17:16:19 UTC / 22:46:19 IST**, after a completed replacement deployment. Both fresh public accounts retained original and witness-file bytes, analysis digests, audit tails and request state; foreign operations remained denied. [Forty post-redeploy checks](saas-redeploy-acceptance.json). A separate browser session also remained valid across server replacement.

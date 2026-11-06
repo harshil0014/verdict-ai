@@ -43,12 +43,14 @@ Open `http://127.0.0.1:8000/`, register and save your recovery key in a password
 
 ```powershell
 backend/.venv/Scripts/python.exe -m pytest
-backend/.venv/Scripts/python.exe scripts/saas_acceptance.py --phase prepare
+backend/.venv/Scripts/python.exe scripts/saas_acceptance.py --base http://127.0.0.1:8000 --phase prepare
 # Restart the SaaS application, then:
-backend/.venv/Scripts/python.exe scripts/saas_acceptance.py --phase verify
+backend/.venv/Scripts/python.exe scripts/saas_acceptance.py --base http://127.0.0.1:8000 --phase verify
 ```
 
 The acceptance runner registers two independent accounts normally, uploads synthetic evidence, calls real Gemini and tests witness replies, isolation and logout. Credentials stay in ignored runtime state. `--base` targets a deployed instance sharing the same primary database; verify compares original bytes, analysis digest, witness state and audit hashes after restart/deploy. [Exact results and limitations](docs/SAAS_ACCEPTANCE.md). Two automated actors do not mean two humans completed usability testing.
+
+For public evidence, open a case's **Public research** tab. Paste a URL or authorize a reviewed public search query, inspect the actual retrieved text and approve the exact snapshot. Search works without a provider account/card/key through documented keyless/public APIs; shared throttling can temporarily limit discovery. Google URL Context uses the existing Gemini key with separate consent. The [Moffatt acceptance runner](scripts/public_research_acceptance.py) accepts the same `--base` option; its `--phase prepare` performs real public HTML/PDF retrieval and Gemini analysis, and `--phase verify` checks retained originals/provenance after replacement. [Results and limits](docs/PUBLIC_RESEARCH.md).
 
 ## Preserved sandbox integration
 

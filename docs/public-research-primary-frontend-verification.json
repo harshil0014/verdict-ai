@@ -1,0 +1,32 @@
+{
+  "checked_at": "2026-11-06T19:40:24.699666+00:00",
+  "base_url": "https://verdict-ai-harshil0014.onrender.com",
+  "application_commit": "9a3ae6655bd0e3c3c3620069eaa012d9eaf8f62d",
+  "checks": {
+    "account_application_html": true,
+    "exact_validated_production_asset_0": true,
+    "exact_validated_production_asset_1": true,
+    "exact_validated_production_asset_2": true,
+    "cloud_readiness": true,
+    "unauthenticated_cases_denied": true
+  },
+  "all_passed": true,
+  "assets": [
+    {
+      "url": "https://verdict-ai-harshil0014.onrender.com/assets/index-BGnEwL97.js",
+      "sha256": "ad5b0b90589aaf7b45037787bce796d14b39f6d3f6694ebc236d8463af56417e",
+      "matches_local_production_build": true
+    },
+    {
+      "url": "https://verdict-ai-harshil0014.onrender.com/assets/index-BtFu-x5z.css",
+      "sha256": "f6120000d4b12cc7f966169bfb3e84a9944b723030d35badc671a5bff6886f61",
+      "matches_local_production_build": true
+    },
+    {
+      "url": "https://verdict-ai-harshil0014.onrender.com/assets/research-KlCq_mVN.js",
+      "sha256": "b814677dc692a950188ba703831ccf9e2b56ee8d6dbed8fae6bd4bb4015cee8f",
+      "matches_local_production_build": true
+    }
+  ],
+  "visual_verification": false
+}

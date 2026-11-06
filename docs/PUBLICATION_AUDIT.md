@@ -1,5 +1,11 @@
 # Public-source audit — 6 November 2026
 
+## Public research release — 7 November 2026
+
+The research release retains 57 locked Python distributions and adds the official Apache-2.0 Google Gen AI SDK and Trafilatura. All 26 added distributions have upstream notices under `third_party/python/`; multi-license choices and corresponding source links are recorded in `THIRD_PARTY_NOTICES.md`. Unmodified `tld` uses its MPL-1.1 option; no dependency is relabeled as project MIT code. Documented public API access does not vendor provider server software.
+
+The new source, all Git objects/history paths and nonignored publication files were scanned against local keys, private project identifiers, account credentials, recovery/portal tokens and private case/source/proposal identifiers. Exact/generic scans and independent redacted Gitleaks history/tree scans found no leaks. Raw retrieved documents and private test-account state remain cloud-private or ignored. Public verification files contain public document URLs, integrity hashes, counts and booleans. The frozen 28/30 evaluation tie is unchanged; workflow checks do not establish general legal accuracy. Application commit `9a3ae66` passed 148 tests, frontend compilation and both remote application/container CI jobs. [Actual research verification](PUBLIC_RESEARCH.md).
+
 ## Persistent account release
 
 The SaaS branch adds real accounts and PostgreSQL primary storage, separate from the preserved operator release. Before its public push, exact/private-value scans were repeated against all local Git objects, including unreachable objects, history paths and nonignored source. Ignored account passwords, recovery keys, portal tokens and the authentication pepper were included in exact matching. Zero findings. Gitleaks 8.30.1 independently reported no leaks in all-branch history and the publication-only tree.

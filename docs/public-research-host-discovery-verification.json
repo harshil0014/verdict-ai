@@ -1,0 +1,23 @@
+{
+  "checked_at": "2026-11-06T19:38:50.108676+00:00",
+  "base_url": "https://verdict-saas-harshil0014.onrender.com",
+  "checks": {
+    "free_discovery_enabled": true,
+    "paid_google_grounding_disabled": true,
+    "real_404_recorded_without_content": true,
+    "autonomous_primary_html_retrieved_for_review": true,
+    "discovered_documents_not_automatically_evidence": true,
+    "real_duplicate_url_reuses_proposal": true,
+    "duplicate_preserves_official_revision_and_audit": true
+  },
+  "all_passed": true,
+  "discovered_primary_documents": [
+    {
+      "url": "https://decisions.civilresolutionbc.ca/crt/crtd/en/item/525448/index.do",
+      "retrieved_at": "2026-11-06T19:18:29.412632+00:00",
+      "raw_sha256": "ef71ef1af93e7d6313afb826578560e93c2fc9ce79c44ae3f8d0ff64425aa2c7",
+      "text_sha256": "6c4b7114c3d2518fd331a1c654c3dc3199e78494638ae04df77c092cf3f0babe"
+    }
+  ],
+  "payment_writes": 0
+}

@@ -1,5 +1,7 @@
 # Deployment and recovery
 
+The public research upgrade is live on both free services at application commit `9a3ae66`. Its separate preview passed before the main replacement, which became live at 2026-11-06 19:39:30 UTC. Primary verification completed at 19:42:32 UTC: original snapshots, exact graph passages, old account/witness data, real retrieval/approval/investigation and logout/return remained functional and private. [Release evidence and incidents](PUBLIC_RESEARCH.md). Google paid Search grounding remains disabled; Tavily keyless and Wikimedia/Crossref need no account, card or API key. Apply the two new timestamped public-research migrations before deploying to another project. Preserve `release/saas-working-20261107` for the preceding account release; do not reverse cloud migrations to roll back application code.
+
 Account mode uses the existing cloud database and a free Render web service. No paid resource or automatic paid overflow is authorized.
 
 | Server variable | Value |

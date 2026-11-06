@@ -1,0 +1,74 @@
+{
+  "recorded_at": "2026-11-06T19:44:02.314838+00:00",
+  "application_commit": "9a3ae6655bd0e3c3c3620069eaa012d9eaf8f62d",
+  "primary_url": "https://verdict-ai-harshil0014.onrender.com",
+  "preview_deploy": {
+    "id": "dep-dbn2j0egekts738noc10",
+    "status": "live",
+    "finished_at": "2026-11-06T19:35:39.28892Z"
+  },
+  "primary_deploy": {
+    "id": "dep-dbn2pfmgekts738oajl0",
+    "status": "live",
+    "finished_at": "2026-11-06T19:39:30.151726Z"
+  },
+  "ci": {
+    "url": "https://github.com/harshil0014/verdict-ai/actions/runs/42281389308",
+    "application": "success",
+    "container": "success",
+    "local_tests_passed": 148
+  },
+  "checks": {
+    "public-research-host-verification.json": {
+      "checked_at": "2026-11-06T19:37:29.645497+00:00",
+      "checks": 29,
+      "all_passed": true
+    },
+    "public-research-host-discovery-verification.json": {
+      "checked_at": "2026-11-06T19:38:50.108676+00:00",
+      "checks": 7,
+      "all_passed": true
+    },
+    "public-research-account-regression.json": {
+      "checked_at": "2026-11-06T19:37:06.539634+00:00",
+      "checks": 40,
+      "all_passed": true
+    },
+    "public-research-primary-verification.json": {
+      "checked_at": "2026-11-06T19:40:31.886724+00:00",
+      "checks": 18,
+      "all_passed": true
+    },
+    "public-research-primary-account-regression.json": {
+      "checked_at": "2026-11-06T19:40:41.226359+00:00",
+      "checks": 40,
+      "all_passed": true
+    },
+    "public-research-primary-frontend-verification.json": {
+      "checked_at": "2026-11-06T19:40:24.699666+00:00",
+      "checks": 6,
+      "all_passed": true
+    },
+    "public-research-primary-write-verification.json": {
+      "checked_at": "2026-11-06T19:42:32.971843+00:00",
+      "checks": 12,
+      "all_passed": true
+    },
+    "public-research-injection-verification.json": {
+      "checked_at": "2026-11-06T19:32:35.839717+00:00",
+      "checks": 7,
+      "all_passed": true
+    }
+  },
+  "paid_resources_enabled": false,
+  "payment_or_dispute_writes": 0,
+  "visual_click_through_verified": false,
+  "visual_limit": "Browser connector disabled; native Windows control stopped by URL-confidence safety guard. No barrier was bypassed.",
+  "recovery_branch": "release/saas-working-20261107",
+  "recovery_commit": "04ec72ca720124df3df41047d4b38afef917d760",
+  "incidents": [
+    "Preview rollout completed after approximately eleven minutes; root cause not established.",
+    "One Render log query returned HTTP 503.",
+    "A pre-promotion primary health read timed out. Post-promotion readiness and acceptance passed."
+  ]
+}

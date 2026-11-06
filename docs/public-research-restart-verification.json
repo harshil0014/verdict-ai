@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-11-06T19:11:32.025848+00:00",
+  "checked_at": "2026-11-06T19:35:14.544624+00:00",
   "base_url": "http://127.0.0.1:8001",
   "phase": "verify",
   "checks": {
@@ -14,8 +14,10 @@
     "reported_and_adjudicated_distinguished": true,
     "past_policy_not_established_by_current_source": true,
     "decision_original_bytes_preserved": true,
+    "decision_original_served_as_attachment": true,
     "decision_original_private": true,
     "act_original_bytes_preserved": true,
+    "act_original_served_as_attachment": true,
     "act_original_private": true,
     "durable_revision_and_audit": true,
     "durable_analysis": true
@@ -35,9 +37,9 @@
       "extracted_text_sha256": "4605ed51b3e456fb562e4267ba57d71f59912b702a2b78b5654e01fac2e86852"
     }
   ],
-  "claim_count": 3,
+  "claim_count": 4,
   "epistemic_status_counts": {
-    "document_finding": 2,
+    "document_finding": 3,
     "party_report": 1
   },
   "free_search_providers": [

@@ -85,6 +85,8 @@ def run(args):
    if args.reinvestigate or not case.get('analysis') or not case['analysis']['claims'] or case.get('analysis_stale'):
     ok(c.post(path+'/analyze',json={'consent':True}));case=ok(c.get(path))
    if not state.get('reanalysis_verified') and case.get('analysis',{}).get('claims'):
+    first_statuses={x.get('epistemic_status') for x in case['analysis']['claims']}
+    check('initial_investigation_reported_and_adjudicated_distinguished','party_report' in first_statuses and bool(first_statuses & {'document_finding','document_order'}))
     first=case['analysis']['created_at']
     ok(c.post(path+'/analyze',json={'consent':True}));case=ok(c.get(path))
     check('real_reanalysis_preserved_history',case['analysis']['created_at']!=first and sum(e['kind']=='investigation_updated' for e in case['timeline'])>=2)
@@ -105,6 +107,7 @@ def run(args):
   check('past_policy_not_established_by_current_source',all(e['provenance']['historical_applicability']=='not_established' for e in evidence.values()))
   for label,s in state['sources'].items():
    file=c.get(path+'/files/'+s['source_id']);check(label+'_original_bytes_preserved',file.status_code==200 and hashlib.sha256(file.content).hexdigest()==s['raw_sha256'])
+   check(label+'_original_served_as_attachment',file.headers.get('content-disposition','').startswith('attachment;'))
    check(label+'_original_private',clients[1].get(path+'/files/'+s['source_id']).status_code==404)
    public_sources.append({'label':label,'url':s['url'],'raw_sha256':s['raw_sha256'],'extracted_text_sha256':s['text_sha256']})
   check('durable_revision_and_audit',case['revision']==state['expected_revision'] and case['audit_valid'] and case['timeline'][-1]['hash']==state['expected_audit'])

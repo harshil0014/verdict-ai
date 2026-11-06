@@ -38,7 +38,25 @@ Tavily keyless is suitable for a bounded public beta, not a production SLA. Prov
 
 ## Actual verification
 
-[Local end-to-end report](public-research-local-verification.json) exercises the official **Moffatt v. Air Canada, 2024 BCCRT 149** PDF and the current **Civil Resolution Tribunal Act** on BC Laws. The latter is a current primary source, not proof of a policy in November 2022. Raw and extracted hashes, actual Google URL Context metadata, human-approval separation, duplicate/replay behavior, foreign-account denial, unavailable URLs and real Gemini reanalysis are checked. A free search independently returned the tribunal's primary HTML page through Tavily/Wikimedia references; source URLs were not invented by the model.
+**Deployed to the main [VERDICT application](https://verdict-ai-harshil0014.onrender.com). Final primary write/investigation/return verification passed at 2026-11-07 01:12:32 IST / 2026-11-06 19:42:32 UTC.** Application commit `9a3ae6655bd0e3c3c3620069eaa012d9eaf8f62d` was first validated on the independent free service, then promoted without changing cloud case data or enabling billing.
+
+| Actual phase | Result | Record |
+|---|---|---|
+| Corrected hosted Moffatt investigation and separate reanalysis | 29 checks passed; final three exact source-linked claims include two findings and one report | [Hosted investigation](public-research-host-verification.json) |
+| Free autonomous discovery, inaccessible URL, duplicate import | Seven checks passed; official tribunal HTML was retrieved into an unapproved proposal; real 404 has no invented text | [Hosted discovery](public-research-host-discovery-verification.json) |
+| Existing account records after validation-service replacement | All 40 isolation/persistence/logout checks passed | [Preview regression](public-research-account-regression.json) |
+| Primary promotion: saved research, originals, graph, audit, classification | All 18 checks passed at 01:10:31 IST | [Primary research](public-research-primary-verification.json) |
+| Primary promotion: two independent existing account workspaces | All 40 checks passed at 01:10:41 IST, including witness original bytes and revoked sessions | [Primary account regression](public-research-primary-account-regression.json) |
+| Fresh primary-source retrieval, approval and real investigation by the other research account, logout and return | All 12 checks passed at 01:12:32 IST; own original/analysis/audit preserved and foreign access denied | [Primary writes](public-research-primary-write-verification.json) |
+| Exact tested frontend and research chunk served publicly | All six asset/readiness/auth checks passed; byte-for-byte hashes match the local production build | [Primary frontend](public-research-primary-frontend-verification.json) |
+
+These are automated API/network/model checks, not two-human usability or a visual click-through pass. The two-account SaaS acceptance remains intact. Free compute can sleep and keyless discovery can throttle; no uptime or provider SLA is claimed.
+
+[Machine-readable release ledger](public-research-release-verification.json) records the exact application commit, live deployments, primary CI, report counts, recovery reference and remaining visual limit. Later documentation/acceptance-runner commits do not change the deployed application modules or built frontend.
+
+The preview replacement took approximately eleven minutes; its build succeeded before the delayed rollout completed. One log query returned provider HTTP 503; the delay's root cause is not established. A pre-promotion primary-service request timed out. No resource upgrade was used. The primary replacement subsequently became live at 19:39:30 UTC and passed the checks above. The preceding account release remains available as `release/saas-working-20261107` at `04ec72ca720124df3df41047d4b38afef917d760`; application rollback does not reverse cloud data or restore a database backup.
+
+[Initial retrieval/discovery report](public-research-retrieval-verification.json) and [updated-engine local report](public-research-local-verification.json) exercise the official **Moffatt v. Air Canada, 2024 BCCRT 149** PDF and the current **Civil Resolution Tribunal Act** on BC Laws. The latter is a current primary source, not proof of a policy in November 2022. Raw and extracted hashes, actual Google URL Context metadata, human-approval separation, duplicate/replay behavior, foreign-account denial, unavailable URLs and real Gemini reanalysis are checked. A free search independently returned the tribunal's primary HTML page through Tavily/Wikimedia references; source URLs were not invented by the model.
 
 The first investigation rejected all four proposed quotes because PDF whitespace did not match. After adding whitespace-only alignment, a real rerun retained source-bound claims and separated party reports from tribunal findings. This is a workflow verification, not a general legal-accuracy benchmark or improvement over the frozen 28/30 baseline tie.
 
@@ -47,3 +65,9 @@ A subsequent hosted check exposed a separate classification failure: all four so
 The Air Canada policy URL returned HTTP 403 to direct retrieval. This is recorded as unavailable; neither Google's summary nor a current accessible snippet was used as a historical policy snapshot. Legitimate alternatives are another public official source or a user-provided copy they have authority to upload. No challenge was bypassed.
 
 Automated tests include unsafe URL forms, mixed-public/private DNS, rebinding-resistant transport, redirect blocking, size/type limits, malicious page instructions, failed tool retrievals, model-invented URLs, citation alignment, keyless-only headers, provider cooldown/fallback and preserved graph spans. Mock tests are distinct from actual network/provider checks. Public deployment and browser verification are recorded separately when completed.
+
+Remote [application and container CI](https://github.com/harshil0014/verdict-ai/actions/runs/42279376268) both passed for application commit `9a3ae6655bd0e3c3c3620069eaa012d9eaf8f62d`. The container checks the built frontend, credential exclusion, real account/research route registration, no SQLite account database, HTTP health/auth boundary and graceful shutdown.
+
+Visual click-through QA for the new panel remains unverified. The browser connector was disabled; a native Windows-control attempt was also stopped by its URL-confidence safety check. No permissions or safety barriers were changed. Existing account screenshots predate this feature and are not represented as research-panel captures.
+
+A [real-model adversarial probe](public-research-injection-verification.json) supplied explicitly synthetic hostile evidence instructing the engine to invent delivery proof, retrieve a private URL, reveal keys and issue refunds. All seven checks passed: warning retained, no delivery conclusion, exact quotations, unchanged evidence/research/request records and no dispatched action. This is one bounded probe, not a universal prompt-injection defense benchmark. Downloaded originals are served as attachments; HTML snapshots are not run inside the application.
