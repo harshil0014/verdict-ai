@@ -1,0 +1,24 @@
+{
+  "verified_at": "2026-11-06T09:57:37Z",
+  "expected_commit": "d36dc625beb48d6985fcecec0541ad465dbd2a93",
+  "checks": {
+    "health": true,
+    "exact_frontend_build_served": true,
+    "asset_served": true,
+    "portal_initially_usable": true,
+    "portal_token_cannot_close_request": true,
+    "other_workspace_cannot_close_request": true,
+    "analysis_stale": true,
+    "prior_evidence_preserved": true,
+    "prior_analysis_preserved": true,
+    "availability_not_verified": true,
+    "portal_read_revoked": true,
+    "portal_text_reply_revoked": true,
+    "portal_file_reply_revoked": true,
+    "reclosing_denied": true,
+    "audit_integrity": true,
+    "closure_audited": true,
+    "payment_writes_disabled": true
+  },
+  "scope": "Real HTTPS API workflow and Gemini analysis on fictional records. No browser visual verification; no PayPal action."
+}

@@ -24,4 +24,8 @@ The available Sites platform runs Cloudflare Workers, not the existing Python ba
 
 The Docker command uses `exec` so the application receives shutdown signals directly. The container CI job now stops the running image and checks for application shutdown completion without forced exit 137. This complements its health/authentication checks; it does not certify recovery of ephemeral state or uninterrupted model calls during a redeploy.
 
+The live `d36dc625beb48d6985fcecec0541ad465dbd2a93` build passed the updated container job and 17 additional HTTPS witness-closure checks. [Verification](witness-closure-host-verification.json). Its frontend asset matched the reviewed local production build. Fresh browser interaction/visual verification is still blocked by Work settings.
+
+The existing directly created service currently uses Render's default TCP readiness checks; `/api/health` was exercised separately over HTTPS. The Blueprint specifies an HTTP health path for a Blueprint-created service, but that setting has not been applied to the existing service through the connector. Do not equate the Blueprint with the live configuration.
+
 The launcher starts only this project's loopback server and writes its logs under ignored `runtime/`. For a manual server, Ctrl+C stops it. Do not use broad process-kill commands that might terminate the user's other Python work. An uncertain PayPal dispatch or reserved action must be reconciled directly with PayPal before any manual database repair or retry.

@@ -6,6 +6,8 @@ Availability is an investigator report with `availability_verified=false`; it is
 
 The deterministic tests cover both closure statuses, text/file token revocation, cross-tenant denial, answered-request protection, the reply-versus-revocation race, rollback if token closure fails, and blank-reason rejection. The frontend uses the existing request cards and modal styles and compiles successfully. Browser control is disabled; fresh visual/interaction QA is outstanding.
 
+The deployed build `d36dc625beb48d6985fcecec0541ad465dbd2a93` passed both remote CI jobs, including graceful Docker shutdown, and all 17 actual HTTPS checks for the closure workflow. The hosted probe used real Gemini analysis on a fresh fictional case, then verified token revocation, preserved evidence/analysis, staleness, tenant boundaries and audit integrity. It did not submit any PayPal action. [Hosted verification record](witness-closure-host-verification.json) · [CI run](https://github.com/harshil0014/verdict-ai/actions/runs/42198564461). Render error-log query for the new deployment returned no entries.
+
 ## Frozen live behavior probe
 
 [Protocol](../evaluation/availability-probe/protocol.json) · [Raw results](../evaluation/availability-probe/results.json) · [Runner](../evaluation/availability_probe.py)
