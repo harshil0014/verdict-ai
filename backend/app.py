@@ -541,8 +541,46 @@ def portal_token(request):
     if not row:
         raise HTTPException(404, "Request expired or unavailable")
     if row["completed"]:
-        raise HTTPException(409, "This request has already been answered")
+        raise HTTPException(409, "This request has been answered or closed")
     return dict(row)
+
+
+class CloseRequestInput(BaseModel):
+    status: Literal["unavailable", "withdrawn"]
+    reason: str = Field(min_length=3, max_length=500)
+
+
+@app.post("/api/cases/{id}/requests/{request_id}/close")
+def close_request(id: str, request_id: str, data: CloseRequestInput, s=Depends(session)):
+    body = store.get(id, s["tenant"])
+    req = next((r for r in body["requests"] if r["id"] == request_id), None)
+    if req is None:
+        raise KeyError("Request not found")
+    if req["status"] != "open":
+        raise HTTPException(409, "Only an unanswered open request can be closed")
+    reason = data.reason.strip()
+    if len(reason) < 3:
+        raise HTTPException(422, "Record a reason for closing this request")
+    req.update(status=data.status, closure_reason=reason, closed_at=now(),
+               closure_origin="investigator_report", availability_verified=False)
+    body["analysis_stale"] = body.get("analysis") is not None
+
+    def extra(c):
+        rows = c.execute("SELECT hash,body FROM requests WHERE case_id=? AND tenant=? AND completed=0",
+                         (id, s["tenant"])).fetchall()
+        row = next((r for r in rows if json.loads(r["body"])["id"] == request_id), None)
+        if row is None:
+            raise ValueError("Request was answered or closed. Refresh before changing it.")
+        changed = c.execute("UPDATE requests SET completed=1,body=? WHERE hash=? AND completed=0",
+                            (canon(req), row["hash"]))
+        if changed.rowcount != 1:
+            raise ValueError("Request changed while it was being closed")
+
+    return store.save(body, s["tenant"], "witness_request_closed", {
+        "request_id": request_id, "status": data.status, "reason": reason,
+        "origin": "investigator_report", "availability_verified": False,
+        "portal_revoked": True,
+    }, extra=extra)
 
 
 @app.get("/api/portal")

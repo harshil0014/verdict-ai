@@ -1,0 +1,18 @@
+{
+  "frozen_at": "2026-11-06T09:44:53.163638+00:00",
+  "protocol": {
+    "name": "request-unavailability-http-probe-v1",
+    "case_titles": [
+      "The delivery that went somewhere else",
+      "Two charges for one order?"
+    ],
+    "fixtures_digest": "8536a642164a8209d9608ca2f0fa6aaf717a61853c7b28aba913ed4d4fce8660",
+    "system_prompt_digest": "b2e823855b2a2a5318cb97121e70b9821e95bcfc5e92353b1637b16e89146bd7",
+    "app_sha256": "cf0dbfe9c9572d5edb275c4e98fc2cf01a57ec43351bdff2e26610eee9a15aa7",
+    "runner_sha256": "50d56395e6506ebb4f5c5e0329421af44e78bd8c57d6c151c678b2dab15c606b",
+    "closure_reason": "Fictional test: the intended recipient reported that the requested record is unavailable. No independent verification of that report was supplied.",
+    "procedure": "Fresh isolated fictional demo workspace. For each selected case, run production analysis, choose its unique first request, create the scoped portal, mark the request reported unavailable, check revocation/staleness, then run production reassessment. Never substitute a request if none is proposed.",
+    "bound": "Two cases; at most four analyses/eight logical generation calls before transport retries, serial. No PayPal operations. Failures checkpointed and not silently retried.",
+    "limits": "Authored examples and investigator-reported availability. No independent witness verification. Raw recommendations retained for independent semantic review; no automated paraphrase/availability-accuracy metric or superiority claim. Default model prompt/schema are unchanged."
+  }
+}

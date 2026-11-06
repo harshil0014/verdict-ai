@@ -34,3 +34,6 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:9000/api/health | python -c 'import json,sys; assert json.load(sys.stdin)["service"] == "VERDICT"'
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:9000/api/cases)" = 401
+          docker stop --time 15 verdict-ci
+          docker logs verdict-ci 2>&1 | python -c 'import sys; assert "Application shutdown complete." in sys.stdin.read()'
+          test "$(docker inspect --format '{{.State.ExitCode}}' verdict-ci)" != 137

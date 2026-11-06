@@ -1,0 +1,406 @@
+{
+  "protocol_digest": "85e45f892a062507a9c91a6db48c2948177d239e51c1edb6f052e0f20bf942f3",
+  "started_at": "2026-11-06T09:44:54.377977+00:00",
+  "cases": [
+    {
+      "title": "The delivery that went somewhere else",
+      "initial_analysis": {
+        "summary": "The buyer claims non-receipt of headphones (Order AT-1042) despite tracking indicating delivery to a building reception. The seller confirms the destination postcode as 94107, which matches the buyer's statement.",
+        "finding": "insufficient",
+        "claims": [
+          {
+            "id": "C-001",
+            "text": "Buyer states they did not receive the headphones.",
+            "source_id": "E-2333fbf0e0944c62",
+            "quote": "I did not receive the headphones.",
+            "subject": "buyer",
+            "field": "receipt_status",
+            "value": "not_received",
+            "stance": "buyer",
+            "source_check": "exact_quote_found",
+            "origin_verified": false,
+            "structured_check": "value_not_found_in_quote",
+            "semantic_support": "entailed",
+            "support_reason": "The source explicitly states the buyer did not receive the headphones."
+          },
+          {
+            "id": "C-002",
+            "text": "Buyer confirms their delivery postcode is 94107.",
+            "source_id": "E-2333fbf0e0944c62",
+            "quote": "My delivery postcode is 94107.",
+            "subject": "buyer",
+            "field": "destination_postcode",
+            "value": "94107",
+            "stance": "neutral",
+            "source_check": "exact_quote_found",
+            "origin_verified": false,
+            "structured_check": "value_in_quote",
+            "semantic_support": "entailed",
+            "support_reason": "The source explicitly states the buyer's delivery postcode is 94107."
+          },
+          {
+            "id": "C-003",
+            "text": "Seller confirms the order destination postcode is 94107.",
+            "source_id": "E-6c160820996a43f4",
+            "quote": "Ship to destination postcode 94107.",
+            "subject": "seller",
+            "field": "destination_postcode",
+            "value": "94107",
+            "stance": "neutral",
+            "source_check": "exact_quote_found",
+            "origin_verified": false,
+            "structured_check": "value_in_quote",
+            "semantic_support": "entailed",
+            "support_reason": "The source explicitly states the order destination postcode is 94107."
+          },
+          {
+            "id": "C-004",
+            "text": "Tracking indicates delivery to building reception.",
+            "source_id": "E-660ed3f1acfc4cb5",
+            "quote": "Delivered to building reception.",
+            "subject": "carrier",
+            "field": "delivery_status",
+            "value": "delivered_to_reception",
+            "stance": "seller",
+            "source_check": "exact_quote_found",
+            "origin_verified": false,
+            "structured_check": "value_not_found_in_quote",
+            "semantic_support": "entailed",
+            "support_reason": "The source explicitly states the tracking indicates delivery to building reception."
+          }
+        ],
+        "hypotheses": [
+          {
+            "id": "H-001",
+            "title": "Misdelivery or theft at reception",
+            "explanation": "The parcel was delivered to the building reception as stated by the carrier, but was subsequently lost, stolen, or not retrieved by the buyer.",
+            "supports": [
+              "C-004"
+            ],
+            "challenges": [
+              "C-001"
+            ],
+            "status": "plausible"
+          },
+          {
+            "id": "H-002",
+            "title": "Carrier error",
+            "explanation": "The carrier misidentified the delivery location or failed to deliver the parcel to the correct building reception.",
+            "supports": [
+              "C-001"
+            ],
+            "challenges": [
+              "C-004"
+            ],
+            "status": "plausible"
+          }
+        ],
+        "requests": [
+          {
+            "id": "R-001",
+            "title": "Proof of delivery details",
+            "question": "Can the carrier provide the specific address or building name where the parcel was delivered to verify it matches the buyer's address?",
+            "recipient": "carrier",
+            "distinguishes": [
+              "H-001",
+              "H-002"
+            ],
+            "rationale": "Confirming the exact delivery location would determine if the carrier delivered to the correct building or an incorrect one.",
+            "burden": "medium",
+            "priority": "first"
+          }
+        ],
+        "unknowns": [
+          "The specific building address associated with the reception delivery",
+          "Whether the building reception has a log of received packages"
+        ],
+        "recommendation": "Request detailed delivery documentation from the carrier to verify the delivery location.",
+        "rejected_claims": [],
+        "review_usage": {
+          "promptTokenCount": 889,
+          "candidatesTokenCount": 210,
+          "totalTokenCount": 1099,
+          "promptTokensDetails": [
+            {
+              "modality": "TEXT",
+              "tokenCount": 889
+            }
+          ],
+          "serviceTier": "standard"
+        },
+        "comparisons": [],
+        "warnings": [],
+        "model": "gemini-3.1-flash-lite",
+        "created_at": "2026-11-06T09:45:02.586218+00:00",
+        "input_digest": "4d01ece5185049e2c21971855f02eac9f79149062cef0b169df802e9bb878f92",
+        "usage": {
+          "promptTokenCount": 619,
+          "candidatesTokenCount": 913,
+          "totalTokenCount": 1532,
+          "promptTokensDetails": [
+            {
+              "modality": "TEXT",
+              "tokenCount": 619
+            }
+          ],
+          "serviceTier": "standard"
+        },
+        "latency_seconds": 7.45,
+        "baseline": null,
+        "source_revision": 1
+      },
+      "created_request": {
+        "burden": "medium",
+        "distinguishes": [
+          "H-001",
+          "H-002"
+        ],
+        "id": "R-b785c851af604430",
+        "priority": "first",
+        "question": "Can the carrier provide the specific address or building name where the parcel was delivered to verify it matches the buyer's address?",
+        "rationale": "Confirming the exact delivery location would determine if the carrier delivered to the correct building or an incorrect one.",
+        "recipient": "carrier",
+        "title": "Proof of delivery details",
+        "created_at": "2026-11-06T09:45:02.649401+00:00",
+        "status": "open",
+        "expires_at": 1794563102.6494226
+      },
+      "closed_request": {
+        "burden": "medium",
+        "created_at": "2026-11-06T09:45:02.649401+00:00",
+        "distinguishes": [
+          "H-001",
+          "H-002"
+        ],
+        "expires_at": 1794563102.6494226,
+        "id": "R-b785c851af604430",
+        "priority": "first",
+        "question": "Can the carrier provide the specific address or building name where the parcel was delivered to verify it matches the buyer's address?",
+        "rationale": "Confirming the exact delivery location would determine if the carrier delivered to the correct building or an incorrect one.",
+        "recipient": "carrier",
+        "status": "unavailable",
+        "title": "Proof of delivery details",
+        "closure_reason": "Fictional test: the intended recipient reported that the requested record is unavailable. No independent verification of that report was supplied.",
+        "closed_at": "2026-11-06T09:45:02.700436+00:00",
+        "closure_origin": "investigator_report",
+        "availability_verified": false
+      },
+      "revoked_portal_get_http": 409,
+      "analysis_marked_stale": true,
+      "after_analysis": {
+        "summary": "The buyer claims non-receipt of Atlas studio headphones (Order AT-1042) despite tracking indicating delivery to a building reception on November 2, 2026. The buyer confirms their destination postcode is 94107, which matches the seller's order confirmation. The carrier has not provided specific delivery address details to confirm if the reception location matches the buyer's address.",
+        "finding": "insufficient",
+        "claims": [
+          {
+            "id": "C-001",
+            "text": "Buyer states they did not receive the headphones and checked the lobby.",
+            "source_id": "E-2333fbf0e0944c62",
+            "quote": "I did not receive the headphones. My delivery postcode is 94107. I checked the lobby and no parcel was there.",
+            "subject": "buyer",
+            "field": "delivery_status",
+            "value": "not_received",
+            "stance": "buyer",
+            "source_check": "exact_quote_found",
+            "origin_verified": false,
+            "structured_check": "value_not_found_in_quote",
+            "semantic_support": "entailed",
+            "support_reason": "The source text explicitly states the buyer did not receive the headphones and checked the lobby."
+          },
+          {
+            "id": "C-002",
+            "text": "Seller confirms the destination postcode for the order is 94107.",
+            "source_id": "E-6c160820996a43f4",
+            "quote": "Ship to destination postcode 94107.",
+            "subject": "order",
+            "field": "destination_postcode",
+            "value": "94107",
+            "stance": "seller",
+            "source_check": "exact_quote_found",
+            "origin_verified": false,
+            "structured_check": "value_in_quote",
+            "semantic_support": "entailed",
+            "support_reason": "The source text explicitly confirms the destination postcode is 94107."
+          },
+          {
+            "id": "C-003",
+            "text": "Tracking indicates delivery to a building reception.",
+            "source_id": "E-660ed3f1acfc4cb5",
+            "quote": "Delivered to building reception.",
+            "subject": "tracking",
+            "field": "delivery_date",
+            "value": "2026-11-02",
+            "stance": "seller",
+            "source_check": "exact_quote_found",
+            "origin_verified": false,
+            "structured_check": "value_not_found_in_quote",
+            "semantic_support": "partial",
+            "support_reason": "The source confirms delivery to a building reception, but does not support the claim that the delivery date was 2026-11-02."
+          }
+        ],
+        "hypotheses": [
+          {
+            "id": "H-001",
+            "title": "Carrier misdelivery",
+            "explanation": "The carrier delivered the package to a different building or reception area than the one associated with the buyer's address.",
+            "supports": [
+              "C-001"
+            ],
+            "challenges": [],
+            "status": "plausible"
+          },
+          {
+            "id": "H-002",
+            "title": "Package theft or loss after delivery",
+            "explanation": "The carrier delivered the package to the correct building reception, but it was subsequently stolen or misplaced before the buyer could retrieve it.",
+            "supports": [],
+            "challenges": [
+              "C-001"
+            ],
+            "status": "plausible"
+          }
+        ],
+        "requests": [],
+        "unknowns": [
+          "The specific building or address where the carrier left the package.",
+          "Whether the building reception mentioned in the tracking is the same building associated with postcode 94107."
+        ],
+        "recommendation": "The evidence is currently insufficient to determine if the delivery was successful or if a misdelivery occurred. As the carrier has failed to provide specific delivery location details, the dispute remains unresolved.",
+        "rejected_claims": [],
+        "review_usage": {
+          "promptTokenCount": 785,
+          "candidatesTokenCount": 181,
+          "totalTokenCount": 966,
+          "promptTokensDetails": [
+            {
+              "modality": "TEXT",
+              "tokenCount": 785
+            }
+          ],
+          "serviceTier": "standard"
+        },
+        "comparisons": [],
+        "warnings": [],
+        "model": "gemini-3.1-flash-lite",
+        "created_at": "2026-11-06T09:45:13.442559+00:00",
+        "input_digest": "fa6f51648460492d377abda9e09c521222223c0727478982c203059149cdfaec",
+        "usage": {
+          "promptTokenCount": 899,
+          "candidatesTokenCount": 764,
+          "totalTokenCount": 1663,
+          "promptTokensDetails": [
+            {
+              "modality": "TEXT",
+              "tokenCount": 899
+            }
+          ],
+          "serviceTier": "standard"
+        },
+        "latency_seconds": 10.69,
+        "baseline": null,
+        "source_revision": 4,
+        "change": {
+          "previous_finding": "insufficient",
+          "current_finding": "insufficient",
+          "previous_claims": 4,
+          "current_claims": 3,
+          "new_source_ids": []
+        }
+      },
+      "status": "completed",
+      "proposed_questions_after": []
+    },
+    {
+      "title": "Two charges for one order?",
+      "initial_analysis": {
+        "summary": "The buyer claims a duplicate charge for a single order (C-12). The seller's ledger confirms two separate captures (CAP-A and CAP-B) for the same order ID, both for the amount of 42.50 USD on the same date.",
+        "finding": "conflicting",
+        "claims": [
+          {
+            "id": "C-001",
+            "text": "Buyer reports two charges for one order.",
+            "source_id": "E-3952e1a756904130",
+            "quote": "I placed one order, C-12, and see two charges of USD 42.50.",
+            "subject": "order_C-12",
+            "field": "amount",
+            "value": "42.50",
+            "stance": "buyer",
+            "source_check": "exact_quote_found",
+            "origin_verified": false,
+            "structured_check": "value_in_quote",
+            "semantic_support": "entailed",
+            "support_reason": "The buyer explicitly states they placed one order and observed two charges of the specified amount."
+          },
+          {
+            "id": "C-002",
+            "text": "Seller ledger shows two captures for the same order.",
+            "source_id": "E-51d050097c224f1f",
+            "quote": "Capture CAP-A, USD 42.50, November 1. Capture CAP-B, USD 42.50, November 1. No second order is recorded.",
+            "subject": "order_C-12",
+            "field": "amount",
+            "value": "42.50",
+            "stance": "seller",
+            "source_check": "exact_quote_found",
+            "origin_verified": false,
+            "structured_check": "value_in_quote",
+            "semantic_support": "entailed",
+            "support_reason": "The seller ledger explicitly lists two separate captures for the same order ID."
+          }
+        ],
+        "hypotheses": [
+          {
+            "id": "H-001",
+            "title": "Duplicate Transaction Error",
+            "explanation": "The seller's system erroneously processed two captures for a single order, resulting in a duplicate charge to the buyer.",
+            "supports": [
+              "C-001",
+              "C-002"
+            ],
+            "challenges": [],
+            "status": "plausible"
+          }
+        ],
+        "requests": [],
+        "unknowns": [
+          "Reason for the second capture (CAP-B) in the seller's system."
+        ],
+        "recommendation": "Await seller explanation regarding the duplicate capture. If the seller confirms a technical error, the duplicate charge should be refunded.",
+        "rejected_claims": [],
+        "review_usage": {
+          "promptTokenCount": 568,
+          "candidatesTokenCount": 113,
+          "totalTokenCount": 681,
+          "promptTokensDetails": [
+            {
+              "modality": "TEXT",
+              "tokenCount": 568
+            }
+          ],
+          "serviceTier": "standard"
+        },
+        "comparisons": [],
+        "warnings": [],
+        "model": "gemini-3.1-flash-lite",
+        "created_at": "2026-11-06T09:45:24.601095+00:00",
+        "input_digest": "ac75939d760253b2fd0605e8914dbc06c247ef569bcf38d1d97aec52b6e266a5",
+        "usage": {
+          "promptTokenCount": 514,
+          "candidatesTokenCount": 668,
+          "totalTokenCount": 1182,
+          "promptTokensDetails": [
+            {
+              "modality": "TEXT",
+              "tokenCount": 514
+            }
+          ],
+          "serviceTier": "standard"
+        },
+        "latency_seconds": 11.08,
+        "baseline": null,
+        "source_revision": 1
+      },
+      "status": "no_unique_first_request"
+    }
+  ],
+  "failures": [],
+  "completed_at": "2026-11-06T09:45:24.657284+00:00"
+}

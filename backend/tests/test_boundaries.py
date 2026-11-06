@@ -511,6 +511,81 @@ def test_portal_token_not_stored_in_plaintext(env):
     assert token not in text
 
 
+@pytest.mark.parametrize("status", ["unavailable", "withdrawn"])
+def test_closing_request_revokes_all_portal_paths_and_preserves_uncertainty(env, status):
+    body, tenant, token = request_fixture(env)
+    original = store.get(body["id"], tenant)
+    request_id = original["requests"][-1]["id"]
+    path = f"/api/cases/{body['id']}/requests/{request_id}/close"
+    r = env.post(path, json={"status": status, "reason": "Carrier reports the destination record cannot be obtained."})
+    assert r.status_code == 200
+    closed = r.json()
+    assert closed["analysis_stale"] and closed["revision"] == original["revision"] + 1
+    assert closed["evidence"] == original["evidence"]
+    assert closed["analysis"] == original["analysis"]
+    req = closed["requests"][-1]
+    assert req["status"] == status and req["availability_verified"] is False
+    assert req["closure_origin"] == "investigator_report"
+    h = {"Authorization": "Bearer " + token}
+    assert env.get("/api/portal", headers=h).status_code == 409
+    assert env.post("/api/portal", headers=h, json={"title": "Late response", "text": "Late record", "party": "carrier"}).status_code == 409
+    assert env.post("/api/portal/upload", headers=h, files={"file": ("late.txt", b"Late record")}).status_code == 409
+    assert env.post(path, json={"status": status, "reason": "Close again"}).status_code == 409
+    event = store.timeline(body["id"])[-1]
+    assert event["kind"] == "witness_request_closed" and event["data"]["portal_revoked"]
+    assert store.verify_timeline(store.timeline(body["id"]))
+
+
+def test_an_answered_request_cannot_be_relabelled_unavailable(env):
+    body, tenant, token = request_fixture(env)
+    h = {"Authorization": "Bearer " + token}
+    assert env.post("/api/portal", headers=h, json={"title": "Response", "text": "Carrier record", "party": "carrier"}).status_code == 200
+    before = store.get(body["id"], tenant)
+    request_id = before["requests"][-1]["id"]
+    assert env.post(f"/api/cases/{body['id']}/requests/{request_id}/close", json={"status": "unavailable", "reason": "Incorrect relabelling"}).status_code == 409
+    assert store.get(body["id"], tenant) == before
+
+
+def test_other_tenant_cannot_revoke_witness_portal(env):
+    body, tenant, token = request_fixture(env)
+    request_id = store.get(body["id"], tenant)["requests"][-1]["id"]
+    demo(env)
+    assert env.post(f"/api/cases/{body['id']}/requests/{request_id}/close", json={"status": "withdrawn", "reason": "Cross tenant"}).status_code == 404
+    assert env.get("/api/portal", headers={"Authorization": "Bearer " + token}).status_code == 200
+
+
+def test_reply_started_before_revocation_cannot_commit_after_it(env):
+    body, tenant, token = request_fixture(env)
+    stale = store.get(body["id"], tenant)
+    with store.connect() as c:
+        row = dict(c.execute("SELECT * FROM requests WHERE case_id=?", (body["id"],)).fetchone())
+    request_id = stale["requests"][-1]["id"]
+    assert env.post(f"/api/cases/{body['id']}/requests/{request_id}/close", json={"status": "withdrawn", "reason": "Wrong recipient"}).status_code == 200
+    with pytest.raises(ValueError, match="Case changed"):
+        application.add_evidence(stale, tenant, application.EvidenceInput(title="Late", text="Late response", party="carrier"), request_row=row)
+    assert len(store.get(body["id"], tenant)["evidence"]) == len(body["evidence"])
+
+
+def test_failed_portal_revocation_rolls_back_case_and_audit(env):
+    body, tenant, _ = request_fixture(env)
+    before = store.get(body["id"], tenant)
+    history = store.timeline(body["id"])
+    with store.connect() as c:
+        c.execute("UPDATE requests SET completed=1 WHERE case_id=?", (body["id"],))
+        c.commit()
+    request_id = before["requests"][-1]["id"]
+    assert env.post(f"/api/cases/{body['id']}/requests/{request_id}/close", json={"status": "withdrawn", "reason": "Concurrent reply"}).status_code == 409
+    assert store.get(body["id"], tenant) == before
+    assert store.timeline(body["id"]) == history
+
+
+def test_blank_closure_reason_cannot_revoke_link(env):
+    body, tenant, token = request_fixture(env)
+    request_id = store.get(body["id"], tenant)["requests"][-1]["id"]
+    assert env.post(f"/api/cases/{body['id']}/requests/{request_id}/close", json={"status": "withdrawn", "reason": "   "}).status_code == 422
+    assert env.get("/api/portal", headers={"Authorization": "Bearer " + token}).status_code == 200
+
+
 def test_human_can_correct_witness_recipient_and_question(env):
     body, tenant, token = request_fixture(env)
     r = env.post(

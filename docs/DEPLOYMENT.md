@@ -22,4 +22,6 @@ The available Sites platform runs Cloudflare Workers, not the existing Python ba
 
 ## Local process control
 
+The Docker command uses `exec` so the application receives shutdown signals directly. The container CI job now stops the running image and checks for application shutdown completion without forced exit 137. This complements its health/authentication checks; it does not certify recovery of ephemeral state or uninterrupted model calls during a redeploy.
+
 The launcher starts only this project's loopback server and writes its logs under ignored `runtime/`. For a manual server, Ctrl+C stops it. Do not use broad process-kill commands that might terminate the user's other Python work. An uncertain PayPal dispatch or reserved action must be reconciled directly with PayPal before any manual database repair or retry.
