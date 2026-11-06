@@ -1,5 +1,11 @@
 # Build status — 6 November 2026
 
+## Account product transformation
+
+The new `saas_app:app` application has individual username/password registration, private empty workspaces and PostgreSQL as primary storage for cases, originals, investigations, witness responses and audits. The legacy single-instance operator release described below remains separate and recoverable. Its SQLite/ephemeral limits do not describe account mode. [Current architecture](ARCHITECTURE.md) · [Exact SaaS acceptance phases](SAAS_ACCEPTANCE.md).
+
+Two normal account sessions passed actual cloud lifecycle/isolation and process-restart persistence. Recovery rotation, revoked sessions, transaction rollback and stale revisions passed real cloud probes. The original 83 tests and 19 new account/stream-boundary contracts pass locally. Actual browser onboarding, upload, investigation and return sign-in were exercised. Public deploy/replacement verification is pending; no completion claim is made yet.
+
 ## Verified continuation after public release
 
 - Public source: [harshil0014/verdict-ai](https://github.com/harshil0014/verdict-ai); anonymous clone/metadata verification and successful remote application/container jobs. [Publication record](PUBLICATION.md).

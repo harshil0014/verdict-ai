@@ -26,6 +26,7 @@ jobs:
       - name: Verify container boundaries and health
         run: |
           docker run --rm --entrypoint sh verdict-ci -c 'test ! -f /app/backend/.env && test -f /app/frontend/dist/index.html'
+          docker run --rm --entrypoint python verdict-ci -c 'import saas_app; from pathlib import Path; assert "/api/auth/register" in {r.path for r in saas_app.app.routes}; assert not list(Path("/data").glob("*.sqlite*"))'
           docker run -d --name verdict-ci -p 9000:8000 -e VERDICT_PUBLIC_HOST=127.0.0.1:9000 verdict-ci
           trap 'docker logs verdict-ci; docker rm -f verdict-ci' EXIT
           for attempt in $(seq 1 30); do

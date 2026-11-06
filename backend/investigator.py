@@ -13,7 +13,12 @@ class ModelError(Exception):
     pass
 
 
+SLOT_RESERVER = None
+
+
 async def reserve_model_slot():
+    if SLOT_RESERVER is not None:
+        return await SLOT_RESERVER()
     # Shared by the web process and offline evaluation on this host.
     # 5.5 seconds keeps requests below the observed 15/minute free-tier quota.
     with sqlite3.connect(RUNTIME / "model-rate.sqlite3", timeout=15) as db:

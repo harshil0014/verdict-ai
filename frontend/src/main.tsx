@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import "@xyflow/react/dist/style.css";
 import "./style.css";
+import { AccountEntry } from "./saas";
 
 type Source = {
   id: string;
@@ -123,7 +124,10 @@ type Case = {
   paypal_snapshot?: any;
   payment_record_acquisition?: { status: string; records_read: number; issues: string[] };
 };
+let authGeneration = 0;
 async function api(path: string, method = "GET", body?: any, token?: string) {
+  if (path.startsWith('/auth/')) authGeneration++;
+  const generation = authGeneration;
   const headers: any = {};
   if (body && !(body instanceof FormData))
     headers["Content-Type"] = "application/json";
@@ -136,7 +140,8 @@ async function api(path: string, method = "GET", body?: any, token?: string) {
     credentials: "same-origin",
   });
   const d = await r.json();
-  if (!r.ok) throw new Error(d.detail || "The request could not be completed");
+  if (generation !== authGeneration) throw new Error("Your session changed. Please open the case again.");
+  if (!r.ok) throw new Error(typeof d.detail === 'string' ? d.detail : "The request could not be completed");
   return d;
 }
 const readable = (s: string) => s.replaceAll("_", " ").replaceAll("-", " ");
@@ -160,6 +165,7 @@ const findings: Record<string, string> = {
 };
 
 function App() {
+  const [config, setConfig] = useState<any>(null);
   const [me, setMe] = useState<any>(null),
     [items, setItems] = useState<Case[]>([]),
     [current, setCurrent] = useState<Case | null>(null),
@@ -183,6 +189,17 @@ function App() {
     [portalDone, setPortalDone] = useState(false),
     [demoCode, setDemoCode] = useState("");
   const [closingRequest, setClosingRequest] = useState<any>(null);
+  const [evidenceParty, setEvidenceParty] = useState('other');
+  function clearPrivateState() {
+    setItems([]); setCurrent(null); setSource(null); setClaim(null); setIntegration(null);
+    setApproval(null); setPortalLink(''); setReviewedWitness(null); setClosingRequest(null);
+    setModal(''); setNotice(''); setError(''); setQuery(''); setFilter('all'); setTab('investigation'); setEvidenceParty('other');
+  }
+  async function authenticated() {
+    clearPrivateState();
+    setMe(await api('/me'));
+    await load();
+  }
   async function run(label: string, fn: () => Promise<any>) {
     setBusy(label);
     setError("");
@@ -197,12 +214,8 @@ function App() {
   async function load(id?: string) {
     const rows = await api("/cases");
     setItems(rows);
-    const choice =
-      id ||
-      current?.id ||
-      rows.find((c: Case) => c.title.includes("somewhere"))?.id ||
-      rows[0]?.id;
-    if (choice) setCurrent(await api("/cases/" + choice));
+    const choice = [id, current?.id, rows[0]?.id].find(value => rows.some((c: Case) => c.id === value));
+    setCurrent(choice ? await api("/cases/" + choice) : null);
   }
   async function choose(id: string) {
     await run("Opening case", async () => {
@@ -218,12 +231,14 @@ function App() {
   useEffect(() => {
     (async () => {
       try {
+        const settings = await api('/config');
+        setConfig(settings);
         if (portalToken) {
           setPortal(await api("/portal", "GET", undefined, portalToken));
           return;
         }
         const bootstrap = hash.get("bootstrap");
-        if (bootstrap) {
+        if (bootstrap && settings.auth_mode === 'legacy') {
           history.replaceState(null, "", location.pathname);
           setMe(await api("/auth/login", "POST", { bootstrap }));
           await load();
@@ -569,6 +584,9 @@ function App() {
       </div>
     );
   if (!me)
+    if (!config) return <div className="loading-screen"><h1>Workspace temporarily unavailable</h1><p>{error || 'Unable to load account configuration.'}</p><button className="primary" onClick={() => location.reload()}>Try again</button></div>;
+    else if (config.auth_mode === 'account') return <><AccountEntry api={api} onAuthenticated={authenticated}/>{alert}</>;
+  if (!me)
     return (
       <div className="entry">
         <div className="entry-art">
@@ -673,6 +691,7 @@ function App() {
             <small>
               {me.role === "operator"
                 ? "Private operator workspace"
+                : me.role === "member" ? "Your private cloud workspace"
                 : "Isolated fictional workspace"}
             </small>
           </div>
@@ -720,8 +739,9 @@ function App() {
         <button
           className="sidebar-bottom"
           onClick={() => {
-            if (me.role === "operator")
+            if (me.role === "operator" || me.role === "member")
               run("Checking integrations", async () => {
+                if (me.role === 'member') setMe(await api('/me'));
                 setIntegration(await api("/integrations"));
                 setModal("integrations");
               });
@@ -740,15 +760,14 @@ function App() {
             run("Signing out", async () => {
               await api("/auth/logout", "POST");
               setMe(null);
-              setItems([]);
-              setCurrent(null);
+              clearPrivateState();
             })
           }
         >
-          <span className="avatar">{me.role === "operator" ? "OP" : "DE"}</span>
+          <span className="avatar">{me.role === "operator" ? "OP" : me.role === "member" ? me.user.display_name.slice(0,2).toUpperCase() : "DE"}</span>
           <span>
             <strong>
-              {me.role === "operator" ? "Operator" : "Demo investigator"}
+              {me.role === "operator" ? "Operator" : me.role === "member" ? me.user.display_name : "Demo investigator"}
             </strong>
             <small>Sign out</small>
           </span>
@@ -764,7 +783,7 @@ function App() {
           </div>
           <span className="sandbox-tag">
             <span className="live-dot" />
-            {me.role === "operator" ? "SANDBOX ONLY" : "FICTIONAL DATA"}
+            {me.role === "operator" ? "SANDBOX ONLY" : me.role === "member" ? "PRIVATE WORKSPACE" : "FICTIONAL DATA"}
           </span>
           <button
             className="secondary small"
@@ -775,6 +794,7 @@ function App() {
           </button>
         </header>
         <main>
+          {me.role === 'member' && <div className="account-mobile"><strong>{me.user.display_name}</strong><button onClick={() => run('Checking account',async () => {setMe(await api('/me'));setIntegration(await api('/integrations'));setModal('integrations');})}>Safeguards</button><button onClick={() => run('Signing out',async () => {await api('/auth/logout','POST');setMe(null);clearPrivateState();})}>Sign out <LogOut size={13}/></button></div>}
           {me.ephemeral_storage && (
             <div className="consent-box" role="note">
               <AlertTriangle size={20} />
@@ -791,7 +811,7 @@ function App() {
                 Follow the facts. Question the gaps. Find the missing witness.
               </p>
             </div>
-            <button
+            {me.role !== "member" && <button
               className="secondary"
               disabled={!!busy || me.role !== "operator"}
               title={
@@ -812,7 +832,7 @@ function App() {
                 className={busy === "Syncing PayPal sandbox" ? "spin" : ""}
               />
               Sync PayPal
-            </button>
+            </button>}
           </div>
           <section className="metrics">
             <div>
@@ -876,7 +896,7 @@ function App() {
                 <option value="all">All investigations</option>
                 <option value="requests">Awaiting witness</option>
                 <option value="review">Ready for review</option>
-                <option value="sandbox">PayPal sandbox</option>
+                {me.role !== "member" && <option value="sandbox">PayPal sandbox</option>}
               </select>
               <div className="case-list">
                 {rows.map((c) => (
@@ -1282,6 +1302,7 @@ function App() {
                         <span className="eyebrow">EVIDENCE ACQUISITION</span>
                         <h3>A question with a purpose.</h3>
                       </div>
+                      {me.role === 'member' && <button className="secondary" onClick={() => createRequest({id:'manual',title:'',question:'',recipient:'other',distinguishes:[],rationale:'Investigator-created request',burden:'medium',priority:'first'})}><Plus size={16}/> New request</button>}
                       <button
                         className="secondary"
                         onClick={() => setModal("evidence")}
@@ -1528,7 +1549,7 @@ function App() {
                 )}
               </section>
             ) : (
-              <Empty
+              me.role === 'member' ? <section className="onboarding"><span className="eyebrow">WELCOME, {me.user.display_name.toUpperCase()}</span><h2>Your next investigation starts here.</h2><p>This is your private workspace. Create a case and bring your own records; nothing is pre-filled.</p><ol><li>Create a case with the question you need to resolve.</li><li>Add original evidence or notes from each party.</li><li>Investigate, inspect the sources and ask for missing evidence.</li></ol><button className="primary" onClick={() => setModal('new-case')}><Plus size={17}/> Create your first case</button><p className="fine">Cloud storage · 20 MB original files · 50 cases · 10 investigation attempts/day. Shared service capacity limits apply.</p></section> : <Empty
                 title="Your inbox is empty"
                 text="Create a case or synchronize the PayPal sandbox."
               />
@@ -1804,7 +1825,7 @@ function App() {
                   </label>
                   <label>
                     Supplied by
-                    <select name="party">
+                    <select name="party" value={evidenceParty} onChange={e => setEvidenceParty(e.target.value)}>
                       {[
                         "buyer",
                         "seller",
@@ -1841,7 +1862,7 @@ function App() {
                         run("Uploading document", async () => {
                           const d = new FormData();
                           d.set("file", f);
-                          d.set("party", "other");
+                          d.set("party", evidenceParty);
                           await api(`/cases/${current!.id}/upload`, "POST", d);
                           await refresh();
                           setModal("");
@@ -1976,7 +1997,7 @@ function App() {
                         : integration.paypal.status === "not_configured"
                           ? "Not configured on this host"
                           : `Sandbox connection unavailable · ${integration.paypal.list_status}`
-                      : "Operator connection not accessible in demo"}
+                      : me.role === 'member' ? "Not connected for this workspace" : "Operator connection not accessible in demo"}
                   </span>
                 </div>
                 <div className="integration-row">
@@ -1986,7 +2007,7 @@ function App() {
                 <div className="integration-row">
                   <strong>Persistence</strong>
                   <span>
-                    {integration?.storage.configured
+                    {me.role === 'member' ? 'Cloud PostgreSQL · original files, investigations, responses and audit records' : integration?.storage.configured
                       ? `SQLite + private Supabase mirror · ${integration.storage.synced_cases} cases synced · ${integration.storage.pending} pending`
                       : "Private server SQLite · cloud mirror not active in this workspace"}
                   </span>
@@ -1999,11 +2020,11 @@ function App() {
                       : "Not registered; signature endpoint fails closed"}
                   </span>
                 </div>
+                {me.role === 'member' && <><div className="integration-row"><strong>Original storage</strong><span>{((me.user.storage_bytes || 0) / 1048576).toFixed(2)} MB / 20 MB</span></div><div className="integration-row"><strong>Today's analysis attempts</strong><span>{me.user.analyses_today || 0} / 10 · resets at 00:00 UTC</span></div></>}
                 <div className="integration-row">
                   <strong>Actions</strong>
                   <span>
-                    Sandbox only · human review · snapshot binding · durable
-                    dispatch reservation
+                    {me.role === 'member' ? 'Merchant actions are not enabled for public accounts' : 'Sandbox only · human review · snapshot binding · durable dispatch reservation'}
                   </span>
                 </div>
                 <p className="fine">

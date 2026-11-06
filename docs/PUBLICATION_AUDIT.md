@@ -1,5 +1,13 @@
 # Public-source audit — 6 November 2026
 
+## Persistent account release
+
+The SaaS branch adds real accounts and PostgreSQL primary storage, separate from the preserved operator release. Before its public push, exact/private-value scans were repeated against all local Git objects, including unreachable objects, history paths and nonignored source. Ignored account passwords, recovery keys, portal tokens and the authentication pepper were included in exact matching. Zero findings. Gitleaks 8.30.1 independently reported no leaks in all-branch history and the publication-only tree.
+
+The release includes 102 passing local tests, a production frontend build, real-cloud two-account/restart/security reports, actual account UI captures, architecture/setup/security/recovery documentation and unchanged honest evaluation results. New pwdlib, argon2-cffi/bindings, cffi and pycparser notices are retained, including upstream Argon2 terms. Dependency licenses retain their scope alongside original MIT code; provider service terms are separate.
+
+Deployment replacement acceptance is tracked in [SAAS_ACCEPTANCE.md](SAAS_ACCEPTANCE.md). Source publication alone is not a claim that the upgraded service is deployed. The original audit below describes the earlier operator release.
+
 The owner explicitly authorized a public repository under `harshil0014`. Publication includes the functioning frontend/backend, tests, schemas, setup/deployment configuration, authored fictional data, research and honest evaluation. It excludes private runtime and credentials.
 
 ## Secret and data checks

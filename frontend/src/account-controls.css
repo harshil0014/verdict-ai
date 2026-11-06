@@ -1,0 +1,14 @@
+/* Account navigation must not inherit the compact workspace sidebar rules. */
+.public-site .public-nav nav { flex-direction: row; margin-top: 0; }
+.public-site .public-nav nav button { font-size: 12px; padding: 11px 13px; justify-content: center; }
+.account-dialog .recovery-confirm { display:flex; flex-direction:row; align-items:flex-start; gap:8px; }
+.account-dialog .recovery-confirm input { width:auto; flex:none; margin:2px 0; }
+.account-mobile { display:none; }
+@media(max-width:640px) {
+  .public-site .public-nav nav { gap:2px; }
+  .public-site .public-nav nav button { font-size:10px; padding:10px 8px; }
+  .public-nav .primary svg { display:none; }
+  .account-mobile { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid var(--line); background:#edf2e7; font-size:11px; }
+  .account-mobile strong { margin-right:auto; max-width:45%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .account-mobile button { font-size:10px; }
+}

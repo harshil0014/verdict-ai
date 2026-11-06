@@ -99,8 +99,11 @@ Python dependencies are installed from PyPI according to backend/requirements.lo
 |---|---|---|
 | annotated-doc | 0.0.5 | MIT |
 | annotated-types | 0.8.0 | MIT |
+| argon2-cffi | 25.1.0 | MIT |
+| argon2-cffi-bindings | 26.1.0 | MIT; bundled Argon2 upstream notices retained |
 | anyio | 4.16.0 | MIT |
 | certifi | 2026.10.23 | MPL-2.0 |
+| cffi | 2.1.1 | MIT-0 |
 | click | 8.5.0 | BSD-3-Clause |
 | colorama | 0.4.6 | See upstream distribution |
 | fastapi | 0.162.0 | MIT |
@@ -112,6 +115,8 @@ Python dependencies are installed from PyPI according to backend/requirements.lo
 | opentelemetry-api | 1.45.2 | Apache-2.0 |
 | packaging | 26.3 | Apache-2.0 OR BSD-2-Clause |
 | pluggy | 1.7.0 | MIT |
+| pwdlib | 0.3.1 | MIT |
+| pycparser | 3.12 | BSD-3-Clause |
 | pydantic | 2.14.3 | MIT |
 | pydantic_core | 2.50.4 | MIT |
 | Pygments | 2.21.0 | BSD-2-Clause |

@@ -38,6 +38,18 @@ def main():
         for key,value in json.loads(hosted.read_text(encoding='utf-8')).items():
             if value:known['hosted_'+key]=value.encode()
     dispute=ROOT/'runtime/private-dispute-id.json'
+    for name in ('saas-deploy-private.json','saas-acceptance-private.json','saas-security-private.json','saas-ui-private.json'):
+        path=ROOT/'runtime'/name
+        if path.exists():
+            def collect_saas(value):
+                if isinstance(value,dict):
+                    for key,item in value.items():
+                        if isinstance(item,str) and len(item)>=12 and (key in ('username','password','recovery_code','portal_token','case_id','original_id','witness_id') or key.startswith('VERDICT_')):
+                            known['saas_private_'+str(len(known))]=item.encode()
+                        collect_saas(item)
+                elif isinstance(value,list):
+                    for item in value:collect_saas(item)
+            collect_saas(json.loads(path.read_text(encoding='utf-8')))
     if dispute.exists():
         known['private_dispute_id']=json.loads(dispute.read_text(encoding='utf-8'))['dispute_id'].encode()
     session=ROOT/'runtime/private-local-session.json'

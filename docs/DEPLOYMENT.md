@@ -1,31 +1,30 @@
-# Deployment preparation and operational contract
+# Deployment and recovery
 
-The real container application was deployed on 6 November 2026 at **https://verdict-ai-harshil0014.onrender.com** on Render's free Singapore plan. No paid resource was activated. Source publication is separately verified in [PUBLICATION.md](PUBLICATION.md). Docker is not installed on the Windows execution host; the separate GitHub Actions container job built and tested the real image remotely. [Run for the first deployed commit](https://github.com/harshil0014/verdict-ai/actions/runs/42188867300).
+Account mode uses the existing cloud database and a free Render web service. No paid resource or automatic paid overflow is authorized.
 
-The first deployment exposed an optional-provider status bug, fixed to report unconfigured PayPal without hiding other connections. The corrected build `d97d283990a07d1ddfc33688a761bb2bf8795c72` then passed all 22 actual HTTPS checks on 6 November: frontend served, access code/session security, original upload/download, consent enforcement, real Gemini analysis, scoped witness reply, replay denial, stale detection, reassessment, export, tenant isolation and absent payment credentials/writes. The finding changed from insufficient to buyer-supported after the explicitly fictional carrier reply. [Machine-readable verification](deployment-verification.json). Browser control is disabled in Work settings; this is actual HTTP lifecycle verification, not fresh visual/browser certification.
+| Server variable | Value |
+|---|---|
+| VERDICT_APP_MODULE | `saas_app:app` |
+| VERDICT_PUBLIC_HOST | Exact public hostname without scheme |
+| VERDICT_SECURE_COOKIES | `true` on HTTPS |
+| VERDICT_AUTH_PEPPER | Stable random secret, at least 24 characters |
+| SUPABASE_URL / SUPABASE_SECRET_KEY | Private project URL and server-only key |
+| GEMINI_API_KEY | Server-only model key |
+| GEMINI_MODEL | `gemini-3.1-flash-lite` |
+| VERDICT_ALLOW_SANDBOX_ACTIONS | `false` |
+| VERDICT_SUPABASE_MIRROR | `false`; account storage already cloud-primary |
 
-## Hosting choice
+Apply timestamped SaaS migrations in filename order before startup. No startup DDL or secret in committed plaintext. Startup fails closed if cloud connectivity/configuration is missing. `/api/health` checks actual cloud RPC connectivity; use it for HTTP readiness. A live deploy must pass acceptance, not merely a TCP probe.
 
-The available Sites platform runs Cloudflare Workers, not the existing Python backend. A static frontend publication would leave investigation/auth/upload functionality disconnected. Preserve the integrated FastAPI service; prepare a container host such as Render. [Render Docker documentation](https://render.com/docs/docker), [persistent disks](https://render.com/docs/disks) and [free services](https://render.com/docs/free) must be rechecked at deployment time for current availability, quotas and sleep behavior. No paid disk or service activation is authorized by this configuration.
+All user cases, originals, responses, sessions, jobs and audits are cloud-primary. Ephemeral compute is replaceable. Free services can sleep; cloud quotas still apply. Database backups and full restore drills remain a separate operational requirement.
 
-`render.yaml` deliberately keeps sandbox writes disabled. The deployed demo has no PayPal or Supabase credentials and uses a separate operator password and judge code stored privately. Only Gemini is configured for real analysis of fictional demo records. Free instance disk is ephemeral; cases, sessions and portal links can be lost on restart, redeploy or spin-down. The UI warns before working in this host. A durable transactional primary store is required for safe provider actions; private snapshots do not replace it. This is a working demonstration host, not continuously available production hosting. Auto-deploy is disabled so reviewed builds are deployed deliberately.
+## Release and recoverability
 
-## Concrete publication sequence
+1. Preserve `release/legacy-working-20261106` at the prior working release. Leave its existing operator service untouched during separate account-service validation.
+2. Run tests, frontend build, real cloud lifecycle/restart checks, secret/history scans and attribution review before public source pushes.
+3. Deploy `saas` to a separate **free** account service. Wait for its named deploy to be live; check health/config and both accounts against persisted originals, investigation digests, witnesses and audit hashes.
+4. Replace the application with a subsequent deploy and repeat checks. Only then designate it as the public product/update links. Source promotion does not itself change the manually deployed legacy service.
 
-1. Review the sanitized release, evaluation report and known limitations. The owner approved public source publication under `harshil0014` on 6 November 2026. Use the audited source state; do not activate paid resources without explicit authorization.
-2. Create/push only the sanitized source with MIT license, lockfiles, CI workflow, docs and dataset. Never upload runtime or `.env`. Run the release secret scanner immediately before pushing.
-3. For the ephemeral fictional demo, configure only the Gemini key, a new operator password (16+ characters) and a separate judge code (16+ characters). Do not copy the local payment credentials or private customer data to this host. Credentials never go in source, Docker arguments, screenshots, public README or logs.
-4. Set the exact `VERDICT_PUBLIC_HOST`, `VERDICT_SECURE_COOKIES=true`, `VERDICT_LOCAL_BOOTSTRAP=false`, `VERDICT_ALLOW_SANDBOX_ACTIONS=false`, `VERDICT_SUPABASE_MIRROR=false`, `VERDICT_EPHEMERAL_STORAGE=true`. A public host without a valid judge code refuses guest sessions. Share judge access privately.
-5. Verify health, HTTPS cookies, operator login, demo isolation, original upload/download, Gemini consent, live quota failures, a scoped request/reply, reassessment and cloud outbox status against the actual host. Record exact deployed commit, time, URL and provider status.
-6. Keep no payment writes on an ephemeral instance. Register webhook delivery only after HTTPS ingress and state durability have been reviewed. Test real signature verification and repeated delivery. Do not weaken host checks or disable authentication to work around a deployment error.
-7. Confirm availability through the end of the official judging period and record a genuine functioning demo under three minutes. Final Devpost/YouTube publication remains a separate owner-approved step.
+The compatibility Docker default is `app:app`; legacy source and private configuration remain recoverable. That SQLite application cannot read SaaS account tables. Do not route user accounts there as if it provided their workspaces. Rolling back an application does not delete or roll back cloud data; avoid destructive down migrations. A retained source branch is not a database backup.
 
-## Local process control
-
-The Docker command uses `exec` so the application receives shutdown signals directly. The container CI job now stops the running image and checks for application shutdown completion without forced exit 137. This complements its health/authentication checks; it does not certify recovery of ephemeral state or uninterrupted model calls during a redeploy.
-
-The live `d36dc625beb48d6985fcecec0541ad465dbd2a93` build passed the updated container job and 17 additional HTTPS witness-closure checks. [Verification](witness-closure-host-verification.json). Its frontend asset matched the reviewed local production build. Fresh browser interaction/visual verification is still blocked by Work settings.
-
-The existing directly created service currently uses Render's default TCP readiness checks; `/api/health` was exercised separately over HTTPS. The Blueprint specifies an HTTP health path for a Blueprint-created service, but that setting has not been applied to the existing service through the connector. Do not equate the Blueprint with the live configuration.
-
-The launcher starts only this project's loopback server and writes its logs under ignored `runtime/`. For a manual server, Ctrl+C stops it. Do not use broad process-kill commands that might terminate the user's other Python work. An uncertain PayPal dispatch or reserved action must be reconciled directly with PayPal before any manual database repair or retry.
+Operational references: [Render deploy lifecycle](https://render.com/docs/deploys), [database-aware HTTP health checks](https://render.com/docs/health-checks). A successful deploy trigger alone is not a live verification.

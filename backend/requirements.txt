@@ -6,3 +6,4 @@ pydantic>=2.10,<3
 python-multipart>=0.0.20,<1
 pypdf>=6,<7
 pytest>=8,<10
+pwdlib[argon2]>=0.3,<1

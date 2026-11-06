@@ -1,17 +1,23 @@
-# Fictional demo configuration. Existing hosted verification is in docs/DEPLOYMENT.md.
-# Free-tier disk is ephemeral: PayPal writes MUST remain disabled.
+# Persistent account application; secrets are entered only in the deployment UI.
+# Existing legacy operator service is managed separately and remains recoverable.
 services:
   - type: web
-    name: verdict-investigation
+    name: verdict-saas-harshil0014
     runtime: docker
     plan: free
+    region: singapore
+    autoDeployTrigger: "off"
     healthCheckPath: /api/health
     envVars:
       - key: VERDICT_PUBLIC_HOST
         sync: false
-      - key: VERDICT_OPERATOR_PASSWORD
+      - key: VERDICT_AUTH_PEPPER
         sync: false
-      - key: VERDICT_DEMO_ACCESS_CODE
+      - key: VERDICT_APP_MODULE
+        value: saas_app:app
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
         sync: false
       - key: VERDICT_SECURE_COOKIES
         value: "true"
@@ -21,8 +27,6 @@ services:
         value: "false"
       - key: VERDICT_SUPABASE_MIRROR
         value: "false"
-      - key: VERDICT_EPHEMERAL_STORAGE
-        value: "true"
       - key: GEMINI_MODEL
         value: gemini-3.1-flash-lite
       - key: GEMINI_API_KEY

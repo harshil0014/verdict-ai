@@ -249,6 +249,11 @@ def health():
     return {"status": "ok", "service": "VERDICT", "environment": "sandbox-only"}
 
 
+@app.get("/api/config")
+def client_config():
+    return {"auth_mode": "legacy", "storage": "sqlite"}
+
+
 @app.get("/api/cases")
 def cases(s=Depends(session)):
     return store.listing(s["tenant"])
