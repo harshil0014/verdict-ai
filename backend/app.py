@@ -26,6 +26,7 @@ from investigator import investigate, ModelError, MODEL
 from fixtures import seed, evidence
 from paypal import client as paypal, PayPalError, allowed, requested_seller_evidence
 import cloud
+from payment_records import ReadBudget, fetch_records, merge_records, record_identity
 
 BOOTSTRAP = secrets.token_urlsafe(32)
 bootstrap_used = False
@@ -648,54 +649,86 @@ async def integrations(s=Depends(operator)):
     }
 
 
-async def import_dispute(detail):
+async def acquire_payment_records(body, detail, budget):
+    records, issues, count = await fetch_records(paypal, detail, budget)
+    body = store.get(body["id"], "operator")
+    if body.get("paypal_snapshot") != detail:
+        raise ValueError("Case changed during payment retrieval. Refresh before linking records.")
+    if not records and not issues and not count and not body.get("payment_record_acquisition"):
+        return body
+    change = merge_records(body, records, issues, count)
+    if not change["changed"]:
+        return body
+    return store.save(body, "operator", "payment_records_acquired", change)
+
+
+async def import_dispute(detail, payment_budget=None, acquire_payments=True):
     id = detail["dispute_id"]
     existing = next(
         (b for b in store.listing("operator") if b.get("paypal_id") == id), None
     )
     ev = evidence(
         "PayPal sandbox dispute record",
-        json.dumps(detail, indent=2),
+        json.dumps(detail, indent=2, sort_keys=True),
         "payment_provider",
         "paypal_sandbox_api",
     )
     ev["origin_verified"] = True
     ev["synthetic"] = False
     if existing:
-        if existing.get("paypal_snapshot") == detail:
-            return existing
-        existing["evidence"].append(ev)
-        existing.update(
-            paypal_snapshot=detail,
-            status=detail.get("status", "UNKNOWN"),
-            analysis_stale=bool(existing.get("analysis")),
+        snapshot_changed = existing.get("paypal_snapshot") != detail
+        if snapshot_changed:
+            if len(existing["evidence"]) >= 40:
+                raise HTTPException(409, "Evidence history limit reached. Export and review this case before importing more snapshots.")
+            prior = next((e for e in reversed(existing["evidence"]) if record_identity(e) and record_identity(e)[0] == ("dispute", id)), None)
+            if prior:
+                ev["replaces_source_id"] = prior["id"]
+            existing["evidence"].append(ev)
+            existing.update(
+                paypal_snapshot=detail,
+                status=detail.get("status", "UNKNOWN"),
+                analysis_stale=bool(existing.get("analysis")),
+            )
+        versions = [e for e in existing["evidence"] if record_identity(e) and record_identity(e)[0] == ("dispute", id)]
+        superseded = []
+        for older in versions[:-1]:
+            if not older.get("superseded_by"):
+                older["superseded_by"] = versions[-1]["id"]
+                superseded.append({"old_source_id": older["id"], "new_source_id": versions[-1]["id"]})
+        if snapshot_changed or superseded:
+            existing["analysis_stale"] = bool(existing.get("analysis"))
+            existing = store.save(existing, "operator", "paypal_refreshed" if snapshot_changed else "provider_history_reconciled", {"provider_id": id, "superseded": superseded})
+        body = existing
+    else:
+        amount = detail.get("dispute_amount", {})
+        body = store.create(
+            "operator",
+            {
+                "title": "PayPal · " + id,
+                "paypal_id": id,
+                "mode": "paypal_sandbox",
+                "status": detail.get("status", "UNKNOWN"),
+                "reason": detail.get("reason", "OTHER"),
+                "amount": amount.get("value", "0.00"),
+                "currency": amount.get("currency_code", "USD"),
+                "deadline": detail.get("seller_response_due_date"),
+                "paypal_snapshot": detail,
+                "evidence": [ev],
+                "story": "Retrieved from PayPal sandbox. API origin is verified; the truth of party statements is not.",
+            },
         )
-        return store.save(existing, "operator", "paypal_refreshed", {"provider_id": id})
-    amount = detail.get("dispute_amount", {})
-    return store.create(
-        "operator",
-        {
-            "title": "PayPal · " + id,
-            "paypal_id": id,
-            "mode": "paypal_sandbox",
-            "status": detail.get("status", "UNKNOWN"),
-            "reason": detail.get("reason", "OTHER"),
-            "amount": amount.get("value", "0.00"),
-            "currency": amount.get("currency_code", "USD"),
-            "deadline": detail.get("seller_response_due_date"),
-            "paypal_snapshot": detail,
-            "evidence": [ev],
-            "story": "Retrieved from PayPal sandbox. API origin is verified; the truth of party statements is not.",
-        },
-    )
+    if acquire_payments:
+        return await acquire_payment_records(body, detail, payment_budget or ReadBudget())
+    return body
 
 
 @app.post("/api/paypal/sync")
 async def sync(s=Depends(operator)):
     rows = await paypal.disputes()
     imported = []
+    budget = ReadBudget(12)
     for r in rows:
-        imported.append(await import_dispute(await paypal.detail(r["dispute_id"])))
+        imported.append(await import_dispute(await paypal.detail(r["dispute_id"]), budget))
     return {
         "listed": len(rows),
         "imported": len(imported),
@@ -730,55 +763,8 @@ async def link_payment(id: str, s=Depends(operator)):
     if not body.get("paypal_id"):
         raise HTTPException(422, "This case is not linked to PayPal")
     current = await paypal.detail(body["paypal_id"])
-    linked = []
-    for tx in current.get("disputed_transactions", [])[:10]:
-        capture = tx.get("seller_transaction_id")
-        if not capture or not capture.isalnum():
-            continue
-        try:
-            record = await paypal.request("GET", "/v2/payments/captures/" + capture)
-            linked.append(
-                evidence(
-                    "PayPal capture " + capture,
-                    json.dumps(record, indent=2),
-                    "payment_provider",
-                    "paypal_sandbox_api",
-                )
-            )
-            order = (
-                record.get("supplementary_data", {})
-                .get("related_ids", {})
-                .get("order_id")
-            )
-            if order and order.isalnum():
-                linked.append(
-                    evidence(
-                        "PayPal order " + order,
-                        json.dumps(
-                            await paypal.request("GET", "/v2/checkout/orders/" + order),
-                            indent=2,
-                        ),
-                        "payment_provider",
-                        "paypal_sandbox_api",
-                    )
-                )
-        except PayPalError:
-            continue
-    if not linked:
-        raise HTTPException(
-            422,
-            "No accessible capture or order was linked. PayPal permissions or transaction type may limit retrieval.",
-        )
-    for ev in linked:
-        ev.update(origin_verified=True, synthetic=False)
-    body["evidence"].extend(linked)
-    body["analysis_stale"] = bool(body.get("analysis"))
-    return store.save(
-        body,
-        s["tenant"],
-        "payment_records_linked",
-        {"source_ids": [e["id"] for e in linked]},
-    )
+    body = await import_dispute(current, acquire_payments=False)
+    return await acquire_payment_records(body, current, ReadBudget())
 
 
 @app.post("/api/cases/{id}/actions/prepare")

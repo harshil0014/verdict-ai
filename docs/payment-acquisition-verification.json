@@ -1,0 +1,16 @@
+{
+  "environment": "sandbox",
+  "verified_date": "2026-11-06",
+  "first_import_http": 200,
+  "second_import_http": 200,
+  "acquisition_status": "complete",
+  "payment_records_read_per_import": 2,
+  "evidence_sources_first": 3,
+  "evidence_sources_second": 3,
+  "active_sources": 3,
+  "unchanged_refresh_preserves_revision": true,
+  "unchanged_refresh_preserves_evidence": true,
+  "sandbox_actions_enabled": false,
+  "scope": "Two actual local imports with PayPal dispute/capture/order GETs and private persistence. OAuth token acquisition is authentication, not a financial write. No new capture, refund, evidence, message or other dispute action.",
+  "unchanged_refresh_preserves_audit_count": true
+}

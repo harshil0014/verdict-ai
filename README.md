@@ -11,6 +11,7 @@ VERDICT investigates disputed payments by comparing competing accounts, identify
 React/React Flow interface + FastAPI backend + transactional SQLite persistence + optional private Supabase PostgreSQL snapshot mirror + real Gemini structured analysis + sandbox-only PayPal REST adapter.
 
 - Case inbox, search, evidence library, source inspector, interactive claim/hypothesis graph, change-aware investigation and chronological integrity-checked audit record.
+- Operator import/refresh acquires accessible PayPal capture/order records through bounded read-only calls before model review. Unchanged snapshots are deduplicated; historical versions remain inspectable and are excluded from new analysis. [Acquisition and verification](docs/PAYMENT_ACQUISITION.md).
 - Actual Gemini extraction and a separate semantic-support review. Exact quotation checks are mechanical. Structured field discrepancies are kept separate from semantic assessments. New evidence makes the previous analysis visibly stale.
 - Targeted witness requests name what competing explanations they distinguish. Restricted one-response portals accept text or a document without exposing other evidence. Links are created locally; no email is sent automatically.
 - An investigator can mark an unanswered request reported unavailable or withdraw it, recording a reason and revoking its link. This makes the investigation stale without inventing evidence. [Availability workflow and live probe](docs/REQUEST_AVAILABILITY.md).

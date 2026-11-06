@@ -8,7 +8,7 @@ Authority: [PayPal integration guide, updated October 14, 2026](https://develope
 |---|---|---|
 | OAuth + bounded dispute pagination | Explicit update-time window; safe host/path and loop checks | Actual 200; one inquiry found with update filter |
 | Dispute detail and inbox import | Listing sync or operator import by exact ID; preserves raw JSON/API provenance | Actual detail 200 and imported locally |
-| Capture/order linkage | Capture ID from dispute → capture API → related order ID | Actual APIs retrieved and linked three provider-origin records |
+| Capture/order linkage | Bounded read acquisition on import/refresh; shared sync budget; versioned deduplication | Two actual imports each read capture/order; unchanged refresh preserved three sources and revision. [Record](PAYMENT_ACQUISITION.md) |
 | Send inquiry message | Exact reviewed JSON payload, current provider link required | Mock transport tests; no message sent |
 | Provide evidence | Multipart `input`; requested fulfillment tracking or `OTHER` notes; exact approval binding | Two individually user-approved notes attempts rejected; latest HTTP 400 `EVIDENCE_TYPE_IS_NOT_ALLOWED`; zero accepted |
 | Accept claim | Explicit note; sandbox only, warns about refund effect | Mock transport tests; no claim accepted |

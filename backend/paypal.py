@@ -41,14 +41,14 @@ class PayPal:
             raise ValueError("Unapproved PayPal path")
         async with httpx.AsyncClient(timeout=35, follow_redirects=False) as c:
             if not self.token or self.expires < time.time():
-                r = await c.post(
-                    BASE + "/v1/oauth2/token",
-                    auth=(
-                        os.getenv("PAYPAL_CLIENT_ID", ""),
-                        os.getenv("PAYPAL_CLIENT_SECRET", ""),
-                    ),
-                    data={"grant_type": "client_credentials"},
-                )
+                try:
+                    r = await c.post(
+                        BASE + "/v1/oauth2/token",
+                        auth=(os.getenv("PAYPAL_CLIENT_ID", ""), os.getenv("PAYPAL_CLIENT_SECRET", "")),
+                        data={"grant_type": "client_credentials"},
+                    )
+                except httpx.HTTPError:
+                    raise PayPalError("authentication_network_error") from None
                 if r.status_code != 200:
                     raise PayPalError(r.status_code, diagnostic=error_diagnostic(r))
                 d = r.json()
@@ -77,7 +77,10 @@ class PayPal:
                     and r.status_code not in {400, 401, 403, 404, 405, 415, 422},
                     diagnostic=error_diagnostic(r),
                 )
-            return r.json() if r.content else {}
+            try:
+                return r.json() if r.content else {}
+            except ValueError:
+                raise PayPalError("invalid_json_response", method != "GET") from None
 
     async def disputes(self):
         result = []

@@ -15,6 +15,7 @@ This document describes the functioning single-instance application, not a propo
 | Transactional primary | `backend/store.py`, SQLite WAL | Cases, sessions, scoped requests, originals, approvals, webhook reservations, audit and cloud outbox |
 | Optional cloud mirror | `backend/cloud.py`, Supabase REST | Retryable private operator-case snapshots, without exposing a privileged key to the browser |
 | Provider adapter | `backend/paypal.py`, httpx | Sandbox-only OAuth, safe pagination, detail retrieval, documented actions, signature verification and conservative uncertainty |
+| Read-only payment acquisition | `backend/payment_records.py` | Bounded capture/order retrieval, response-ID binding, snapshot deduplication/versioning and selection of active API sources; failures remain explicit |
 | PDF parser | `backend/parse_pdf.py`, pypdf | Disposable bounded subprocess; page-text provenance; no OCR, active rendering or malware-scanning claim |
 | Evaluation | `evaluation/` | Separate authored inputs/labels, checkpointed baselines, simulated witness inventory, matched-evidence control and frozen outputs |
 

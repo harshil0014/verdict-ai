@@ -53,6 +53,8 @@ type Source = {
   mime: string;
   synthetic: boolean;
   file_available?: boolean;
+  superseded_by?: string;
+  replaces_source_id?: string;
 };
 type Claim = {
   id: string;
@@ -119,6 +121,7 @@ type Case = {
   audit_valid?: boolean;
   paypal_id?: string;
   paypal_snapshot?: any;
+  payment_record_acquisition?: { status: string; records_read: number; issues: string[] };
 };
 async function api(path: string, method = "GET", body?: any, token?: string) {
   const headers: any = {};
@@ -1239,7 +1242,7 @@ function App() {
                             <FileText size={21} />
                           </span>
                           <div>
-                            <strong>{e.title}</strong>
+                            <strong>{e.title}{e.superseded_by ? " · historical snapshot" : ""}</strong>
                             <small>
                               {e.party} · {readable(e.origin)} ·{" "}
                               {date(e.received_at)}
@@ -1474,19 +1477,24 @@ function App() {
                           revision and current PayPal state. Every execution
                           requires a separate explicit review.
                         </p>
+                        {current.payment_record_acquisition && <p className="fine">
+                          Payment-record acquisition: {readable(current.payment_record_acquisition.status)} · {current.payment_record_acquisition.records_read} records read.
+                          {current.payment_record_acquisition.issues.length > 0 && " Some records could not be refreshed. Review the available sources before relying on them."}
+                        </p>}
                         <button
                           className="secondary"
                           onClick={() =>
                             run("Linking payment records", async () => {
-                              await api(
+                              const linked = await api(
                                 `/cases/${current.id}/paypal/link-payment`,
                                 "POST",
                               );
                               await refresh();
+                              setNotice(`Payment-record acquisition: ${readable(linked.payment_record_acquisition?.status || "no eligible capture")}. Unchanged snapshots are not duplicated.`);
                             })
                           }
                         >
-                          Link capture & order
+                          Refresh capture & order
                         </button>
                         <button
                           className="secondary"
@@ -1560,6 +1568,14 @@ function App() {
                   : "Origin unverified"}
               </span>
             </div>
+            {source.superseded_by && <div className="claim-inspection">
+              <strong>Historical API snapshot</strong>
+              <p>A newer snapshot supersedes this record. Its original content is retained for review and excluded from new investigations.</p>
+              <button className="secondary small" disabled={!current?.evidence.some(e => e.id === source.superseded_by)} onClick={() => {
+                const newer = current?.evidence.find(e => e.id === source.superseded_by);
+                if (newer) { setSource(newer); setClaim(null); }
+              }}>Open newer snapshot</button>
+            </div>}
             {claim && (
               <div className="claim-inspection">
                 <span className="eyebrow">REPORTED CLAIM · {claim.id}</span>
