@@ -1,4 +1,5 @@
 import os, time, json, re
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse, quote
 import httpx
 
@@ -6,10 +7,28 @@ BASE = "https://api-m.sandbox.paypal.com"
 
 
 class PayPalError(Exception):
-    def __init__(self, status, uncertain=False):
+    def __init__(self, status, uncertain=False, diagnostic=None):
         self.status = status
         self.uncertain = uncertain
+        self.diagnostic = diagnostic or {"http_status": status}
         super().__init__(f"PayPal sandbox returned {status}")
+
+
+def error_diagnostic(response):
+    """Keep machine codes for reconciliation; never return provider message/PII bodies."""
+    result = {"http_status": response.status_code}
+    try:
+        body = response.json()
+    except ValueError:
+        return result
+    if not isinstance(body, dict):
+        return result
+    for target, value in [("name", body.get("name")), ("debug_id", body.get("debug_id") or response.headers.get("paypal-debug-id"))]:
+        if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,100}", value):
+            result[target] = value
+    details = body.get("details", [])
+    result["issues"] = [x["issue"] for x in (details if isinstance(details, list) else []) if isinstance(x, dict) and isinstance(x.get("issue"), str) and re.fullmatch(r"[A-Z0-9_]{1,100}", x["issue"])]
+    return result
 
 
 class PayPal:
@@ -31,7 +50,7 @@ class PayPal:
                     data={"grant_type": "client_credentials"},
                 )
                 if r.status_code != 200:
-                    raise PayPalError(r.status_code)
+                    raise PayPalError(r.status_code, diagnostic=error_diagnostic(r))
                 d = r.json()
                 self.token = d["access_token"]
                 self.expires = time.time() + d.get("expires_in", 300) - 60
@@ -56,12 +75,15 @@ class PayPal:
                     r.status_code,
                     method != "GET"
                     and r.status_code not in {400, 401, 403, 404, 405, 415, 422},
+                    diagnostic=error_diagnostic(r),
                 )
             return r.json() if r.content else {}
 
     async def disputes(self):
         result = []
-        path = "/v1/customer/disputes"
+        # Avoid the provider's current-time default excluding existing cases.
+        after = (datetime.now(timezone.utc) - timedelta(days=179)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        path = "/v1/customer/disputes?update_time_after=" + quote(after, safe="") + "&page_size=50"
         seen = set()
         for _ in range(20):
             if path in seen:

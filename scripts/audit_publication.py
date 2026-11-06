@@ -33,12 +33,23 @@ def main():
         known['private_supabase_project']=urlparse(private['SUPABASE_URL']).hostname.split('.')[0].encode()
     local_url=ROOT/'runtime/local-access.url'
     if local_url.exists():known['local_bootstrap']=local_url.read_text().split('bootstrap=')[-1].strip().encode()
+    hosted=ROOT/'runtime/hosted-demo-private.json'
+    if hosted.exists():
+        for key,value in json.loads(hosted.read_text(encoding='utf-8')).items():
+            if value:known['hosted_'+key]=value.encode()
+    dispute=ROOT/'runtime/private-dispute-id.json'
+    if dispute.exists():
+        known['private_dispute_id']=json.loads(dispute.read_text(encoding='utf-8'))['dispute_id'].encode()
+    session=ROOT/'runtime/private-local-session.json'
+    if session.exists():
+        for key,value in json.loads(session.read_text(encoding='utf-8')).items():
+            if value:known['local_session_'+key]=value.encode()
     checkout=ROOT/'runtime/sandbox-checkout.json'
     if checkout.exists():
         def private_fields(value):
             if isinstance(value,dict):
                 for key,item in value.items():
-                    if key in ('order_id','email_address','merchant_id','payer_id') and isinstance(item,str) and len(item)>=8:
+                    if key in ('id','order_id','email_address','merchant_id','payer_id') and isinstance(item,str) and len(item)>=8:
                         known['private_checkout_'+str(len(known))]=item.encode()
                     private_fields(item)
             elif isinstance(value,list):

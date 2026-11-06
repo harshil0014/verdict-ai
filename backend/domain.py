@@ -83,6 +83,7 @@ class AnalyzeInput(StrictModel):
 class ActionInput(StrictModel):
     action: Literal["send-message", "provide-evidence", "accept-claim"]
     note: str = Field(min_length=1, max_length=1200)
+    evidence_type: Literal["PROOF_OF_FULFILLMENT", "OTHER"] = "PROOF_OF_FULFILLMENT"
     tracking_number: str = Field(default="", max_length=100)
     carrier: str = Field(default="", max_length=100)
 

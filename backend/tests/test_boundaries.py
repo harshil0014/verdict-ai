@@ -72,6 +72,77 @@ def test_authentication_is_required(env):
     assert env.post("/api/paypal/sync").status_code == 401
 
 
+def test_optional_paypal_does_not_hide_other_integration_status(env, monkeypatch):
+    login(env)
+    monkeypatch.delenv("PAYPAL_CLIENT_ID", raising=False)
+    monkeypatch.delenv("PAYPAL_CLIENT_SECRET", raising=False)
+    async def must_not_call():
+        raise AssertionError("Unconfigured provider must not receive an OAuth request")
+    monkeypatch.setattr(application.paypal, "disputes", must_not_call)
+    r = env.get("/api/integrations")
+    assert r.status_code == 200
+    assert r.json()["paypal"]["status"] == "not_configured"
+    assert r.json()["paypal"]["list_status"] is None
+    assert "gemini" in r.json() and "storage" in r.json()
+    monkeypatch.setenv("PAYPAL_CLIENT_ID", "test-id")
+    monkeypatch.setenv("PAYPAL_CLIENT_SECRET", "test-secret")
+    async def unavailable():
+        raise PayPalError(403)
+    monkeypatch.setattr(application.paypal, "disputes", unavailable)
+    r = env.get("/api/integrations")
+    assert r.status_code == 200
+    assert r.json()["paypal"]["status"] == "unavailable"
+    assert r.json()["paypal"]["disputes"] is None
+
+
+def test_exact_case_import_requires_operator_and_provider_record(env, monkeypatch):
+    calls = []
+    async def detail(identifier):
+        calls.append(identifier)
+        return {**provider_detail(), "reason": "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "dispute_amount": {"currency_code": "USD", "value": "1.00"}}
+    monkeypatch.setattr(application.paypal, "detail", detail)
+    assert env.post("/api/paypal/import", json={"dispute_id": "PP-D-TEST"}).status_code == 401
+    demo(env)
+    assert env.post("/api/paypal/import", json={"dispute_id": "PP-D-TEST"}).status_code == 403
+    assert not calls
+    login(env)
+    response = env.post("/api/paypal/import", json={"dispute_id": "PP-D-TEST"})
+    assert response.status_code == 200
+    assert calls == ["PP-D-TEST"]
+    body = response.json()
+    assert body["mode"] == "paypal_sandbox" and body["evidence"][0]["origin_verified"]
+    assert env.post("/api/paypal/import", json={"dispute_id": "../unsafe"}).status_code == 422
+
+
+def test_other_evidence_notes_use_exact_approval_without_fabricated_tracking(env, monkeypatch):
+    login(env)
+    body = case_for_actions()
+    detail_body = provider_detail()
+    detail_body["links"][0]["href"] = detail_body["links"][0]["href"].replace("send-message", "provide-evidence")
+    async def detail(identifier):
+        return detail_body
+    sent = []
+    async def send(*args, **kwargs):
+        sent.append(kwargs)
+        return {}
+    monkeypatch.setattr(application.paypal, "detail", detail)
+    monkeypatch.setattr(application.paypal, "request", send)
+    monkeypatch.setenv("VERDICT_ALLOW_SANDBOX_ACTIONS", "true")
+    path = "/api/cases/" + body["id"] + "/actions/"
+    note = "Sandbox test only. No goods shipped; no fulfillment proof exists."
+    response = env.post(path + "prepare", json={"action": "provide-evidence", "evidence_type": "OTHER", "note": note})
+    assert response.status_code == 200
+    plan = response.json()
+    expected = {"evidences": [{"evidence_type": "OTHER", "notes": note}]}
+    assert plan["approval"]["payload"] == expected
+    params = {"approval_id": plan["approval"]["id"], "reviewed_digest": plan["digest"], "confirmed": True}
+    assert env.post(path + "execute", json=params).json()["status"] == "succeeded"
+    assert json.loads(sent[0]["files"]["input"][1]) == expected
+    assert env.post(path + "execute", json=params).json()["status"] == "succeeded"
+    assert len(sent) == 1
+    assert env.post(path + "prepare", json={"action": "provide-evidence", "evidence_type": "OTHER", "note": note, "tracking_number": "invented"}).status_code == 422
+
+
 def test_demo_tenant_cannot_read_operator_or_other_demo(env):
     first = demo(env)
     first_id = first["id"]

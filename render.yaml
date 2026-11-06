@@ -1,4 +1,4 @@
-# Preparation only. No service has been created or deployed.
+# Fictional demo configuration. Existing hosted verification is in docs/DEPLOYMENT.md.
 # Free-tier disk is ephemeral: PayPal writes MUST remain disabled.
 services:
   - type: web
@@ -20,16 +20,10 @@ services:
       - key: VERDICT_ALLOW_SANDBOX_ACTIONS
         value: "false"
       - key: VERDICT_SUPABASE_MIRROR
+        value: "false"
+      - key: VERDICT_EPHEMERAL_STORAGE
         value: "true"
       - key: GEMINI_MODEL
         value: gemini-3.1-flash-lite
       - key: GEMINI_API_KEY
-        sync: false
-      - key: PAYPAL_CLIENT_ID
-        sync: false
-      - key: PAYPAL_CLIENT_SECRET
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SECRET_KEY
         sync: false

@@ -5,6 +5,7 @@ Provider records stay in ignored runtime state. Never commit that journal.
 """
 
 import argparse
+from contextlib import contextmanager
 from decimal import Decimal, InvalidOperation
 import json
 import os
@@ -60,6 +61,8 @@ def validate_capture(order):
     if order.get("status") != "APPROVED" or order.get("intent") != "CAPTURE":
         raise ValueError("The buyer has not approved this sandbox capture.")
     units = order.get("purchase_units", [])
+    if any(u.get("payments", {}).get("captures") for u in units):
+        raise ValueError("An existing capture blocks another capture attempt.")
     if len(units) != 1 or units[0].get("reference_id") != REFERENCE:
         raise ValueError(
             "The approved order does not match the reviewed test purchase."
@@ -103,12 +106,46 @@ def save(path, body):
     temporary.replace(path)
 
 
+@contextmanager
+def checkout_lock(path):
+    """OS-backed lock prevents two local processes from dispatching the same write."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        handle.seek(0, 2)
+        if not handle.tell():
+            handle.write(b"0")
+            handle.flush()
+        handle.seek(0)
+        try:
+            if os.name == "nt":
+                import msvcrt
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            raise RuntimeError("Another checkout process holds the journal lock; no request sent.") from None
+        try:
+            yield
+        finally:
+            handle.seek(0)
+            if os.name == "nt":
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=["create", "status", "capture"])
     parser.add_argument("--confirm-sandbox-capture", action="store_true")
     parser.add_argument("--show-approval-link", action="store_true")
     args = parser.parse_args()
+    with checkout_lock(ROOT / "runtime/sandbox-checkout.lock"):
+        run(args)
+
+
+def run(args):
     load_dotenv(ROOT / "backend/.env")
     if os.getenv("PAYPAL_BASE_URL", BASE).rstrip("/") != BASE:
         raise ValueError("Only the PayPal sandbox is allowed.")
@@ -178,9 +215,9 @@ def main():
             raise RuntimeError("Sandbox order read HTTP " + str(r.status_code))
         order = r.json()
         if args.command == "capture" and order.get("status") != "COMPLETED":
-            if journal["state"] in ("capturing", "capture_unconfirmed"):
+            if journal["state"] != "created":
                 raise RuntimeError(
-                    "An unresolved capture reservation blocks resending. Reconcile directly with PayPal."
+                    "The journal does not allow a new capture. Reconcile directly with PayPal."
                 )
             validate_capture(order)
             journal.update(
@@ -221,6 +258,11 @@ def main():
             "journal_state": journal["state"],
             "reviewed_amount": "USD 1.00",
             "money_is_real": False,
+            "capture_statuses": [
+                capture.get("status")
+                for unit in order.get("purchase_units", [])
+                for capture in unit.get("payments", {}).get("captures", [])
+            ],
         }
         if args.show_approval_link:
             summary["approval_url"] = approval_link(order)

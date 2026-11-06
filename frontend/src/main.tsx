@@ -766,6 +766,12 @@ function App() {
           </button>
         </header>
         <main>
+          {me.ephemeral_storage && (
+            <div className="consent-box" role="note">
+              <AlertTriangle size={20} />
+              <p>Temporary demo workspace. Use fictional records only. Cases and request links can disappear when this free host restarts; export work you want to keep.</p>
+            </div>
+          )}
           <div className="page-heading">
             <div>
               <span className="eyebrow">EVIDENCE BEFORE CERTAINTY</span>
@@ -1899,7 +1905,11 @@ function App() {
                   <strong>PayPal</strong>
                   <span>
                     {integration
-                      ? `Sandbox list verified · ${integration.paypal.disputes} disputes`
+                      ? integration.paypal.status === "verified"
+                        ? `Sandbox list verified · ${integration.paypal.disputes} disputes`
+                        : integration.paypal.status === "not_configured"
+                          ? "Not configured on this host"
+                          : `Sandbox connection unavailable · ${integration.paypal.list_status}`
                       : "Operator connection not accessible in demo"}
                   </span>
                 </div>
@@ -1935,6 +1945,23 @@ function App() {
                   has no external action tools. No real-money operations are
                   enabled.
                 </p>
+                {me.role === "operator" && integration?.paypal.configured && (
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const id = field(e.currentTarget, "dispute_id");
+                    run("Importing PayPal case", async () => {
+                      const imported = await api("/paypal/import", "POST", { dispute_id: id });
+                      await load();
+                      setCurrent(imported);
+                      setModal("");
+                    });
+                  }}>
+                    <label>Import an accessible sandbox case by ID
+                      <input name="dispute_id" required maxLength={80} pattern="[A-Za-z0-9-]+" placeholder="PayPal case ID" />
+                    </label>
+                    <button className="secondary" disabled={!!busy}>Retrieve from PayPal</button>
+                  </form>
+                )}
               </>
             )}
             {modal === "action" && (
@@ -1953,6 +1980,7 @@ function App() {
                           {
                             action: field(f, "action"),
                             note: field(f, "note"),
+                            evidence_type: field(f, "evidence_type"),
                             carrier: field(f, "carrier"),
                             tracking_number: field(f, "tracking_number"),
                           },
@@ -1967,11 +1995,18 @@ function App() {
                     <select name="action">
                       <option value="send-message">Send message</option>
                       <option value="provide-evidence">
-                        Provide tracking evidence
+                        Provide evidence
                       </option>
                       <option value="accept-claim">
                         Accept claim (sandbox refund)
                       </option>
+                    </select>
+                  </label>
+                  <label>
+                    Evidence type (for evidence submission)
+                    <select name="evidence_type">
+                      <option value="PROOF_OF_FULFILLMENT">Actual fulfillment tracking</option>
+                      <option value="OTHER">Other evidence notes</option>
                     </select>
                   </label>
                   <label>

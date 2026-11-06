@@ -238,6 +238,7 @@ def me(s=Depends(session)):
         "tenant": s["tenant"],
         "model": MODEL,
         "sandbox_actions_enabled": os.getenv("VERDICT_ALLOW_SANDBOX_ACTIONS") == "true",
+        "ephemeral_storage": os.getenv("VERDICT_EPHEMERAL_STORAGE") == "true",
         "cloud": cloud.status() if s["role"] == "operator" else None,
     }
 
@@ -592,13 +593,17 @@ def export(id: str, s=Depends(session)):
 
 @app.get("/api/integrations")
 async def integrations(s=Depends(operator)):
-    details = await paypal.disputes()
+    configured = bool(os.getenv("PAYPAL_CLIENT_ID") and os.getenv("PAYPAL_CLIENT_SECRET"))
+    paypal_status = {"environment": "sandbox", "configured": configured,
+                     "list_status": None, "disputes": None, "status": "not_configured"}
+    if configured:
+        try:
+            details = await paypal.disputes()
+            paypal_status.update(list_status=200, disputes=len(details), status="verified")
+        except PayPalError as error:
+            paypal_status.update(list_status=error.status, status="unavailable")
     return {
-        "paypal": {
-            "environment": "sandbox",
-            "list_status": 200,
-            "disputes": len(details),
-        },
+        "paypal": paypal_status,
         "gemini": {"model": MODEL, "configured": bool(os.getenv("GEMINI_API_KEY"))},
         "storage": cloud.status(),
         "webhook": {"configured": bool(os.getenv("PAYPAL_WEBHOOK_ID"))},
@@ -661,6 +666,16 @@ async def sync(s=Depends(operator)):
         if not rows
         else "Sandbox cases synchronized",
     }
+
+
+class ImportDisputeInput(BaseModel):
+    dispute_id: str = Field(pattern=r"^[A-Za-z0-9-]{1,80}$")
+
+
+@app.post("/api/paypal/import")
+async def import_by_id(data: ImportDisputeInput, s=Depends(operator)):
+    # A successful authenticated detail response is required; no UI record is trusted.
+    return await import_dispute(await paypal.detail(data.dispute_id))
 
 
 @app.post("/api/cases/{id}/paypal/refresh")
@@ -742,7 +757,7 @@ async def prepare(id: str, data: ActionInput, s=Depends(operator)):
         {"message": data.note} if data.action == "send-message" else {"note": data.note}
     )
     if data.action == "provide-evidence":
-        if not data.carrier or not data.tracking_number:
+        if data.evidence_type == "PROOF_OF_FULFILLMENT" and (not data.carrier or not data.tracking_number):
             raise HTTPException(
                 422, "Review and supply the actual carrier and tracking number"
             )
@@ -762,6 +777,10 @@ async def prepare(id: str, data: ActionInput, s=Depends(operator)):
                 }
             ]
         }
+        if data.evidence_type == "OTHER":
+            if data.carrier or data.tracking_number:
+                raise HTTPException(422, "Other evidence notes must not include fulfillment tracking fields")
+            payload = {"evidences": [{"evidence_type": "OTHER", "notes": data.note}]}
     record = {
         "id": uid("A-"),
         "case_id": id,
@@ -873,6 +892,7 @@ async def execute(id: str, data: ExecuteInput, s=Depends(operator)):
         )
         c.commit()
     status = "unknown"
+    provider_error = None
     try:
         files = (
             {"input": (None, json.dumps(rec["payload"]), "application/json")}
@@ -889,6 +909,7 @@ async def execute(id: str, data: ExecuteInput, s=Depends(operator)):
         status = "succeeded"
     except PayPalError as e:
         status = "unknown" if e.uncertain else "rejected"
+        provider_error = e.diagnostic
     finally:
         with connect() as c:
             c.execute("UPDATE approvals SET status=? WHERE id=?", (status, rec["id"]))
@@ -896,11 +917,12 @@ async def execute(id: str, data: ExecuteInput, s=Depends(operator)):
                 c,
                 id,
                 "paypal_action_result",
-                {"approval_id": rec["id"], "status": status},
+                {"approval_id": rec["id"], "status": status, "provider_error": provider_error},
             )
             c.commit()
     return {
         "status": status,
+        "provider_error": provider_error,
         "message": "Check PayPal before any further action if status is unknown. No automatic retry is performed.",
     }
 

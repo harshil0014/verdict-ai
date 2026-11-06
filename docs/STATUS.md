@@ -1,4 +1,14 @@
-# Build status — 5 November 2026
+# Build status — 6 November 2026
+
+## Verified continuation after public release
+
+- Public source: [harshil0014/verdict-ai](https://github.com/harshil0014/verdict-ai); anonymous clone/metadata verification and successful remote application/container jobs. [Publication record](PUBLICATION.md).
+- Actual USD 1.00 sandbox order buyer-approved and captured once; independent order/capture APIs confirmed completed status, one capture and amount/linkage. A real buyer-created inquiry was retrieved/imported and its capture/order linked. Update-time-filtered listing returned the case. One human-approved factual `OTHER` evidence submission was rejected; it is not represented as successful. Sandbox writes restored to disabled. [PayPal ledger](PAYPAL.md).
+- Real container hosted on free Render. HTTPS fictional-case upload, model analysis, scoped witness/reply and reassessment exercised. Optional-provider status bug found and fixed; corrected deployed-build verification tracked in [deployment notes](DEPLOYMENT.md). No payment credentials/writes on the host. Free-host sleep and ephemeral state prevent an always-on/durable claim.
+- Local suite expanded to 60 passing tests and frontend production build passed. New coverage includes concurrent checkout exclusion, no recapture, exact-case import authorization, `OTHER` payload approval/replay, optional-provider failure isolation and bounded rejection diagnostics. External provider tests remain distinct from transport mocks.
+- Frozen eight-case custody-aware research: both strategies acquired 3/6; matched-evidence findings tied 3/3. Original v1 results unchanged. No production prompt/schema promotion. [Follow-up report](CUSTODY_EVALUATION.md).
+
+The historical sections below describe the original 5 November build; the continuation above and linked current ledgers supersede its zero-dispute, no-host and no-remote-CI statements.
 
 ## Implemented and exercised
 

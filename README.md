@@ -55,7 +55,7 @@ $env:VERDICT_SUPABASE_MIRROR='true'
 
 Open `http://127.0.0.1:8000/`. **Explore fictional cases** creates an isolated workspace. Hosted demos require an owner-provided judge access code; local exploration leaves it blank. No sample login grants access to the operator's sandbox data. Each demo workspace is limited to eight completed investigations. Model calls share local pacing below the observed 15 RPM limit; quota/transport failures remain visible instead of becoming fabricated results.
 
-Linux setup uses `backend/.venv/bin/python` and the same requirements/build steps. Linux commands and the Docker image are prepared but were not executed on this Windows host.
+Linux setup uses `backend/.venv/bin/python` and the same requirements/build steps. Linux tests, frontend build and the real Docker image passed [remote CI](https://github.com/harshil0014/verdict-ai/actions/runs/42188867300). Docker is not installed on this Windows host.
 
 ## Environment and cloud storage
 
@@ -67,7 +67,7 @@ See [backend/.env.example](backend/.env.example). Credentials stay server-side. 
 
 ## PayPal integration and limits
 
-Actual OAuth and dispute listing returned **200**, with **zero disputes**. No available eligible sandbox dispute existed for detail retrieval or an evidence submission test. Code and mock-transport tests cover detail import, capture/order linkage, message/evidence/accept-claim preparation and dispatch, safe HATEOAS checking, duplicate reservation, signature verification and uncertain outcomes. These are **not** claimed as completed external lifecycle tests. See [the capability ledger and sandbox walkthrough](docs/PAYPAL.md). A genuine USD 1.00 sandbox checkout helper is documented in [SANDBOX_CHECKOUT.md](docs/SANDBOX_CHECKOUT.md); buyer approval is a real provider step and no completed transaction is invented.
+An actual USD 1.00 sandbox checkout was buyer-approved and captured once. Independent order/capture reads confirmed `COMPLETED`, the amount and linkage. A real buyer-created inquiry was retrieved and imported; its capture and order were linked. Explicit update-time filtering returned the dispute when unfiltered listing omitted it. One human-approved factual `OTHER` evidence-notes attempt was rejected; successful evidence submission is not claimed. Message/refund actions and webhook delivery remain externally unverified. [Capability ledger and limitations](docs/PAYPAL.md) · [Checkout helper](docs/SANDBOX_CHECKOUT.md).
 
 `VERDICT_ALLOW_SANDBOX_ACTIONS=false` is the default. The UI cannot send a fictional/manual case to PayPal. Only an operator reviewing an imported sandbox dispute can prepare an action. Enable sandbox writes only after reviewing that operation and using durable primary storage. No live PayPal endpoints, automatic refunds, mass payouts or forced adjudication are exposed. Register a public HTTPS webhook and privately configure `PAYPAL_WEBHOOK_ID` to test deliveries; an unconfigured endpoint fails closed.
 
@@ -115,9 +115,11 @@ The 30-case fictional development set covers delivery location/recipient ambigui
 
 This is an authored development pilot, not a held-out real-case benchmark. Regex request/contradiction screens and model-assessed support require human validation. No real win rate, independent fraud accuracy or superiority over commercial products is inferred.
 
+A [frozen eight-case custody follow-up](docs/CUSTODY_EVALUATION.md) separates the recipient from the record custodian and uses stricter simulated acquisition gates. Both strategies acquired 3/6 eligible records and tied 3/3 with matched evidence. Production prompt/schema defaults are retained; no acquisition advantage is established.
+
 ## Deployment and judge access
 
-There is **no remote deployment yet**. The running localhost service is not described as deployed. The functional local build plus complete setup satisfies the official alternative to a hosted demo, subject to providing the required public repository and testing access. [Dockerfile](Dockerfile), [Render blueprint](render.yaml) and [deployment notes](docs/DEPLOYMENT.md) prepare a real host; public source publication has been authorized; no paid hosting activation is authorized. The cloud snapshot mirror is live and verified, but it is not application hosting.
+The actual application is hosted at [VERDICT on Render](https://verdict-ai-harshil0014.onrender.com). A private judge code is required. Hosting verification and known limits are recorded in [deployment notes](docs/DEPLOYMENT.md). The free host sleeps and loses local state on restart; use fictional records and export anything needed. PayPal credentials/writes and the cloud mirror are absent from this public demo. No paid resource was activated. Local durable operation remains the path for the actual sandbox lifecycle.
 
 ## Attribution, originality and next work
 

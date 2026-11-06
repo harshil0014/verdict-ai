@@ -1,0 +1,33 @@
+{
+  "protocol": "custody-development-pilot-v2",
+  "n": 8,
+  "failures": [],
+  "strategies": {
+    "B_checklist": {
+      "initial_n": 8,
+      "initial_label_matches": 7,
+      "own_acquisitions": 3,
+      "eligible_inventories": 6,
+      "final_label_matches_all_cases": 6,
+      "stop_case_request_count": 0,
+      "initial_nonentailed_claims": 0,
+      "initial_claims": 18
+    },
+    "V_custody": {
+      "initial_n": 8,
+      "initial_label_matches": 8,
+      "own_acquisitions": 3,
+      "eligible_inventories": 6,
+      "final_label_matches_all_cases": 8,
+      "stop_case_request_count": 0,
+      "initial_nonentailed_claims": 0,
+      "initial_claims": 19
+    }
+  },
+  "matched_on_V_evidence": {
+    "n": 3,
+    "V": 3,
+    "B": 3
+  },
+  "limitations": "Eight preselected authored development cases, not held out. Six eligible inventories and two stop cases. Regex topics and single author custodian categories are imperfect. Prompts tuned using prior set knowledge. No superiority or real outcome inference. Maximum 40 analysis runs (80 logical generation calls before transport retries), serial and checkpointed; failures retained. No automatic promotion."
+}
