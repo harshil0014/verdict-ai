@@ -179,6 +179,7 @@ function App() {
   const [portal, setPortal] = useState<any>(null),
     [portalDone, setPortalDone] = useState(false),
     [demoCode, setDemoCode] = useState("");
+  const [closingRequest, setClosingRequest] = useState<any>(null);
   async function run(label: string, fn: () => Promise<any>) {
     setBusy(label);
     setError("");
@@ -1299,7 +1300,7 @@ function App() {
                             {r.status === "open" &&
                             r.expires_at * 1000 < Date.now()
                               ? "expired"
-                              : r.status}
+                              : r.status === "unavailable" ? "reported unavailable" : r.status}
                           </span>
                           <small>
                             {r.recipient} · {date(r.created_at)}
@@ -1307,10 +1308,22 @@ function App() {
                         </div>
                         <h3>{r.title}</h3>
                         <p>{r.question}</p>
+                        {r.closure_reason && (
+                          <>
+                            <p>Investigator report: {r.closure_reason}</p>
+                            <p className="fine">{r.status === "unavailable" ? "Record availability has not been independently verified." : "The request was withdrawn and its response link revoked."}</p>
+                          </>
+                        )}
                         <span className="fine">
                           The restricted link was shown once when created. No
                           email was sent.
                         </span>
+                        {r.status === "open" && (
+                          <button className="secondary small" disabled={!!busy} onClick={() => {
+                            setClosingRequest({ ...r, caseId: current.id });
+                            setModal("close-request");
+                          }}>Close and revoke link</button>
+                        )}
                       </div>
                     ))}
                     {!current.requests.length && (
@@ -1715,6 +1728,38 @@ function App() {
                   <button className="primary" disabled={!!busy}>
                     Create case <Plus size={16} />
                   </button>
+                </form>
+              </>
+            )}
+            {modal === "close-request" && closingRequest && (
+              <>
+                <span className="eyebrow">UPDATE WITNESS AVAILABILITY</span>
+                <h2>Close this request.</h2>
+                <p>{closingRequest.question}</p>
+                <p>The response link will stop accepting submissions. Your reason is recorded as an investigator report. It does not establish what happened in the dispute.</p>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const f = e.currentTarget;
+                  run("Closing witness request", async () => {
+                    await api(`/cases/${closingRequest.caseId}/requests/${closingRequest.id}/close`, "POST", {
+                      status: field(f, "status"), reason: field(f, "reason"),
+                    });
+                    await load(closingRequest.caseId);
+                    setClosingRequest(null);
+                    setModal("");
+                    setNotice("Request closed and link revoked. Reassess the case with this availability update.");
+                  });
+                }}>
+                  <label>Request status
+                    <select name="status">
+                      <option value="unavailable">Record reported unavailable</option>
+                      <option value="withdrawn">Request withdrawn</option>
+                    </select>
+                  </label>
+                  <label>Reason
+                    <textarea name="reason" required minLength={3} maxLength={500} rows={4} />
+                  </label>
+                  <button className="primary" disabled={!!busy}>Close request and revoke link</button>
                 </form>
               </>
             )}
