@@ -26,6 +26,7 @@ from saas_store import repo, SESSION
 import saas_auth as auth
 from store import digest, now, uid
 from web_security import guard, BoundedBodyMiddleware
+from research_routes import router as research_router
 
 
 async def cloud_slot():
@@ -46,6 +47,7 @@ async def lifespan(app):
 
 
 app = FastAPI(title="VERDICT", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+app.include_router(research_router)
 
 
 @app.middleware("http")

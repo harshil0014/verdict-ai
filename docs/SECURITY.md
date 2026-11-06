@@ -15,6 +15,8 @@ The account application provides durable private workspaces. It is a public beta
 
 ## Evidence and limits
 
+Public web proposals use a separate private RLS table and server-only RPC. Direct retrieval rejects private/reserved addresses, credentials, unsafe ports and redirects, pins DNS-validated destinations with TLS verification, and executes no page scripts. Exact-byte/text hashes bind approval to the preserved source; a Google/Tavily summary cannot become evidence. Documented keyless APIs are explicitly selected; API-key environment variables are never consumed for search. Provider cooldown persists across server replacement. See [public research controls and actual tests](PUBLIC_RESEARCH.md).
+
 [Acceptance results](SAAS_ACCEPTANCE.md) separate HTTP contracts from actual cloud tests: two independent accounts, foreign reads/writes/files/exports/analyses/requests, original hashes, logout/recovery, atomic rollback and stale revisions. Actual database-role checks cover foreign rows across five relations, denied foreign updates/inserts and denied anonymous RPC/schema access.
 
 The cloud security advisor returned informational RLS-without-policy notices for server-only accounts/sessions/rate-limits and legacy snapshots, with no warning/error finding at that check. These tables deliberately have no ordinary-role grants or policies. This is not proof of absence of vulnerabilities.

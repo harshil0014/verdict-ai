@@ -43,7 +43,7 @@ def main():
             def collect_saas(value):
                 if isinstance(value,dict):
                     for key,item in value.items():
-                        if isinstance(item,str) and len(item)>=12 and (key in ('username','password','recovery_code','portal_token','case_id','original_id','witness_id') or key.startswith('VERDICT_')):
+                        if isinstance(item,str) and len(item)>=12 and (key in ('username','password','recovery_code','portal_token','case_id','original_id','witness_id','source_id','draft_id') or key.startswith('VERDICT_')):
                             known['saas_private_'+str(len(known))]=item.encode()
                         collect_saas(item)
                 elif isinstance(value,list):

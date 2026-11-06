@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ReactFlow,
@@ -41,6 +41,8 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./style.css";
 import { AccountEntry } from "./saas";
+import './research.css';
+const ResearchPanel=lazy(()=>import('./research').then(m=>({default:m.ResearchPanel})));
 
 type Source = {
   id: string;
@@ -56,6 +58,7 @@ type Source = {
   file_available?: boolean;
   superseded_by?: string;
   replaces_source_id?: string;
+  provenance?: any;
 };
 type Claim = {
   id: string;
@@ -67,6 +70,7 @@ type Claim = {
   source_check: string;
   structured_check?: string;
   origin_verified: boolean;
+  epistemic_status?: string;
 };
 type Hypothesis = {
   id: string;
@@ -357,7 +361,7 @@ function App() {
             <>
               <span className="node-kind">REPORTED CLAIM · {c.id}</span>
               <strong>{c.text}</strong>
-              <small>{readable(c.semantic_support)} · select to inspect</small>
+              <small>{readable(c.epistemic_status || 'reported claim')} · {readable(c.semantic_support)} · inspect</small>
             </>
           ),
         },
@@ -986,6 +990,7 @@ function App() {
                   {[
                     ["investigation", "Investigation"],
                     ["evidence", `Evidence · ${current.evidence.length}`],
+                    ...(me.role === 'member' ? [["research", "Public research"]] : []),
                     ["requests", `Witnesses · ${current.requests.length}`],
                     ["timeline", "Timeline"],
                     ["review", "Human review"],
@@ -1008,6 +1013,7 @@ function App() {
                     <Download size={16} />
                   </button>
                 </div>
+                {tab === 'research' && me.role === 'member' && <Suspense fallback={<div className="progress">Opening public research…</div>}><ResearchPanel key={current.id} caseId={current.id} api={api} changed={refresh} suggestions={(a?.requests || []).filter((w:any)=>w.publicly_obtainable)}/></Suspense>}
                 {busy && (
                   <div className="progress" role="status">
                     <LoaderCircle size={16} className="spin" />
@@ -1610,7 +1616,7 @@ function App() {
             </div>}
             {claim && (
               <div className="claim-inspection">
-                <span className="eyebrow">REPORTED CLAIM · {claim.id}</span>
+                <span className="eyebrow">{readable(claim.epistemic_status || 'reported claim').toUpperCase()} · {claim.id}</span>
                 <h3>{claim.text}</h3>
                 <dl>
                   <dt>Source existence</dt>
@@ -1629,6 +1635,7 @@ function App() {
                 <blockquote>{claim.quote}</blockquote>
               </div>
             )}
+            {source.provenance && <div className="source-provenance"><strong>PRESERVED PUBLIC SOURCE</strong><a className="research-url" href={source.provenance.final_url} target="_blank" rel="noreferrer">{source.provenance.final_url} ↗</a><p>Retrieved: {date(source.provenance.retrieved_at)}<br/>Source-stated publication: {source.provenance.publication_date || 'Unknown — not inferred'}<br/>Reviewed classification: {readable(source.provenance.source_kind)}</p><p>Historical applicability is not established by retrieval. {source.provenance.event_date && `Relevant event: ${source.provenance.event_date}. `}{source.provenance.historical_note}</p>{source.provenance.excerpt_truncated&&<p>Only the first 30,000 extracted characters were investigated. Download the original for full review.</p>}<p>Extracted-text SHA-256<br/><code>{source.provenance.text_sha256}</code></p></div>}
             <span className="eyebrow">ORIGINAL EXTRACTED CONTENT</span>
             <pre>{source.text}</pre>
             {source.file_available && current && (
@@ -1815,6 +1822,7 @@ function App() {
               <>
                 <span className="eyebrow">ADD TO THE SOURCE RECORD</span>
                 <h2>A new piece of the picture.</h2>
+                {me.role === 'member' && <button className="secondary" onClick={()=>{setModal('');setTab('research');}}><Link2 size={16}/> Retrieve a public webpage or PDF URL</button>}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();

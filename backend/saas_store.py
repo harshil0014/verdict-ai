@@ -26,6 +26,9 @@ ERRORS = {
     "case_limit": (409, "Your workspace has reached its 50-case limit"),
     "registration_capacity": (503, "Registration capacity has been reached"),
     "invalid_file": (422, "The original file failed integrity or size validation"),
+    "research_limit": (409, "This case has reached its 40 research-proposal limit"),
+    "research_storage_limit": (413, "Your private research drafts have reached their 20 MB limit"),
+    "research_closed": (409, "This proposal cannot be approved or changed in its current state"),
 }
 
 
@@ -55,9 +58,11 @@ class CloudRepository:
         if not url.startswith("https://") or not key:
             raise HTTPException(503, "Cloud database configuration is missing")
         try:
-            response = await self.client.post(url + "/rest/v1/rpc/verdict_saas_api",
+            function = 'verdict_research_api' if operation.startswith('research:') else 'verdict_saas_api'
+            op = operation.removeprefix('research:')
+            response = await self.client.post(url + "/rest/v1/rpc/"+function,
                 headers={"apikey": key, "Content-Type": "application/json"},
-                json={"p_op": operation, "p_session_hash": SESSION.get() if session is None else session,
+                json={"p_op": op, "p_session_hash": SESSION.get() if session is None else session,
                       "p_args": args or {}})
         except httpx.HTTPError:
             raise HTTPException(503, "Cloud database connection failed. Refresh to check whether the operation completed") from None

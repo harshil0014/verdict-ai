@@ -33,6 +33,12 @@ The existing engine retains typed Gemini extraction, separate support review, ci
 
 Witness tokens are random, hashed in storage, expire after seven days and permit one response. Only the question is exposed. Recipient binding comes from the stored request, not reply JSON. Reply/original/revision/audit completion is atomic. Bearer possession does not verify respondent identity.
 
+## Public research boundary
+
+`research_routes.py` separates public research proposals from official case evidence. `free_search.py` uses documented Tavily keyless and Wikimedia/Crossref APIs; no API key, credit card, scraped SERP or paid fallback. `google_research.py` uses the official Gen AI SDK for consented URL Context. Google's paid 3.x Search grounding is disabled after both free 2.5 options returned 404. Provider summaries stay research-only.
+
+`public_web.py` performs a bounded single-document fetch, validates all resolved addresses/redirects and pins the actual network destination while preserving TLS SNI. `extract_public.py` runs offline Trafilatura/pypdf extraction. Cloud research drafts have forced ownership RLS; approval uses the existing atomic case/file/audit transaction, binds exact snapshot/text hashes and marks the analysis stale. Search snippets and inaccessible documents cannot be approved. [Detailed provenance and provider selection](PUBLIC_RESEARCH.md).
+
 ## Legacy boundary
 
 `backend/app.py` remains a separate SQLite operator application with the optional snapshot mirror, fictional exploration and sandbox PayPal. It does not read account tables. Docker's module switch and the preserved legacy branch/service keep the working release recoverable. Cloud schema changes do not overwrite old data. See [deployment](DEPLOYMENT.md).

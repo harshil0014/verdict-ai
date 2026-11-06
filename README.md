@@ -15,6 +15,7 @@ VERDICT is a multi-user investigation workspace. Create a private case, preserve
 - Real Gemini extraction and separate semantic-support review. Mechanical citation checks reject missing sources/quotations. Review the graph, competing hypotheses, unknowns and witness questions. New evidence makes prior analysis visibly stale.
 - Restricted seven-day, single-response witness links. Reply, original file, case state and audit event commit together. Links can be withdrawn or marked reported unavailable. No automatic email is sent; token possession does not verify identity.
 - Revision checks, durable investigation leases, JSON export and an integrity-checked audit trail. Logout and recovery revoke cloud sessions.
+- Public URL evidence and autonomous document discovery: official Google URL Context, free Tavily keyless search and Wikimedia/Crossref discovery feed a private review queue. Human-approved original snapshots and extracted passages carry permanent provenance; current pages never establish a past policy merely by being retrieved. [Providers, controls and verification](docs/PUBLIC_RESEARCH.md). Google paid Search grounding remains disabled.
 
 Free beta limits: 50 cases, 20 MB of originals and 10 investigation attempts/account/day; 5 MB/file and 40 sources/case. Shared capacity limits can refuse new work while retaining existing data. Free compute may sleep. This is a functioning beta, not an uptime, accuracy or disaster-recovery certification.
 

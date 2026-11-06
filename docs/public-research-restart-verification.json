@@ -1,0 +1,57 @@
+{
+  "checked_at": "2026-11-06T19:11:32.025848+00:00",
+  "base_url": "http://127.0.0.1:8001",
+  "phase": "verify",
+  "checks": {
+    "foreign_research_hidden": true,
+    "foreign_retrieval_denied": true,
+    "preserved_real_google_url_context_success": true,
+    "decision_issued_date_retained": true,
+    "both_real_html_and_pdf_preserved": true,
+    "real_source_linked_investigation": true,
+    "every_quote_in_preserved_text": true,
+    "graph_bound_to_snapshot_hash_and_offsets": true,
+    "reported_and_adjudicated_distinguished": true,
+    "past_policy_not_established_by_current_source": true,
+    "decision_original_bytes_preserved": true,
+    "decision_original_private": true,
+    "act_original_bytes_preserved": true,
+    "act_original_private": true,
+    "durable_revision_and_audit": true,
+    "durable_analysis": true
+  },
+  "all_passed": true,
+  "public_sources": [
+    {
+      "label": "decision",
+      "url": "https://decisions.civilresolutionbc.ca/crt/crtd/en/525448/1/document.do",
+      "raw_sha256": "4dd97ce46d0d3f858488dd5ddfac85ec6fb993fcf7ba85567bd2875548f7e394",
+      "extracted_text_sha256": "02a847a2a0ac6f43eafc1293770dd8e14075eb572d117b29d8467a35bcf9ba57"
+    },
+    {
+      "label": "act",
+      "url": "https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/12025_01",
+      "raw_sha256": "adeaba00815730843bd5ccb76d6c64a9e76aa4e256fb32c9b98bbd7eb30f563d",
+      "extracted_text_sha256": "4605ed51b3e456fb562e4267ba57d71f59912b702a2b78b5654e01fac2e86852"
+    }
+  ],
+  "claim_count": 3,
+  "epistemic_status_counts": {
+    "document_finding": 2,
+    "party_report": 1
+  },
+  "free_search_providers": [
+    {
+      "status": "completed",
+      "results": 5,
+      "provider": "Tavily keyless"
+    },
+    {
+      "http": 200,
+      "status": "completed",
+      "provider": "Wikimedia cited references"
+    }
+  ],
+  "search_grounding": "Google paid grounding remains disabled. Documented Tavily keyless search plus public research APIs independently discover documents, which are retrieved directly before approval.",
+  "payment_writes": 0
+}

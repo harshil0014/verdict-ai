@@ -15,6 +15,7 @@ class Claim(StrictModel):
     field: str = Field(max_length=100)
     value: str = Field(max_length=300)
     stance: Literal["buyer", "seller", "neutral"]
+    epistemic_status: Literal["party_report", "document_finding", "document_order", "current_policy", "uncertain"] = "uncertain"
 
 
 class Hypothesis(StrictModel):
@@ -35,6 +36,8 @@ class Witness(StrictModel):
     rationale: str = Field(max_length=1000)
     burden: Literal["low", "medium", "high"]
     priority: Literal["first", "next", "optional"]
+    publicly_obtainable: bool = False
+    public_research_query: str = Field(default="", max_length=600)
 
 
 class Analysis(StrictModel):

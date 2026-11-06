@@ -134,3 +134,39 @@ Python dependencies are installed from PyPI according to backend/requirements.lo
 All 90 installed npm packages were inspected: 71 MIT, 14 ISC, 2 Apache-2.0, 2 BSD-3-Clause and 1 CC-BY-4.0 data package. The 86 upstream license files available at package roots are preserved above, with generated-bundle dependencies retaining their package notices. The CC-BY-4.0 data belongs to caniuse-lite; credit the [caniuse-lite contributors and upstream data](https://github.com/browserslist/caniuse-lite). No vendor UI assets or competitor application source were copied.
 
 Python distributions use MIT/BSD/Apache/PSF-compatible licenses, plus the unmodified certifi certificate bundle under MPL-2.0. These dependency licenses retain their own scope; the project MIT license does not replace them. [Certifi upstream source](https://github.com/certifi/python-certifi) supplies the certificate-bundle source. Installed Python license and notice texts are retained in [third_party/python](third_party/python). Packaging is dual Apache-2.0/BSD-2-Clause; typing_extensions uses PSF-2.0. Dependencies are unmodified and installed through the lockfile.
+
+
+## Public evidence research dependencies
+
+Google Gen AI SDK and Trafilatura are unmodified Apache-2.0 components. The HTTP adapters use existing httpx; no search-engine HTML scraping or competitor application code was copied. The following additional distributions retain their license texts under `third_party/python/`. These licenses apply to their own components, not to original project code.
+
+| Distribution | Version | License | Notice |
+|---|---|---|---|
+| babel | 2.18.0 | BSD-3-Clause | [license](third_party/python/babel/LICENSE.txt) |
+| charset-normalizer | 3.5.2 | MIT | [license](third_party/python/charset-normalizer/LICENSE.txt) |
+| courlan | 1.4.0 | Apache-2.0 | [license](third_party/python/courlan/LICENSE.txt) |
+| cryptography | 50.0.2 | Apache-2.0 OR BSD-3-Clause | [license](third_party/python/cryptography/LICENSE.txt) |
+| dateparser | 1.5.0 | BSD-3-Clause | [license](third_party/python/dateparser/LICENSE.txt) |
+| distro | 1.9.0 | Apache License, Version 2.0 | [license](third_party/python/distro/LICENSE.txt) |
+| google-auth | 2.62.1 | Apache 2.0 | [license](third_party/python/google-auth/LICENSE.txt) |
+| google-genai | 1.75.0 | Apache-2.0 | [license](third_party/python/google-genai/LICENSE.txt) |
+| htmldate | 1.11.0 | Apache-2.0 | [license](third_party/python/htmldate/LICENSE.txt) |
+| jusText | 3.0.2 | The BSD 2-Clause License | [license](third_party/python/justext/LICENSE.txt) |
+| lxml | 6.1.3 | BSD-3-Clause | [license](third_party/python/lxml/LICENSE.txt) |
+| lxml_html_clean | 0.4.6 | BSD-3-Clause | [license](third_party/python/lxml-html-clean/LICENSE.txt) |
+| pyasn1 | 0.6.5 | BSD-2-Clause | [license](third_party/python/pyasn1/LICENSE.txt) |
+| pyasn1_modules | 0.4.2 | BSD | [license](third_party/python/pyasn1-modules/LICENSE.txt) |
+| python-dateutil | 4.0.0 | BSD-3-Clause | [license](third_party/python/python-dateutil/LICENSE.txt) |
+| pytz | 2026.6 | MIT | [license](third_party/python/pytz/LICENSE.txt) |
+| regex | 2026.9.29 | Apache-2.0 AND CNRI-Python | [license](third_party/python/regex/LICENSE.txt) |
+| requests | 2.34.2 | Apache-2.0 | [license](third_party/python/requests/LICENSE.txt) |
+| sniffio | 1.3.1 | MIT OR Apache-2.0 | [license](third_party/python/sniffio/LICENSE.txt) |
+| tenacity | 9.1.4 | Apache 2.0 | [license](third_party/python/tenacity/LICENSE.txt) |
+| tld | 0.13.2 | MPL-1.1 OR GPL-2.0-only OR LGPL-2.1-or-later | [license](third_party/python/tld/LICENSE.txt) |
+| trafilatura | 2.3.1 | Apache-2.0 | [license](third_party/python/trafilatura/LICENSE.txt) |
+| tzdata | 2026.6 | Apache-2.0 | [license](third_party/python/tzdata/LICENSE.txt) |
+| tzlocal | 5.4.5 | MIT | [license](third_party/python/tzlocal/LICENSE.txt) |
+| urllib3 | 2.8.0 | MIT | [license](third_party/python/urllib3/LICENSE.txt) |
+| websockets | 16.1.1 | BSD-3-Clause | [license](third_party/python/websockets/LICENSE.txt) |
+
+`tld` is used under its MPL-1.1 option; it is unmodified and installed as a separate dependency. Its corresponding source is available from [PyPI](https://pypi.org/project/tld/0.13.2/#files) and [upstream](https://github.com/barseghyanartur/tld). `regex` retains Apache-2.0 and CNRI-Python notices; `cryptography` and `lxml` retain their bundled notices. No copyleft component has been relabeled as project MIT code. Tavily/Wikimedia/Crossref/Google API services have separate terms; consuming their documented APIs does not vendor their server software.
