@@ -17,7 +17,7 @@ SOURCES=[('decision','https://decisions.civilresolutionbc.ca/crt/crtd/en/525448/
 
 
 def run(args):
- state_path=ROOT/'runtime/saas-research-acceptance-private.json'
+ state_path=args.state
  state=json.loads(state_path.read_text()) if state_path.exists() else {'actors':[],'sources':{}}
  checks={};public_sources=[]
  def save():state_path.write_text(json.dumps(state,indent=2))
@@ -82,7 +82,7 @@ def run(args):
     check('discovery_did_not_write_official_evidence',ok(c.get(path))['revision']==before['revision'])
     state['free_search_checked']=True;state['free_search_providers']=search['report']['google']['provider_attempts'];save()
    case=ok(c.get(path))
-   if not case.get('analysis') or not case['analysis']['claims'] or case.get('analysis_stale'):
+   if args.reinvestigate or not case.get('analysis') or not case['analysis']['claims'] or case.get('analysis_stale'):
     ok(c.post(path+'/analyze',json={'consent':True}));case=ok(c.get(path))
    if not state.get('reanalysis_verified') and case.get('analysis',{}).get('claims'):
     first=case['analysis']['created_at']
@@ -116,4 +116,4 @@ def run(args):
 
 
 if __name__=='__main__':
- p=argparse.ArgumentParser();p.add_argument('--base',default='http://127.0.0.1:8001');p.add_argument('--phase',choices=['prepare','verify'],default='prepare');p.add_argument('--report',type=Path,default=ROOT/'work/web-research/acceptance.json');run(p.parse_args())
+ p=argparse.ArgumentParser();p.add_argument('--base',default='http://127.0.0.1:8001');p.add_argument('--phase',choices=['prepare','verify'],default='prepare');p.add_argument('--reinvestigate',action='store_true',help='Run one fresh investigation when validating a changed engine.');p.add_argument('--state',type=Path,default=ROOT/'runtime/saas-research-acceptance-private.json');p.add_argument('--report',type=Path,default=ROOT/'work/web-research/acceptance.json');run(p.parse_args())

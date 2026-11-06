@@ -160,3 +160,26 @@ def test_pdf_whitespace_alignment_returns_actual_preserved_passage():
  assert preserved_quote('The tribunal orders $650.88.','The tribunal orders $880.') is None
  assert preserved_quote('The tribunal orders payment.','The tribunal awards payment.') is None
  assert preserved_quote('The actual text.','  ') is None
+
+
+@pytest.mark.parametrize('review_status,source_kind,expected',[
+ ('party_report','tribunal_decision','party_report'),
+ ('document_finding','tribunal_decision','document_finding'),
+ ('document_finding','current_policy','uncertain'),
+ (None,'tribunal_decision','uncertain'),
+])
+def test_independent_review_corrects_or_withholds_public_claim_classification(monkeypatch,review_status,source_kind,expected):
+ import investigator
+ from domain import Analysis,SupportReview
+ text='The seller says the chatbot offered a refund. I find the offer was misleading.'
+ source={'id':'E1','text':text,'provenance':{'source_kind':source_kind}}
+ async def generate(prompt,payload,schema):
+  if schema is SupportReview:
+   rows=[] if review_status is None else [{'claim_id':'C1','support':'entailed','reason':'The statement occurs in the source.','epistemic_status':review_status,'epistemic_reason':'Classified using the full source context.'}]
+   return SupportReview(reviews=rows),{}
+  return Analysis(summary='Review',finding='insufficient',claims=[{'id':'C1','text':'The seller reports a refund offer.','source_id':'E1','quote':'The seller says the chatbot offered a refund.','subject':'seller','field':'offer','value':'refund','stance':'seller','epistemic_status':'document_finding'}],hypotheses=[],requests=[],unknowns=[],recommendation='Inspect the source.'),{}
+ monkeypatch.setattr(investigator,'generate',generate)
+ result=asyncio.run(investigator.investigate({'id':'test','evidence':[source]}))
+ claim=result['claims'][0]
+ assert claim['epistemic_status']==expected
+ assert claim['quote'] in text and claim['epistemic_reason']

@@ -54,6 +54,8 @@ class Support(StrictModel):
     claim_id: str
     support: Literal["entailed", "partial", "unsupported", "uncertain"]
     reason: str = Field(max_length=500)
+    epistemic_status: Literal["party_report", "document_finding", "document_order", "current_policy", "uncertain"] = "uncertain"
+    epistemic_reason: str = Field(default="", max_length=500)
 
 
 class SupportReview(StrictModel):

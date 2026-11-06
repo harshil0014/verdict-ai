@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-11-06T19:06:10.065876+00:00",
+  "checked_at": "2026-11-06T19:23:52.897233+00:00",
   "base_url": "http://127.0.0.1:8001",
   "phase": "prepare",
   "checks": {
@@ -14,10 +14,9 @@
     "malicious_url_denied_8": true,
     "malicious_url_denied_9": true,
     "malicious_url_denied_10": true,
-    "real_free_search_returned_documents": true,
-    "autonomous_primary_source_retrieved": true,
-    "discovery_did_not_write_official_evidence": true,
-    "real_reanalysis_preserved_history": true,
+    "preserved_real_google_url_context_success": true,
+    "decision_issued_date_retained": true,
+    "both_real_html_and_pdf_preserved": true,
     "real_source_linked_investigation": true,
     "every_quote_in_preserved_text": true,
     "graph_bound_to_snapshot_hash_and_offsets": true,
@@ -45,9 +44,9 @@
       "extracted_text_sha256": "4605ed51b3e456fb562e4267ba57d71f59912b702a2b78b5654e01fac2e86852"
     }
   ],
-  "claim_count": 3,
+  "claim_count": 4,
   "epistemic_status_counts": {
-    "document_finding": 2,
+    "document_finding": 3,
     "party_report": 1
   },
   "free_search_providers": [

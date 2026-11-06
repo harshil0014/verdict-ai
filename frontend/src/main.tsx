@@ -71,6 +71,7 @@ type Claim = {
   structured_check?: string;
   origin_verified: boolean;
   epistemic_status?: string;
+  epistemic_reason?: string;
 };
 type Hypothesis = {
   id: string;
@@ -1632,6 +1633,7 @@ function App() {
                   <dd>{readable(claim.semantic_support)} · AI assessed</dd>
                 </dl>
                 <p>{claim.support_reason}</p>
+                {claim.epistemic_reason && <p><strong>Classification review:</strong> {claim.epistemic_reason}</p>}
                 <blockquote>{claim.quote}</blockquote>
               </div>
             )}
