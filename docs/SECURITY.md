@@ -11,7 +11,7 @@ The account application provides durable private workspaces. It is a public beta
 - Atomic case/original/request/audit commits, revision checks and durable investigation leases. Corrupt originals fail closed. Cloud failure produces an error, never local fallback.
 - Bounded TXT/JSON/text-PDF ingestion; no HTML/executable/image upload. PDFs run in timed subprocesses with additional POSIX resource bounds. This is not malware scanning or a complete document sandbox. Originals download as attachments.
 - Scoped single-response witness portals with expiry/revocation and stored recipient binding. A link does not authenticate its holder's identity.
-- Gemini receives case evidence only after explicit consent; provider data terms still apply. No automatic email or financial action in account mode. Preserved PayPal code is sandbox-only in the separate operator build.
+- Gemini receives case evidence under the account's investigation consent; provider data terms still apply. No automatic email or financial action in account mode. The account-scoped PayPal bridge is sandbox-only and read-only, with separately restricted operator functionality. [Authorization, private originals and minimized projections](SAAS_PAYPAL.md).
 
 ## Evidence and limits
 

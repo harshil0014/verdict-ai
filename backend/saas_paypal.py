@@ -152,7 +152,13 @@ def prepare_import(existing,detail,records,issues,count,connection):
                 'canonical_json_sha256':meta['canonical_response_sha256'],'projection_sha256':source['sha256'],
                 'privacy':'Data-minimized projection; full authenticated JSON retained privately on the server.',
                 'verification':'PayPal API record origin, not truth of party statements or personal identity.'}
-    if changed:body.update(analysis_stale=bool(body.get('analysis')),paypal_synced_at=now())
+    if changed:
+        # Availability/receipt metadata can change while preserved evidence does
+        # not. Keep its existing assessment; only new source material requires
+        # reassessment (and triggers the existing transactional outbox).
+        source_changed=bool(change['source_ids'] or change['superseded'])
+        body.update(analysis_stale=bool(body.get('analysis')) if source_changed else bool(existing and existing.get('analysis_stale')),
+            paypal_synced_at=now())
     snapshots=[{'kind':r['kind'],'record_id':r['id'],'sha256':digest(r['body']),
         'content':base64.b64encode(json.dumps(r['body'],sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).decode()} for r in all_records]
     return body,changed,snapshots,change
@@ -232,7 +238,8 @@ async def import_for_connection(connection,dispute_id,*,expected_case_id=None,or
             'creating':not existing,'mutation':mutation,'snapshots':snapshots})
         case_id=result['id']
     else:case_id=existing['id']
-    await repo.rpc('paypal:status',{'connection_id':connection['id'],'status':'healthy','diagnostic':None})
+    await repo.rpc('paypal:status',{'connection_id':connection['id'],'status':'provider_error' if issues else 'healthy',
+        'diagnostic':{'issues':issues,'partial_import':True} if issues else None})
     from automatic_investigation import WAKE
     WAKE.set()
     return {'case':await repo.get(case_id),'duplicate':not changed,'environment':'sandbox','provider_writes':0}

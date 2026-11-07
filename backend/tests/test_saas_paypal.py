@@ -81,6 +81,15 @@ def test_changed_snapshot_preserves_versions_and_existing_analysis_and_requests(
     assert new['evidence'][1].get('superseded_by')
 
 
+def test_temporarily_unavailable_order_preserves_its_snapshot_and_existing_assessment():
+    d,r,c=fixture();body,_,_,_=pp.prepare_import(None,d,r,[],1,c)
+    body.update(analysis={'finding':'insufficient'},analysis_stale=False)
+    new,changed,_,change=pp.prepare_import(body,d,r[:1],['order_unavailable:403'],1,c)
+    assert changed and not change['source_ids'] and len(new['evidence'])==3
+    assert new['analysis']==body['analysis'] and new['analysis_stale'] is False
+    assert new['payment_record_acquisition']['status']=='partial'
+
+
 @pytest.mark.parametrize('method',['POST','PATCH','PUT','DELETE'])
 def test_read_only_adapter_blocks_business_writes_before_oauth(monkeypatch,method):
     def forbidden(*args,**kwargs):raise AssertionError('No network request may occur')

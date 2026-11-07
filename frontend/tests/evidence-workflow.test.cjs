@@ -110,8 +110,9 @@ test('PayPal import is a distinct case entry without fabricated consent or manua
 });
 
 test('provider receipt separates amounts, account identifiers, missing fields and reported statements',()=>{
- const html=render(ui.PayPalReceipt,{caseData:{id:'case',paypal_account:{merchant_id:'M1',dispute:{dispute_id:'PP-D-test',disputed_amount:{currency_code:'USD',value:'1.00'},reason:'ITEM_NOT_RECEIVED'},payments:[{capture_id:'CAP1',payment_amount:{currency_code:'USD',value:'5.00'},buyer_id:null,order_id:null}]}},api:()=>{throw Error('Rendering must not mutate');},onUpdated:async()=>{}});
+ const html=render(ui.PayPalReceipt,{caseData:{id:'case',payment_record_acquisition:{issues:['order_unavailable:403']},paypal_account:{merchant_id:'M1',dispute:{dispute_id:'PP-D-test',disputed_amount:{currency_code:'USD',value:'1.00'},reason:'ITEM_NOT_RECEIVED'},payments:[{capture_id:'CAP1',payment_amount:{currency_code:'USD',value:'5.00'},buyer_id:null,order_id:null}]}},api:()=>{throw Error('Rendering must not mutate');},onUpdated:async()=>{}});
  assert.match(html,/USD 1.00/);assert.match(html,/USD 5.00/);assert.match(html,/Not available from PayPal/);
  assert.match(html,/SANDBOX · TEST FUNDS/);assert.match(html,/not a finding that it is true/);
+ assert.match(html,/order unavailable:403/);assert.match(html,/Previously preserved sources are retained/);
  assert.doesNotMatch(html,/Refund payment|Submit evidence|Accept claim/);
 });
