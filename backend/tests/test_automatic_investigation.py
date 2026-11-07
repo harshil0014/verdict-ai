@@ -11,6 +11,8 @@ import pytest
 from fastapi import HTTPException
 import automatic_investigation as auto
 import research_routes as research
+from investigator import reviewed_public_classification
+from domain import Support
 from saas_store import SESSION
 
 
@@ -36,6 +38,18 @@ def test_search_fallback_never_uses_private_case_context_or_arbitrary_path_segme
     q=auto.public_fallback_query('https://carrier.example/refund/customer-name-123/policy')
     assert q=='site:carrier.example policy refund official public document'
     assert auto.public_fallback_query('https://carrier.example/customer-name-123/tracking') is None
+
+
+@pytest.mark.parametrize('text,quote,expected',[
+ ('A chatbot suggested a retroactive fare.','Apply within 90 days.','party_report'),
+ ('The company admitted misleading information.','A representative admitted the words were misleading.','party_report'),
+ ('The tribunal found negligent misrepresentation.','I find the claim of negligent misrepresentation is made out.','document_finding'),
+ ('A flight was booked in November.','In November, the applicant booked a flight.','uncertain'),
+])
+def test_model_finding_labels_require_explicit_adjudication_in_the_actual_cited_passage(text,quote,expected):
+    review=Support(claim_id='C1',support='entailed',reason='Present in the source',epistemic_status='document_finding',epistemic_reason='Model proposed a finding')
+    status,reason=reviewed_public_classification({'text':text,'quote':quote},review,{'provenance':{'source_kind':'tribunal_decision'}})
+    assert status==expected and reason
 
 
 def test_automatic_reference_candidates_are_bounded_and_unique():

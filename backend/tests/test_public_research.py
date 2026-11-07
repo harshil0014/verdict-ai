@@ -164,7 +164,7 @@ def test_pdf_whitespace_alignment_returns_actual_preserved_passage():
 
 @pytest.mark.parametrize('review_status,source_kind,expected',[
  ('party_report','tribunal_decision','party_report'),
- ('document_finding','tribunal_decision','document_finding'),
+ ('document_finding','tribunal_decision','party_report'),
  ('document_finding','current_policy','uncertain'),
  (None,'tribunal_decision','uncertain'),
 ])

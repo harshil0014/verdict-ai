@@ -201,6 +201,27 @@ def comparisons(claims):
     return compare(claims)
 
 
+def reviewed_public_classification(claim, assessment, source):
+    """A model label alone cannot promote reported speech to adjudication.
+
+    This is a conservative language check, not legal truth verification. A
+    finding/order requires explicit adjudicative wording in the cited passage
+    as well as the independent model review. Ambiguous narrative stays uncertain.
+    """
+    status=assessment.epistemic_status if assessment else 'uncertain'
+    reason=assessment.epistemic_reason if assessment else 'No independent classification review was returned.'
+    if status in ('document_finding','document_order'):
+        if source['provenance'].get('source_kind')!='tribunal_decision':
+            return 'uncertain','The retrieved source was not classified as a tribunal decision.'
+        explicit=re.search(r'\b(?:I|we|the tribunal|the court)\s+(?:find|finds|conclude|concludes|order|orders|accept|accepts|am satisfied|are satisfied)\b',claim['quote'],re.I)
+        if not explicit:
+            reported=re.search(r'\b(?:says?|said|stated|states|suggested|admitted|reported|reports|alleged|alleges|claimed|wrote|told|testified|asserted|contends)\b',claim['text']+' '+claim['quote'],re.I)
+            if reported:
+                return 'party_report','The cited passage reports an attributed statement or communication. Its inclusion in a decision does not make the statement itself an adjudicated finding.'
+            return 'uncertain','No explicit adjudicative finding or order appears in the cited passage; the model label was withheld. Inspect the decision for its finding and basis.'
+    return status,reason
+
+
 def investigation_payload(case):
     evidence = active_sources(case["evidence"])
     payload = {
@@ -265,11 +286,9 @@ async def investigate(case, baseline=None, *, analysis_schema=Analysis, system_p
                 claim["support_reason"] = assessment.reason
             source = next((e for e in evidence if e['id'] == claim['source_id']), {})
             if source.get('provenance'):
-                status = assessment.epistemic_status if assessment else 'uncertain'
-                if status in ('document_finding', 'document_order') and source['provenance'].get('source_kind') != 'tribunal_decision':
-                    status = 'uncertain'
+                status,reason=reviewed_public_classification(claim,assessment,source)
                 claim['epistemic_status'] = status
-                claim['epistemic_reason'] = assessment.epistemic_reason if assessment else 'No independent classification review was returned.'
+                claim['epistemic_reason'] = reason
         result["review_usage"] = usage2
         # Unsupported sources cannot support a hypothesis or a suggested conclusion.
         acceptable = {

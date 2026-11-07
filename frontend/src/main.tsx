@@ -565,7 +565,7 @@ function App() {
                 </label>
                 <p className="fine">
                   Share only evidence you have permission to provide. The
-                  investigator can see your response. This link gives access
+                  investigator can see your response and may investigate it with Gemini and retrieve its safe public references automatically. This link gives access
                   only to this request.
                 </p>
                 <button className="primary" disabled={!!busy}>
