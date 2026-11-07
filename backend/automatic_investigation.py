@@ -13,7 +13,7 @@ from public_web import normalize_url, RetrievalError
 from saas_store import repo, SESSION
 from research_routes import URLInput, budget, stage_url, collect_draft
 from case_investigation import run_investigation
-from investigator import investigation_payload
+from investigator import investigation_payload,ModelError
 from store import digest,now
 from free_search import discover
 from source_recovery import automatic_url,decision_identity,recovery_query,publisher_candidates,check_decision,publisher_embed,RECOVERY_VERSION
@@ -79,6 +79,10 @@ def references(evidence):
 
 
 def safe_failure(error):
+    if isinstance(error,ModelError):
+        status=re.match(r'Gemini returned HTTP (\d{3});',str(error))
+        if status:
+            return 'Gemini returned HTTP '+status[1]+'. Retrieved sources and any prior investigation are retained; no substitute analysis was generated.'
     if isinstance(error, HTTPException):
         if error.status_code in (409,429,413,503,422):
             return str(error.detail)[:500]
@@ -110,6 +114,17 @@ async def process(claim):
             return
         recoveries=progress.setdefault('recoveries',{})
         record=recoveries.get(blocked_url)
+        # Upgrade the initial wrapper-only attempt without searching again or
+        # losing its failure. Resume from the saved publisher snapshot once.
+        if record and record.get('status')=='unavailable' and record.get('version',0)<RECOVERY_VERSION:
+            wrappers=[c for c in record.get('candidates',[]) if c.get('draft_id') and c.get('identity_check',{}).get('reason')=='The preserved header has no explicit indexed case name and neutral citation.']
+            if wrappers:
+                import copy
+                history=record.setdefault('previous_attempts',[])
+                history.append(copy.deepcopy({k:v for k,v in record.items() if k!='previous_attempts'}))
+                for c in wrappers:c['status']='retrieved'
+                record.update(version=RECOVERY_VERSION,status='checking_publisher',detail='Resuming the retained publisher wrapper with bounded document extraction.')
+                await heartbeat()
         if record and record.get('status') in ('recovered','unavailable','interrupted','no_publisher_candidates'):
             return
         if not record and len(recoveries)>=1:

@@ -107,7 +107,7 @@ def test_one_submission_recovers_same_decision_without_erasing_403_or_manual_app
 def test_cached_old_403_recovers_without_requesting_blocked_site_again(monkeypatch):
     case,calls,claim=run_recovery(monkeypatch,resume=True)
     assert [r[1] for r in calls if r[0]=='retrieve']==[PUBLISHER]
-    assert claim['progress']['recovery_version']==2
+    assert claim['progress']['recovery_version']==auto.RECOVERY_VERSION
 
 
 def test_wrong_decision_is_retained_as_rejected_candidate_never_case_evidence(monkeypatch):
@@ -144,30 +144,44 @@ def test_only_literal_same_document_publisher_frame_is_followed(src,allowed):
         assert publisher_embed(draft,decision_identity(BLOCKED)) is None
 
 
-def test_publisher_wrapper_frame_is_preserved_then_checked_before_adoption(monkeypatch):
+@pytest.mark.parametrize('resume',[False,True])
+def test_publisher_wrapper_frame_is_preserved_then_checked_before_adoption(monkeypatch,resume):
     case,calls,claim=fake_process(monkeypatch)
     case['evidence'][0]['text']=BLOCKED
     wrapper=PUBLISHER.replace('/525448/1/document.do','/item/525448/index.do')
     frame=wrapper+'?iframe=true'
+    raw=b'<iframe src="?iframe=true"></iframe>'
+    saved={'id':'D-wrapper','status':'ready','raw_sha256':hashlib.sha256(raw).hexdigest(),'content':base64.encodebytes(raw).decode(),
+        'text':'Publisher navigation, not a decision.', 'metadata':{'final_url':wrapper,'mime':'text/html'}}
+    if resume:
+        claim['progress']['references'][BLOCKED]={'status':'unavailable','detail':'HTTP 403'}
+        claim['progress']['recoveries']={BLOCKED:{'version':2,'status':'unavailable','query':recovery_query(decision_identity(BLOCKED)),
+            'candidates':[{'url':wrapper,'draft_id':'D-wrapper','status':'rejected','identity_check':check_decision(saved,decision_identity(BLOCKED))}]}}
+        original_rpc=auto.repo.rpc
+        async def rpc(op,args=None,**kwargs):
+            if op=='research:get':return saved
+            return await original_rpc(op,args,**kwargs)
+        monkeypatch.setattr(auto.repo,'rpc',rpc)
     async def stage(case_id,data,**kwargs):
         calls.append(('retrieve',data.url,''))
         if data.url==BLOCKED:return {'id':'D-blocked','status':'unavailable','failure_code':'http_403','failure_message':'HTTP 403'}
         if data.url==wrapper:
-            raw=b'<iframe src="?iframe=true"></iframe>'
-            return {'id':'D-wrapper','status':'ready','raw_sha256':hashlib.sha256(raw).hexdigest(),'content':base64.b64encode(raw).decode(),
-                'text':'Publisher navigation, not a decision.', 'metadata':{'final_url':wrapper,'mime':'text/html'}}
+            return saved
         return document(host_url=frame)
-    async def discover(*args):return {'documents':[{'url':wrapper}], 'provider_attempts':[]}
+    async def discover(*args):
+        calls.append(('search',None,''));return {'documents':[{'url':wrapper}], 'provider_attempts':[]}
     async def collect(case_id,draft_id,**kwargs):
         calls.append(('collect',kwargs,''))
         case['evidence'].append({'id':'E-frame','sha256':'a'*64,'provenance':{'final_url':frame}})
     monkeypatch.setattr(auto,'stage_url',stage);monkeypatch.setattr(auto,'discover',discover);monkeypatch.setattr(auto,'collect_draft',collect)
     asyncio.run(auto.process(claim))
-    assert [c[1] for c in calls if c[0]=='retrieve']==[BLOCKED,wrapper,frame]
+    assert [c[1] for c in calls if c[0]=='retrieve']==([frame] if resume else [BLOCKED,wrapper,frame])
+    assert len([c for c in calls if c[0]=='search'])==(0 if resume else 1)
     record=claim['progress']['recoveries'][BLOCKED]
     assert record['status']=='recovered' and record['candidates'][0]['status']=='wrapper'
     adoption=next(c[1] for c in calls if c[0]=='collect')
     assert adoption['recovery']['publisher_wrapper']['url']==wrapper
+    if resume:assert record['previous_attempts'][0]['status']=='unavailable' and record['version']==auto.RECOVERY_VERSION
 
 
 def test_recovery_reads_retained_raw_snapshot_after_staging_omits_content(monkeypatch):
@@ -182,3 +196,9 @@ def test_recovery_reads_retained_raw_snapshot_after_staging_omits_content(monkey
     monkeypatch.setattr(research,'public_addresses',addresses);monkeypatch.setattr(research,'retrieve',retrieve);monkeypatch.setattr(research.repo,'rpc',rpc)
     result=asyncio.run(research.stage_url('case',research.URLInput(url=PUBLISHER,consent=True),recovery_identity=decision_identity(BLOCKED)))
     assert calls==['research:stage','research:get'] and base64.b64decode(result['content'])==snapshot['raw']
+
+
+def test_automatic_provider_failure_exposes_only_status_and_retained_source_state():
+    from investigator import ModelError
+    value=auto.safe_failure(ModelError('Gemini returned HTTP 503; untrusted provider message is not surfaced'))
+    assert 'HTTP 503' in value and 'retained' in value and 'untrusted' not in value

@@ -11,7 +11,7 @@ from urllib.parse import urljoin
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 from public_web import normalize_url, RetrievalError
 
-RECOVERY_VERSION=2
+RECOVERY_VERSION=3
 PUBLISHERS={'BCCRT':{'name':'British Columbia Civil Resolution Tribunal',
     'host':'decisions.civilresolutionbc.ca','help_url':'https://civilresolutionbc.ca/help/how-do-i-search-crt-decisions/'}}
 TRACKING_KEYS={'utm_source','utm_medium','utm_campaign','utm_term','utm_content'}

@@ -28,6 +28,7 @@ from store import digest, now, uid
 from web_security import guard, BoundedBodyMiddleware
 from research_routes import router as research_router
 from case_investigation import run_investigation
+from source_recovery import RECOVERY_VERSION
 import automatic_investigation as automatic
 from contextlib import suppress
 
@@ -128,7 +129,7 @@ async def cases(user=Depends(auth.current_session)):
 @app.post("/api/cases")
 async def create_case(data: CaseInput, user=Depends(auth.current_session)):
     return await repo.create({**data.model_dump(), "mode": "manual", "status": "OPEN", "deadline": None,
-        "story": "User-created case. Statements and uploads require assessment.", "evidence": [], "automatic_investigation":True,"automatic_workflow_version":2})
+        "story": "User-created case. Statements and uploads require assessment.", "evidence": [], "automatic_investigation":True,"automatic_workflow_version":RECOVERY_VERSION})
 
 
 @app.get("/api/cases/{id}")
@@ -162,7 +163,7 @@ async def retry_automation(id:str,user=Depends(auth.current_session)):
 
 def add_source(body, data, raw=None, mime="text/plain", request_row=None, links=None):
     body.setdefault('automatic_investigation',True)
-    body['automatic_workflow_version']=2
+    body['automatic_workflow_version']=RECOVERY_VERSION
     if len(body["evidence"]) >= 40: raise HTTPException(422, "Maximum 40 evidence sources per case")
     if "\x00" in data.text: raise HTTPException(422, "Null bytes are not supported")
     source = evidence(data.title, data.text, data.party, "portal_upload" if request_row else "user_upload")

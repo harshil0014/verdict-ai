@@ -13,7 +13,7 @@ from fixtures import evidence
 from public_web import retrieve, normalize_url, public_addresses, RetrievalError
 from google_research import call_google, capabilities
 from free_search import discover
-from source_recovery import check_decision,decision_identity
+from source_recovery import check_decision,decision_identity,RECOVERY_VERSION
 
 router=APIRouter(prefix='/api')
 
@@ -157,7 +157,7 @@ def inferred_kind(metadata, title, text=''):
 async def collect_draft(id,draft_id,*,approval=None,acquisition='human_review',parent=None,recovery=None):
     body=await repo.get(id)
     body.setdefault('automatic_investigation',True)
-    body['automatic_workflow_version']=2
+    body['automatic_workflow_version']=RECOVERY_VERSION
     draft=await repo.rpc('research:get',{'case_id':id,'id':draft_id})
     if approval and not approval.consent: raise HTTPException(422,'Review the exact extracted text and authorize preservation before adding it to the case.')
     if approval and approval.snapshot_sha256!=draft['raw_sha256']: raise HTTPException(409,'The approved snapshot hash does not match the staged document')
