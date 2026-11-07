@@ -1,5 +1,18 @@
 # One continuous investigation
 
+**Live in [VERDICT](https://verdict-ai-harshil0014.onrender.com). Post-deployment verification completed at 10:38:31 IST / 05:08:31 UTC on 7 November 2026.** Refresh an already-open page to load the new navigation. Application commit `a065ae9ffc480cd89f6413fd11018112cb8bcede` passed both [remote application and container CI](https://github.com/harshil0014/verdict-ai/actions/runs/42341307790), including all 175 Python tests, six frontend checks and the production build.
+
+| Executed phase | Result | Record |
+|---|---|---|
+| Separate validation service | Live at 05:04:52 UTC; exact built frontend/research assets served | [Preview assets](continuous-ui-preview-assets.json) |
+| Preview stored-data comparison | All 16 checks passed: two QA accounts, four cases, four research records and seven original files unchanged | [Preview preservation](continuous-ui-preview-preservation.json) |
+| Preview account/witness/session/isolation regression | All 40 checks passed | [Preview accounts](continuous-ui-preview-account-regression.json) |
+| Main service replacement | Live at 05:07:29 UTC; all seven asset/readiness/auth checks passed | [Main assets](continuous-ui-primary-assets.json) |
+| Main stored-data comparison | All 16 checks passed against the same pre-deploy baseline; case, research, audit and original-byte digests match | [Main preservation](continuous-ui-primary-preservation.json) |
+| Main account/witness/session/isolation regression | All 40 checks passed at 05:08:31 UTC | [Main accounts](continuous-ui-primary-account-regression.json) |
+
+These checks used existing independent automated QA accounts, not private customer accounts or two-human usability sessions. No evidence/research records were added, changed or deleted for the UI verification; only authentication sessions changed. The 403 refusals shown in the user's screenshot remain failures, visible in Investigation/Timeline. This UI release does not claim to resolve those provider restrictions. No paid resources or billing were activated. The previous working release remains at `release/automatic-working-20261107` (`d2b5de38467ad1bff67efb0084bf6ae07fff37c6`).
+
 The standalone Public research tab has been removed from case navigation. The five destinations are Investigation, Evidence, Witnesses, Timeline and Human review.
 
 - **Evidence** combines uploads and automatically collected documents. Public source cards show requested/final URLs, retrieval/publication metadata, original and extracted SHA-256 hashes, origin-verification and human-review status. Original downloads and passage inspection remain in the source drawer. Historical applicability is not inferred from retrieval.

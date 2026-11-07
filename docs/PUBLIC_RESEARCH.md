@@ -20,11 +20,11 @@ Tavily keyless is suitable for a bounded public beta, not a production SLA. Prov
 
 ## User flow
 
-1. Open a case and **Public research**, or choose the public-URL option in Add evidence.
-2. Supply a public HTML/PDF/text URL and optional event date. Authorize retrieval/private staging, with optional Google URL Context. Alternatively review a public question, optionally adapt a model-suggested publicly obtainable witness question, and authorize discovery. Only that reviewed query is sent to search providers; the entire case is not sent for search.
-3. Discovery gets up to five search leads and uses documented reference APIs. Primary-looking domains are heuristically prioritized, without claiming authentication. Up to three result URLs are independently retrieved. The panel records the provider, relevance, URLs, timestamps, failures and exact extracted text.
-4. Inspect the preserved text and original/text SHA-256 values. Review document type and historical limitations; explicitly approve that snapshot. A transaction appends the exact text, original bytes, provenance and audit event together. Dismissed/unavailable/search-only proposals do not become evidence.
-5. Investigate or reassess. Claims resolve to actual preserved passages and character offsets; the source inspector shows provenance and downloads the original. New approved evidence marks prior analysis stale. Repeated approval is idempotent.
+1. Submit evidence to a case. Safe public references are retrieved and the investigation updates automatically unless automatic work is paused.
+2. In **Evidence**, inspect uploads and collected documents together: requested/final URLs, original and extracted hashes, timestamps, review status and preserved text. Earlier staged/dismissed records remain under Other discoveries.
+3. In **Investigation** or **Timeline**, follow automatic progress, failed/blocked attempts and saved provider reports. A provider refusal does not become source content. Search leads remain labeled as leads.
+4. When useful, choose **Find more evidence** from Evidence/Add evidence. Enter a public URL or search question; dates and optional Google URL Context are additional options. Only the reviewed public query goes to search providers, not the entire case. Accessible result snapshots are collected and investigated without a separate approval/reassessment step.
+5. Review source-linked conclusions and consequential actions. Claims resolve to preserved passages and character offsets; originals remain downloadable. Optional staging-only API mode and legacy ready-snapshot adoption retain their existing integrity and idempotency controls.
 
 ## Source and historical integrity
 
