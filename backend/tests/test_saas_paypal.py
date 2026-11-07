@@ -38,6 +38,13 @@ def test_missing_buyer_and_disputed_amount_are_not_invented():
     assert body['paypal_account']['payments'][0]['payment_date'] is None
 
 
+def test_equivalent_capture_money_formats_match_without_rewriting_provider_values():
+    d,r,c=fixture();r[1]['body']['purchase_units'][0]['payments']['captures'][0]['amount']['value']='5.0'
+    body,_,_,_=pp.prepare_import(None,d,r,[],1,c)
+    assert body['paypal_account']['payments'][0]['linkage']=='verified_capture_and_order'
+    assert body['paypal_account']['payments'][0]['payment_amount']['value']=='5.00'
+
+
 def test_provider_link_order_is_deduplicated_but_changed_actions_are_preserved():
     d,r,c=fixture();d['links']=[{'rel':'self','method':'GET','href':'https://api-m.sandbox.paypal.com/v1/customer/disputes/PP-D-UNIT'},
         {'rel':'send-message','method':'POST','href':'https://api-m.sandbox.paypal.com/v1/customer/disputes/PP-D-UNIT/send-message'}]

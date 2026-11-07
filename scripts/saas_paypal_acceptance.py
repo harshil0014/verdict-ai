@@ -101,6 +101,7 @@ def run(a):
         check('provider_provenance_hashes',all(e['provider_provenance']['canonical_json_sha256'] and e['provider_provenance']['projection_sha256']==e['sha256'] for e in case['evidence'] if e['origin']=='paypal_sandbox_api'))
         check('sensitive_fields_not_exposed',all(term not in json.dumps(case) for term in ['email_address','address_line_1','given_name','surname']))
         check('other_account_case_denied',other.get(path).status_code==404)
+        check('other_account_list_hides_case',all(x['id']!=case['id'] for x in ok(other.get('/api/cases'))))
         check('other_account_connection_denied',ok(other.get('/api/paypal/connection'))['connected'] is False)
         check('other_account_dispute_list_denied',other.get('/api/paypal/disputes').status_code==403)
         check('other_account_import_denied',other.post('/api/paypal/import',json={'dispute_id':state['dispute_id']}).status_code==403)
@@ -112,10 +113,10 @@ def run(a):
                 check('unchanged_sync_deduplicated',result['duplicate'] is True)
                 check('unchanged_sync_preserves_revision_sources_audit_analysis',fingerprint(ok(c.get(path)))==before)
             state['fingerprint']=before;save()
-        check('deployment_persistence',fingerprint(ok(c.get(path)))==state['fingerprint'])
+        check('baseline_captured' if a.phase=='wait' else 'deployment_persistence',fingerprint(ok(c.get(path)))==state['fingerprint'])
         ok(c.post('/api/auth/logout',json={}));check('logout_revoked',c.get(path).status_code==401)
         ok(c.post('/api/auth/login',json={k:state['actors'][0][k] for k in ['username','password']}));check('login_preserves_case',fingerprint(ok(c.get(path)))==state['fingerprint'])
-        report={'checked_at':datetime.now(timezone.utc).isoformat(),'base_url':a.base,'phase':a.phase,'creation_origin':state.get('creation_origin'),'checks':checks,'all_passed':all(checks.values()),'provider':'real PayPal sandbox OAuth and authenticated GETs','payment_amount':payment['payment_amount'],'disputed_amount':receipt['dispute']['disputed_amount'],'capture_status':payment['status'],'order_linkage':payment['linkage'],'provider_business_writes':0,'actors':'Two controlled automated QA accounts with normal registration/login; merchant binding is operator-provisioned, not public OAuth consent.'}
+        report={'checked_at':datetime.now(timezone.utc).isoformat(),'base_url':a.base,'phase':a.phase,'creation_origin':state.get('creation_origin'),'controlled_workflow_retries':state.get('controlled_workflow_retries',0),'checks':checks,'all_passed':all(checks.values()),'provider':'real PayPal sandbox OAuth and authenticated GETs','payment_amount':payment['payment_amount'],'disputed_amount':receipt['dispute']['disputed_amount'],'capture_status':payment['status'],'order_linkage':payment['linkage'],'provider_business_writes':0,'actors':'Controlled automated QA accounts with normal registration/login; merchant binding is operator-provisioned, not public OAuth consent.'}
         a.report.write_text(json.dumps(report,indent=2),encoding='utf-8');print(json.dumps(report,indent=2))
     finally:
         for i,c in enumerate(clients):

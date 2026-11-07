@@ -79,8 +79,10 @@ def payment_summary(detail,records,merchant):
             if mid and mid!=merchant:raise HTTPException(409,'PayPal order payee does not match the authorized merchant. No case was changed.')
             merchant_seen=merchant_seen or mid==merchant
             listed=next(x for x in unit['payments']['captures'] if x.get('id')==cap_id)
-            if money(listed.get('amount')) and money(cap.get('amount')) and money(listed['amount'])!=money(cap['amount']):
-                raise HTTPException(409,'PayPal capture amounts disagree across records. No case was changed.')
+            listed_amount=money(listed.get('amount'));captured_amount=money(cap.get('amount'))
+            if listed_amount and captured_amount:
+                if listed_amount['currency_code']!=captured_amount['currency_code'] or Decimal(listed_amount['value'])!=Decimal(captured_amount['value']):
+                    raise HTTPException(409,'PayPal capture amounts disagree across records. No case was changed.')
         buyer=identifier((tx.get('buyer') or {}).get('payer_id'))
         order_buyer=identifier((order.get('payer') or {}).get('payer_id')) or identifier(order.get('payment_source',{}).get('paypal',{}).get('account_id'))
         if buyer and order_buyer and buyer!=order_buyer:raise HTTPException(409,'PayPal buyer account identifiers disagree. No case was changed.')
