@@ -61,6 +61,11 @@ def test_provider_pin_is_inferred_and_incompatible_results_are_rejected():
     r=dl.photon_result({'features':[feature()]},'400076 India','postcode','400076');assert r['inferred_postcode']=='400076'
     assert dl.photon_result({'features':[feature(pin='400078')]},'400076 India','postcode','400076')['status']=='no_compatible_result'
 
+def test_explicit_country_conflict_is_not_hidden_by_same_numeric_postcode():
+    a=mention('Example Building, India 400076');b=mention('Example Building, Singapore 400076','reported_delivery')
+    assert dl.lookup_query(b,'area_only') is None
+    assert dl.compare_pair(a,b)['status']=='LOCATION MISMATCH'
+
 @pytest.mark.parametrize('coords',[[181,20],[72,91],[float('nan'),20],['72',19],[True,19]])
 def test_invalid_coordinates_are_rejected(coords):
     f=feature();f['geometry']['coordinates']=coords

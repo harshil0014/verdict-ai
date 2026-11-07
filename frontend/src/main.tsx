@@ -1445,6 +1445,7 @@ function App() {
                                 e.data.status ||
                                 "Case state recorded"}
                             </p>
+                            {e.kind==='delivery_location_verified'&&<p className="fine">{e.data.previous_status?`${e.data.previous_status} → ${e.data.status}`:'Initial destination comparison'} · {e.data.source_ids?.length||0} source references. Review the location panel for supporting facts and limitations.</p>}
                             <span className="mono">
                               SHA256 {e.hash.slice(0, 18)}…
                             </span>

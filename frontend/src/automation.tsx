@@ -7,6 +7,7 @@ export function AutomaticInvestigation({current,api,changed}: {current:any;api:(
  if(!a)return null;
  const active=['queued','running'].includes(a.state), failed=a.state==='failed';
  const labels:Record<string,string>={queued:'Evidence saved. Investigation queued.',finding_references:'Finding public references in your evidence…',retrieving_references:'Retrieving and preserving public sources…',recovering_sources:'Checking the original publisher for the same document…',investigating:'Investigating preserved evidence…',complete:'Investigation updated.',needs_attention:'Evidence saved. Automatic investigation needs attention.',paused:'Automatic investigation is paused.',waiting_for_evidence:'Add evidence to start your investigation.'};
+ labels.verifying_delivery_locations='Comparing source-backed delivery locations…';
  const rows=Object.entries(a.progress?.references||{}) as [string,any][];
  async function run(path:string,body?:any){setBusy(true);setError('');try{await api(`/cases/${current.id}/${path}`,'POST',body);await changed();}catch(e:any){setError(e.message);}finally{setBusy(false);}}
  return <section className={`automatic-investigation ${active?'working':''}`} aria-label="Automatic investigation">

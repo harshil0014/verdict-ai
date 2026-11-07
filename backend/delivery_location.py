@@ -25,6 +25,7 @@ PIN=re.compile(r'(?<![\d.])[1-9]\d{5}(?![\d.])')
 ADDRESS_HINT=re.compile(r'\b(address|ship\s+to|destination|postcode|postal|pin\s*(?:code)?|flat|building|road|street)\b',re.I)
 UNSAFE=re.compile(r'https?://|@|\b(ignore|instructions?|system prompt|execute|password|token)\b',re.I)
 DISCLAIMER='Map estimates are not authenticated delivery scans, proof of personal receipt, or a dispute decision.'
+COUNTRIES={'IN':r'\b(?:India|Bharat)\b','SG':r'\bSingapore\b','CA':r'\bCanada\b','AU':r'\bAustralia\b','GB':r'\b(?:United Kingdom|UK)\b','US':r'\b(?:United States(?: of America)?|USA)\b'}
 
 
 class Mention(StrictModel):
@@ -71,8 +72,10 @@ def anchored(mentions,sources):
         pins=sorted(set(PIN.findall(m['address'])))
         if len(pins)>1:continue
         row={**m,'quote':q,'party':s.get('party'),'origin':s.get('origin'),
-            'source_sha256':s['sha256'],'quote_sha256':digest(q.encode()),'explicit_postcode':pins[0] if pins else None,
+            'source_sha256':s.get('sha256') or digest(s['text'].encode()),'quote_sha256':digest(q.encode()),'explicit_postcode':pins[0] if pins else None,
             'source_authenticity':'Source-reported location; authenticity and physical delivery are not established.'}
+        countries=[code for code,pattern in COUNTRIES.items() if re.search(pattern,m['address'],re.I)]
+        row['explicit_country']=countries[0] if len(countries)==1 else None
         row['id']='L-'+digest({k:row[k] for k in ('source_id','quote','address','role')})[:16]
         if not any(x['id']==row['id'] for x in accepted):accepted.append(row)
     return accepted[:8]
@@ -86,6 +89,7 @@ def local_mentions(sources):
             match=re.search(r'(?:address|ship\s+to|destination|postcode|postal\s*code|pin\s*code|pin)\s*(?:is|:|=|-)?\s*(.+)',line,re.I)
             if not match:continue
             address=match.group(1).strip().rstrip('.')
+            address=re.sub(r'^(?:PIN\s*(?:code)?|postal\s*code|postcode)\s*[:=-]?\s*','',address,flags=re.I)
             if not address or len(address)>350:continue
             found.append({'source_id':s['id'],'quote':line,'address':address,'role':role_for(line,s),'shipment_ref':''})
     return anchored(found,sources)
@@ -108,7 +112,7 @@ def documented_gps(mention):
 def lookup_query(m,mode):
     if mode=='off':return None
     pin=m.get('explicit_postcode')
-    if mode=='area_only':return (pin+' India','postcode') if pin else None
+    if mode=='area_only':return (pin+' India','postcode') if pin and m.get('explicit_country') in (None,'IN') else None
     address=m['address']
     # Omit unit/floor details, contact data and recipient labels. Original stays intact.
     address=re.sub(r'\b(?:flat|unit|apartment|apt|floor|room)\s*[#:]?\s*[\w-]+\s*[,;-]?','',address,flags=re.I)
@@ -186,6 +190,8 @@ def building_tokens(address):
 def compare_pair(a,b):
     support=[];conflict=[];limits=[DISCLAIMER]
     p,q=a.get('explicit_postcode'),b.get('explicit_postcode')
+    ca,cb=a.get('explicit_country'),b.get('explicit_country')
+    if ca and cb and ca!=cb:conflict.append('Explicit source countries differ: '+ca+' versus '+cb+'.')
     if p and q:
         (support if p==q else conflict).append('Explicit source PIN codes '+('agree: '+p if p==q else 'differ: '+p+' versus '+q)+'.')
     elif p or q:limits.append('One source omits a PIN code; absence is not a mismatch.')
@@ -235,7 +241,7 @@ def pair_mentions(mentions):
 
 async def verify_case(case_id):
     body=await repo.get(case_id);sources=active_sources(body['evidence']);settings=body.get('location_authorization',{'mode':'off'})
-    key=digest({'version':VERSION,'evidence':[(s['id'],s['sha256']) for s in sources],'authorization':settings})
+    key=digest({'version':VERSION,'evidence':[(s['id'],s.get('sha256') or digest(s['text'].encode())) for s in sources],'authorization':settings})
     old=body.get('delivery_location',{})
     if old.get('input_digest')==key:return old
     candidates=[s for s in sources if ADDRESS_HINT.search(s['text'])]
@@ -261,7 +267,7 @@ async def verify_case(case_id):
             fresh=await repo.get(case_id)
             if fresh['revision']!=body['revision'] or fresh.get('location_authorization',{'mode':'off'})!=settings:
                 raise HTTPException(409,'Case or location authorization changed; further external lookups stopped.')
-            result=await geocode(case_id,query,kind,m.get('explicit_postcode'));queries+=1
+            result=await geocode(case_id,query,kind,m.get('explicit_postcode') if m.get('explicit_country') in (None,'IN') else None);queries+=1
             cache[ck]={'cached_at':now(),'result':result};m['geocode']=result
         else:m['geocode']={'status':'case_limit','detail':'At most four new geocoder queries per evidence revision.'}
     pairs=pair_mentions(mentions);comparisons=[compare_pair(a,b) for a,b in pairs]
@@ -281,7 +287,7 @@ async def verify_case(case_id):
 def investigation_record(record):
     if not record:return None
     return {k:record[k] for k in ('status','comparisons','limitations','record_sha256')} | {'mentions':[
-        {k:m.get(k) for k in ('id','source_id','quote','address','role','explicit_postcode','source_authenticity')} |
+        {k:m.get(k) for k in ('id','source_id','quote','address','role','explicit_postcode','explicit_country','source_authenticity')} |
         {'geocode':{k:m.get('geocode',{}).get(k) for k in ('status','provider','precision','uncertainty_m','uncertainty_basis','inferred_postcode','lat','lon','response_sha256')}} for m in record['mentions']]}
 
 

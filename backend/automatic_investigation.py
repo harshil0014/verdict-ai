@@ -13,6 +13,7 @@ from public_web import normalize_url, RetrievalError
 from saas_store import repo, SESSION
 from research_routes import URLInput, budget, stage_url, collect_draft
 from case_investigation import run_investigation
+from delivery_location import verify_case as verify_delivery_locations
 from investigator import investigation_payload,ModelError
 from store import digest,now
 from free_search import discover
@@ -275,6 +276,10 @@ async def process(claim):
                     await heartbeat()
                     await collect_draft(case_id,row['draft_id'],acquisition='embedded_reference',parent={k:row.get(k) for k in ('parent_source_id','page','context')})
                     row['status']='preserved'
+            stage='verifying_delivery_locations'
+            await heartbeat()
+            location_record=await verify_delivery_locations(case_id)
+            if location_record:progress['delivery_location_status']=location_record['status']
             stage='investigating'
             await heartbeat()
 
