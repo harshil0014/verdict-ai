@@ -172,6 +172,7 @@ def test_publisher_wrapper_frame_is_preserved_then_checked_before_adoption(monke
 
 def test_recovery_reads_retained_raw_snapshot_after_staging_omits_content(monkeypatch):
     calls=[];snapshot=document();snapshot['raw']=b'actual retained wrapper'
+    snapshot['metadata']['raw_sha256']=hashlib.sha256(snapshot['raw']).hexdigest()
     async def addresses(url):return ['8.8.8.8']
     async def retrieve(url):return snapshot
     async def rpc(op,args):
