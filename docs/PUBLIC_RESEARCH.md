@@ -1,6 +1,6 @@
 # Public evidence discovery
 
-VERDICT discovers public documents, retrieves actual source content into private proposals, and adds only human-approved snapshots to official case evidence. Search summaries, URL Context answers and a URL mentioned in generated prose are never substituted for source text.
+VERDICT now starts investigation when evidence is submitted: literal public references are retrieved, preserved as unreviewed sources and investigated automatically. Direct URL and authorized Search submissions also collect and investigate accessible snapshots by default. The optional `review_only=true` API retains staging-only research. Humans review conclusions and consequential actions. [Current automatic workflow](AUTOMATIC_INVESTIGATION.md). Search summaries, URL Context answers and a URL mentioned in generated prose are never substituted for source text. Earlier acceptance records below describe the preceding approval-driven workflow and remain historical evidence.
 
 ## Provider decision — 7 November 2026
 

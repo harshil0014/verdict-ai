@@ -2238,3 +2238,10 @@ footer > small {
   font-size: 11px;
   margin-bottom: 3px;
 }
+/* Persisted evidence-to-investigation progress. */
+.automatic-investigation{margin:16px 0;padding:18px 20px;border:1px solid #ccd8ce;border-radius:12px;background:#f5f8f3;color:#203f31}
+.automatic-investigation.working{border-color:#88ab95;background:#eef5ee}
+.automatic-status{display:flex;gap:12px;align-items:flex-start}.automatic-status svg{flex:none;margin-top:2px}
+.automatic-status strong{font-size:14px}.automatic-status p{font-size:12px;line-height:1.6;margin:5px 0 0;color:#54665a}
+.automatic-controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.automatic-investigation details{font-size:12px;margin-top:12px}
+.automatic-investigation summary{cursor:pointer}.automatic-investigation ul{padding-left:20px}.automatic-investigation li{margin:10px 0;overflow-wrap:anywhere}.automatic-investigation li strong{display:block;font-size:11px;text-transform:uppercase;margin-top:4px}

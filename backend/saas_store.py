@@ -42,7 +42,10 @@ class CloudRepository:
         self.client = None
 
     async def start(self):
-        self.client = httpx.AsyncClient(timeout=40, follow_redirects=False)
+        # Avoid stale pooled sockets across sleeping/free-service boundaries.
+        # No automatic replay of an ambiguous database mutation is performed.
+        self.client = httpx.AsyncClient(timeout=40, follow_redirects=False,
+            limits=httpx.Limits(max_keepalive_connections=0))
         await self.rpc("health", session="")
 
     async def close(self):
@@ -58,8 +61,9 @@ class CloudRepository:
         if not url.startswith("https://") or not key:
             raise HTTPException(503, "Cloud database configuration is missing")
         try:
-            function = 'verdict_research_api' if operation.startswith('research:') else 'verdict_saas_api'
-            op = operation.removeprefix('research:')
+            prefix = operation.split(':', 1)[0] if ':' in operation else ''
+            function = {'research': 'verdict_research_api', 'workflow': 'verdict_workflow_api'}.get(prefix, 'verdict_saas_api')
+            op = operation.split(':', 1)[-1]
             response = await self.client.post(url + "/rest/v1/rpc/"+function,
                 headers={"apikey": key, "Content-Type": "application/json"},
                 json={"p_op": op, "p_session_hash": SESSION.get() if session is None else session,

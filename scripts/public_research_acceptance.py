@@ -46,10 +46,14 @@ def run(args):
   check('foreign_research_hidden',clients[1].get(path+'/research').status_code==404)
   check('foreign_retrieval_denied',clients[1].post(path+'/research/url',json={'url':SOURCES[0][1],'consent':True}).status_code==404)
   if args.phase=='prepare':
+   # Explicitly exercise the retained staging/manual-analysis API mode. The
+   # default product flow is covered by automatic_investigation_acceptance.py.
+   if not state.get('manual_mode_selected'):
+    ok(c.post(path+'/automation',json={'enabled':False}));state['manual_mode_selected']=True;save()
    for label,url,kind in SOURCES:
     if label not in state['sources']:
      before=ok(c.get(path))
-     d=ok(c.post(path+'/research/url',json={'url':url,'consent':True,'google_context':label=='decision','event_date':'2022-11-11'}))
+     d=ok(c.post(path+'/research/url',json={'url':url,'consent':True,'review_only':True,'google_context':label=='decision','event_date':'2022-11-11'}))
      check(label+'_real_snapshot_ready',d['status']=='ready')
      after=ok(c.get(path));check(label+'_unapproved_not_evidence',after['revision']==before['revision'] and len(after['evidence'])==len(before['evidence']))
      check(label+'_text_integrity',hashlib.sha256(d['text'].encode()).hexdigest()==d['metadata']['text_sha256'])
@@ -67,7 +71,7 @@ def run(args):
     duplicate=ok(c.post(path+'/research/'+s['draft_id']+'/approve',json={'consent':True,'snapshot_sha256':s['raw_sha256'],'source_kind':kind}))
     fresh=ok(c.get(path));check(label+'_approval_replay_idempotent',duplicate['duplicate'] and fresh['revision']==revision and len(fresh['timeline'])==audit)
    if not state.get('duplicate_fetch_checked'):
-    duplicate=ok(c.post(path+'/research/url',json={'url':SOURCES[0][1],'consent':True}))
+    duplicate=ok(c.post(path+'/research/url',json={'url':SOURCES[0][1],'consent':True,'review_only':True}))
     check('duplicate_url_import_deduplicated',duplicate.get('duplicate') and duplicate['id']==state['sources']['decision']['draft_id']);state['duplicate_fetch_checked']=True;save()
    for url in ('http://127.0.0.1/private','https://169.254.169.254/latest/meta-data','https://user:secret@example.com/'):
     check('malicious_url_denied_'+str(len(checks)),c.post(path+'/research/url',json={'url':url,'consent':True,'google_context':True}).status_code==422)
@@ -76,7 +80,7 @@ def run(args):
     check('unavailable_has_no_source_text',failed['status']=='unavailable' and not failed['text']);state['unavailable_checked']=True;save()
    if not state.get('free_search_checked'):
     before=ok(c.get(path))
-    search=ok(c.post(path+'/research/search',json={'query':'Moffatt v Air Canada 2024 BCCRT 149 official tribunal decision','consent':True,'event_date':'2022-11-11'}))
+    search=ok(c.post(path+'/research/search',json={'query':'Moffatt v Air Canada 2024 BCCRT 149 official tribunal decision','consent':True,'review_only':True,'event_date':'2022-11-11'}))
     check('real_free_search_returned_documents',search['report']['google']['status']=='completed' and bool(search['report']['google']['documents']))
     check('autonomous_primary_source_retrieved',any(p.get('status')=='ready' and 'decisions.civilresolutionbc.ca' in p.get('metadata',{}).get('final_url','') for p in search['proposals']))
     check('discovery_did_not_write_official_evidence',ok(c.get(path))['revision']==before['revision'])

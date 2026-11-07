@@ -201,8 +201,7 @@ def comparisons(claims):
     return compare(claims)
 
 
-async def investigate(case, baseline=None, *, analysis_schema=Analysis, system_prompt=None):
-    started = time.monotonic()
+def investigation_payload(case):
     evidence = active_sources(case["evidence"])
     payload = {
         "case": {
@@ -227,6 +226,13 @@ async def investigate(case, baseline=None, *, analysis_schema=Analysis, system_p
     }
     if case.get("payment_record_acquisition"):
         payload["case"]["payment_record_acquisition"] = case["payment_record_acquisition"]
+    return payload
+
+
+async def investigate(case, baseline=None, *, analysis_schema=Analysis, system_prompt=None):
+    started = time.monotonic()
+    evidence = active_sources(case["evidence"])
+    payload = investigation_payload(case)
     if sum(len(e["text"]) for e in evidence) > 180000:
         raise ModelError(
             "Evidence exceeds the 180,000 character investigation limit. Split the case or remove irrelevant material."

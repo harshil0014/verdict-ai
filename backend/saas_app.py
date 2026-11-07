@@ -27,6 +27,9 @@ import saas_auth as auth
 from store import digest, now, uid
 from web_security import guard, BoundedBodyMiddleware
 from research_routes import router as research_router
+from case_investigation import run_investigation
+import automatic_investigation as automatic
+from contextlib import suppress
 
 
 async def cloud_slot():
@@ -39,9 +42,14 @@ async def lifespan(app):
     await repo.start()
     previous = investigator.SLOT_RESERVER
     investigator.SLOT_RESERVER = cloud_slot
+    runner = asyncio.create_task(automatic.worker()) if repo.client is not None and os.getenv('VERDICT_AUTOMATIC_WORKER','true').lower()=='true' else None
     try:
         yield
     finally:
+        if runner:
+            runner.cancel()
+            with suppress(asyncio.CancelledError):
+                await runner
         investigator.SLOT_RESERVER = previous
         await repo.close()
 
@@ -120,19 +128,45 @@ async def cases(user=Depends(auth.current_session)):
 @app.post("/api/cases")
 async def create_case(data: CaseInput, user=Depends(auth.current_session)):
     return await repo.create({**data.model_dump(), "mode": "manual", "status": "OPEN", "deadline": None,
-        "story": "User-created case. Statements and uploads require assessment.", "evidence": []})
+        "story": "User-created case. Statements and uploads require assessment.", "evidence": [], "automatic_investigation":True})
 
 
 @app.get("/api/cases/{id}")
 async def get_case(id: str, user=Depends(auth.current_session)):
-    return await repo.get(id)
+    body=await repo.get(id)
+    body['automation']=await repo.rpc('workflow:status',{'case_id':id})
+    return body
 
 
-def add_source(body, data, raw=None, mime="text/plain", request_row=None):
+class AutomationInput(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    enabled: bool
+
+
+@app.post('/api/cases/{id}/automation')
+async def configure_automation(id:str,data:AutomationInput,user=Depends(auth.current_session)):
+    body=await repo.get(id)
+    body['automatic_investigation']=data.enabled
+    await repo.save(body,'automatic_investigation_configured',{'enabled':data.enabled})
+    await repo.rpc('workflow:retry' if data.enabled and body['evidence'] else 'workflow:pause',{'case_id':id})
+    automatic.WAKE.set()
+    return await get_case(id,user)
+
+
+@app.post('/api/cases/{id}/automation/retry')
+async def retry_automation(id:str,user=Depends(auth.current_session)):
+    await repo.rpc('workflow:retry',{'case_id':id})
+    automatic.WAKE.set()
+    return {'ok':True}
+
+
+def add_source(body, data, raw=None, mime="text/plain", request_row=None, links=None):
+    body.setdefault('automatic_investigation',True)
     if len(body["evidence"]) >= 40: raise HTTPException(422, "Maximum 40 evidence sources per case")
     if "\x00" in data.text: raise HTTPException(422, "Null bytes are not supported")
     source = evidence(data.title, data.text, data.party, "portal_upload" if request_row else "user_upload")
     source.update(synthetic=False, mime=mime, sha256=digest(raw if raw is not None else data.text.encode()), file_available=raw is not None)
+    if links: source['embedded_links']=links
     body["evidence"].append(source)
     if request_row:
         for request in body["requests"]:
@@ -148,16 +182,20 @@ def add_source(body, data, raw=None, mime="text/plain", request_row=None):
 async def text_evidence(id: str, data: EvidenceInput, user=Depends(auth.current_session)):
     body = await repo.get(id)
     event, original = add_source(body, data)
-    return await repo.save(body, "evidence_received", event)
+    result=await repo.save(body, "evidence_received", event)
+    automatic.WAKE.set()
+    return result
 
 
 @app.post("/api/cases/{id}/upload")
 async def upload(id: str, file: UploadFile=File(...), party: Literal["buyer","seller","carrier","payment_provider","other"]=Form("seller"), user=Depends(auth.current_session)):
     body = await repo.get(id)
-    raw, text, mime = await extract_file(file)
+    raw, text, mime, links = await extract_file(file,include_links=True)
     data = EvidenceInput(title=Path(file.filename or "Evidence").name[:160], text=text, party=party)
-    event, original = add_source(body, data, raw, mime)
-    return await repo.save(body, "evidence_received", event, file=original)
+    event, original = add_source(body, data, raw, mime,links=links)
+    result=await repo.save(body, "evidence_received", event, file=original)
+    automatic.WAKE.set()
+    return result
 
 
 @app.get("/api/cases/{id}/files/{file_id}")
@@ -174,19 +212,7 @@ async def analyze(id: str, data: AnalyzeInput, user=Depends(auth.current_session
     if not data.consent: raise HTTPException(422, "Confirm that these records may be sent to Gemini for analysis")
     body = await repo.get(id)
     if not body["evidence"]: raise HTTPException(422, "Add evidence before investigating")
-    job = await repo.rpc("reserve_analysis", {"case_id": id})
-    try:
-        result = await investigate(body)
-        prior = body.get("analysis")
-        if prior:
-            result["change"] = {"previous_finding": prior["finding"], "current_finding": result["finding"],
-                "previous_claims": len(prior["claims"]), "current_claims": len(result["claims"]),
-                "new_source_ids": [e["id"] for e in body["evidence"] if e["id"] not in {c["source_id"] for c in prior["claims"]}]}
-        body.update(analysis=result, analysis_stale=False)
-        return await repo.save(body, "investigation_updated", {"finding": result["finding"], "input_digest": result["input_digest"], "model": MODEL, "analysis": result}, job_id=job["job_id"])
-    except Exception:
-        await repo.rpc("fail_analysis", {"job_id": job["job_id"], "error": "Investigation did not commit; prior case data retained"})
-        raise
+    return await run_investigation(id)
 
 
 class RequestInput(BaseModel):
@@ -248,14 +274,15 @@ async def portal(request: Request):
     return {k:context["request"][k] for k in ("id","title","question","recipient","expires_at")}
 
 
-async def portal_save(request, data, raw=None, mime="text/plain"):
+async def portal_save(request, data, raw=None, mime="text/plain",links=None):
     hashed = portal_hash(request)
     context = await repo.rpc("portal_context", {"request_hash": hashed}, session="")
     body = {**context["case"], "timeline": context["timeline"]}
     data.party = context["request"]["recipient"]
-    event, original = add_source(body, data, raw, mime, context["request"])
+    event, original = add_source(body, data, raw, mime, context["request"],links)
     await repo.rpc("portal_submit", repo.mutation(body, "evidence_received", event,
         request_action="reply", request_hash=hashed, file=original), session="")
+    automatic.WAKE.set()
     return {"ok": True, "message": "Response saved for review. Origin and factual truth remain unverified."}
 
 
@@ -267,8 +294,8 @@ async def portal_reply(request: Request, data: EvidenceInput):
 @app.post("/api/portal/upload")
 async def portal_upload(request: Request, file: UploadFile=File(...)):
     await repo.rpc("portal_context", {"request_hash": portal_hash(request)}, session="")
-    raw,text,mime = await extract_file(file)
-    return await portal_save(request, EvidenceInput(title=Path(file.filename or "Evidence").name[:160], text=text),raw,mime)
+    raw,text,mime,links = await extract_file(file,include_links=True)
+    return await portal_save(request, EvidenceInput(title=Path(file.filename or "Evidence").name[:160], text=text),raw,mime,links)
 
 
 @app.get("/api/cases/{id}/export")

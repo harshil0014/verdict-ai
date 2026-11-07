@@ -1,5 +1,6 @@
 """Account-isolated proposals, explicit approval and transactional provenance."""
 import base64
+import re
 from datetime import date, datetime, timezone
 from typing import Literal
 from urllib.parse import urlsplit
@@ -21,6 +22,7 @@ class URLInput(BaseModel):
     url: str=Field(min_length=8,max_length=2048)
     consent: bool=False
     google_context: bool=False
+    review_only: bool=False
     relevance: str=Field(default='User-supplied public source; review its contents and relevance.',max_length=1000)
     event_date: date | None=None
 
@@ -31,6 +33,7 @@ class SearchInput(BaseModel):
     consent: bool=False
     event_date: date | None=None
     google_context: bool=False
+    review_only: bool=False
 
 
 class ApprovalInput(BaseModel):
@@ -90,7 +93,11 @@ async def from_url(id:str,data:URLInput,user=Depends(auth.current_session)):
     try: normalize_url(data.url)
     except RetrievalError as e: raise HTTPException(422,e.message) from None
     await budget(user,'url')
-    return await stage_url(id,data)
+    draft = await stage_url(id,data)
+    if draft['status'] == 'ready' and not data.review_only:
+        await collect_draft(id, draft['id'], acquisition='submitted_url')
+        draft = public_draft(await repo.rpc('research:get', {'case_id':id,'id':draft['id']}))
+    return draft
 
 
 @router.post('/cases/{id}/research/search')
@@ -109,7 +116,11 @@ async def search(id:str,data:SearchInput,user=Depends(auth.current_session)):
     for doc in result.get('documents',[])[:3]:
         try:
             await budget(user,'url')
-            acquired.append(await stage_url(id,URLInput(url=doc['url'],consent=True,relevance=doc['provider']+': '+doc['relevance'],event_date=data.event_date,google_context=data.google_context)))
+            draft=await stage_url(id,URLInput(url=doc['url'],consent=True,relevance=doc['provider']+': '+doc['relevance'],event_date=data.event_date,google_context=data.google_context))
+            if draft['status']=='ready' and not data.review_only:
+                await collect_draft(id,draft['id'],acquisition='authorized_search')
+                draft=public_draft(await repo.rpc('research:get',{'case_id':id,'id':draft['id']}))
+            acquired.append(draft)
         except HTTPException as error:
             acquired.append({'status':'unavailable','failure_message':error.detail})
     return {'report':saved,'proposals':acquired}
@@ -122,23 +133,42 @@ async def dismiss(id:str,draft_id:str,user=Depends(auth.current_session)):
 
 @router.post('/cases/{id}/research/{draft_id}/approve')
 async def approve(id:str,draft_id:str,data:ApprovalInput,user=Depends(auth.current_session)):
+    return await collect_draft(id,draft_id,approval=data)
+
+
+def inferred_kind(metadata, title, text=''):
+    host=urlsplit(metadata.get('final_url','')).hostname or ''
+    if host=='decisions.civilresolutionbc.ca' and re.search(r'\bBCCRT\b|Civil Resolution Tribunal',title+' '+text[:1000],re.I):
+        return 'tribunal_decision'
+    if any(word in metadata.get('final_url','').lower() for word in ('/policy','/policies','bereavement')):
+        return 'current_policy'
+    return 'reported_document'
+
+
+async def collect_draft(id,draft_id,*,approval=None,acquisition='human_review',parent=None):
     body=await repo.get(id)
+    body.setdefault('automatic_investigation',True)
     draft=await repo.rpc('research:get',{'case_id':id,'id':draft_id})
-    if not data.consent: raise HTTPException(422,'Review the exact extracted text and authorize preservation before adding it to the case.')
-    if data.snapshot_sha256!=draft['raw_sha256']: raise HTTPException(409,'The approved snapshot hash does not match the staged document')
+    if approval and not approval.consent: raise HTTPException(422,'Review the exact extracted text and authorize preservation before adding it to the case.')
+    if approval and approval.snapshot_sha256!=draft['raw_sha256']: raise HTTPException(409,'The approved snapshot hash does not match the staged document')
     if draft.get('source_id'): return {'case':body,'duplicate':True}
     if draft['status']!='ready' or not draft.get('content'): raise HTTPException(409,'This proposal has no readable snapshot to approve. Upload an authorized copy or use another source.')
     if len(body['evidence'])>=40: raise HTTPException(422,'Maximum 40 evidence sources per case')
     prior=next((s for s in body['evidence'] if s.get('sha256')==draft['raw_sha256'] and s.get('provenance',{}).get('final_url')==draft['metadata']['final_url']),None)
     if prior: return {'case':body,'duplicate':True}
-    if data.source_kind=='archived_record' and not draft['metadata'].get('archive_capture_requested'):
+    kind=approval.source_kind if approval else inferred_kind(draft['metadata'],draft['title'],draft['text'])
+    if kind=='archived_record' and not draft['metadata'].get('archive_capture_requested'):
         raise HTTPException(422,'No archive capture was established. A current webpage cannot be labeled as an archived record.')
-    meta={**draft['metadata'],'source_kind':data.source_kind,'classification_basis':'user-reviewed classification; not independent authentication',
-          'historical_note':data.historical_note,'event_date':draft.get('event_date'),'approved_at':now(),'research_proposal_id':draft_id}
-    source=evidence(draft['title'][:160],draft['text'],'other','public_web_snapshot')
+    meta={**draft['metadata'],'source_kind':kind,'classification_basis':'user-reviewed classification; not independent authentication' if approval else 'URL/document metadata heuristic; reviewable and not independently authenticated',
+          'historical_note':approval.historical_note if approval else 'Automatically collected source. Retrieval does not establish historical policy applicability.',
+          'event_date':draft.get('event_date'),'collected_at':now(),'research_proposal_id':draft_id,
+          'acquisition_mode':acquisition,'review_status':'human_reviewed' if approval else 'unreviewed',
+          'parent_reference':parent}
+    automatic=acquisition=='embedded_reference'
+    source=evidence(draft['title'][:160],draft['text'],'other','public_web_automatic' if automatic else 'public_web_snapshot')
     source.update(sha256=draft['raw_sha256'],synthetic=False,file_available=True,mime=meta['mime'],origin_verified=False,provenance=meta)
     body['evidence'].append(source);body['analysis_stale']=body.get('analysis') is not None
     raw=base64.b64decode(draft['content'])
     file=repo.file_record(source['id'],raw,meta['mime'],draft['title'][:150]+('.pdf' if meta['mime']=='application/pdf' else '.html' if 'html' in meta['mime'] else '.txt'))
-    mutation=repo.mutation(body,'public_evidence_approved',{'evidence_id':source['id'],'url':meta['final_url'],'raw_sha256':source['sha256'],'text_sha256':meta['text_sha256'],'source_kind':data.source_kind},file=file)
+    mutation=repo.mutation(body,'public_evidence_approved' if approval else 'public_evidence_acquired',{'evidence_id':source['id'],'url':meta['final_url'],'raw_sha256':source['sha256'],'text_sha256':meta['text_sha256'],'source_kind':kind,'acquisition_mode':acquisition,'parent_reference':parent},file=file)
     return await repo.rpc('research:approve',{'case_id':id,'id':draft_id,'mutation':mutation})

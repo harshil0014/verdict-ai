@@ -1,0 +1,35 @@
+# Evidence submission starts investigation
+
+An uploaded document, submitted note or saved witness response is enough. VERDICT saves the original and audit record, discovers literal HTTP(S) references in its text or PDF hyperlink annotations, retrieves accessible source content, preserves original bytes and extracted text with hashes, and refreshes the real Gemini investigation. A separate approval or reassessment click is unnecessary.
+
+Automatic sources are marked **unreviewed** and origin-unverified. Collection is not a factual finding, authentication or acceptance of a party's claim. Humans review conclusions and consequential actions. The public account application cannot submit PayPal evidence, issue refunds or contact parties; its existing safeguards remain separate. Users may pause automatic work for a case before submitting material they want to store without analysis. Evidence submission is disclosed as authorization for Gemini investigation and safe public retrieval.
+
+## Durable work and isolation
+
+The source/file/audit commit also writes a PostgreSQL workflow outbox row. There is one coalescing job per case. A runner in the existing web service claims it using row locks and `SKIP LOCKED`; no paid queue, worker service or card is needed. A 120-second renewable lease coordinates multiple processes/services. Interrupted work resumes when an awake process claims it. Free sleeping compute does not promise immediate processing while every service is asleep.
+
+The queue has forced owner RLS. Server-only fixed-operation `verdict_workflow_api` resolves status/retry/pause from an authenticated owner; ordinary API roles have no execution grant. Claims create short-lived internal owner sessions, never browser cookies; they are discarded after completion and replaced on recovery. Existing case/file/research operations still drop to the restricted RLS executor. Lease renewal is checked before collection and before analysis commit. A revoked/expired lease cannot publish an investigation result.
+
+New evidence arriving during a run increments its generation; the current result cannot overwrite a newer case revision. A follow-up run handles the newest records. Already preserved references and staged snapshot checkpoints are reused. A matching committed analysis digest is reused after a crash instead of spending another model call. Three interrupted attempts require explicit retry. Quota/model failures retain saved sources and prior analysis, with visible status and a retry control.
+
+## Bounded retrieval and provenance
+
+- Up to three literal references per run, prioritizing policy/decision/regulation context, from at most 24 candidates. Links in automatically acquired pages are not recursively followed. Model-generated URLs are not acquisition authority.
+- PDF `/URI` annotations are extracted offline with their page number. No PDF action, JavaScript, cookie, login, challenge bypass or browser crawler is executed.
+- Existing public-address validation, pinned network destination/TLS hostname, redirect validation and 5 MB/30-page/30,000-character extraction limits remain mandatory. Unknown or customer-specific query keys are withheld from automatic retrieval; signed/credential/private URLs are blocked.
+- DNS/network/timeouts and selected transient server failures receive at most three bounded attempts, each charged to the existing quota. HTTP 403 and 429 are not retried as transient failures. Search providers retain their cooldowns and have no paid fallback.
+- An unavailable policy link can trigger one bounded free search. Only its hostname and allowlisted public policy-topic words are sent, never original case text, private path segments, customer identifiers or a model's arbitrary query. Only API-returned URLs may be fetched, within the same three-reference bound. Unavailable content remains unavailable; snippets never replace source text.
+- Every collected snapshot retains raw/text SHA-256, original bytes, retrieval metadata, the exact parent evidence ID and reference context/page. Audit events identify automatic collection separately from human approval. Claims remain linked to exact preserved passages and character offsets.
+- Current policies do not establish a past policy. Historical applicability stays unestablished. Limited document-kind inference is identified as a heuristic; the independent classification pass remains fallible. A quoted party/chatbot statement is not automatically an adjudicated finding.
+
+Direct URL and authorized Search submissions also collect accessible snapshots and queue investigation by default. `review_only=true` retains the optional staging-only API workflow for research that should not yet enter the record. Manual reassessment remains available; it is not required after ordinary evidence submission.
+
+## Verification
+
+The [acceptance runner](../scripts/automatic_investigation_acceptance.py) creates two independent automated accounts, makes one evidence upload per account and then only polls. It never calls analyze/approve/search/retry. The first upload contains the official Moffatt tribunal PDF and current BC legislation URLs; the second is a different synthetic record. `prepare` can run with the worker stopped; after process replacement, `wait` checks actual retrieval, provenance, source-linked Gemini output, isolation, logout and return. `verify` compares the same originals, analysis/revision/audit fingerprints after another restart or deployment.
+
+The first actual local run recorded a transient tribunal DNS failure and correctly produced a partial investigation from accessible evidence. That did not pass the full two-document acceptance; it motivated the bounded transient retry change. Passing reports and deployment records are added only after execution. Visual click-through QA is separate; browser/native control limitations are not represented as a visual pass.
+
+The next run retrieved both sources but encountered a transient cloud connection failure before analysis committed. It retained both originals and showed a failure. The worker now requeues connection interruptions for committed-state reconciliation, within the same bounded interruption limit, and the RPC client avoids stale pooled sockets. No ambiguous database mutation is blindly replayed.
+
+After these fixes, [all 35 automatic checks passed locally](automatic-investigation-local-verification.json) at **09:58:08 IST on 7 November 2026**. Both accounts submitted only once; the runner made zero analyze/approve/search/retry calls. The first account's original references yielded the actual tribunal PDF and legislation HTML, with parent provenance, exact passages, reports/findings distinguished and historical applicability unestablished. Both accounts retained private data across logout/login. The queued submissions survived a process replacement before the worker ran. The existing [40-check account regression](automatic-investigation-account-regression.json) also passed. There are 171 passing local automated tests; frontend production compilation passes. Hosted verification is recorded separately after deployment.

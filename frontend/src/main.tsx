@@ -41,6 +41,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./style.css";
 import { AccountEntry } from "./saas";
+import { AutomaticInvestigation } from './automation';
 import './research.css';
 const ResearchPanel=lazy(()=>import('./research').then(m=>({default:m.ResearchPanel})));
 
@@ -128,6 +129,7 @@ type Case = {
   paypal_id?: string;
   paypal_snapshot?: any;
   payment_record_acquisition?: { status: string; records_read: number; issues: string[] };
+  automation?: any;
 };
 let authGeneration = 0;
 async function api(path: string, method = "GET", body?: any, token?: string) {
@@ -295,14 +297,14 @@ function App() {
       if (document.visibilityState !== "visible") return;
       try {
         const latest = await api("/cases/" + current.id);
-        if (latest.revision !== current.revision) {
+        if (latest.revision !== current.revision || latest.automation?.updated_at !== current.automation?.updated_at) {
           setCurrent(latest);
           setItems((v) => v.map((c) => (c.id === latest.id ? latest : c)));
         }
       } catch {}
-    }, 15000);
+    }, ['queued','running'].includes(current.automation?.state) ? 4000 : 15000);
     return () => clearInterval(timer);
-  }, [current?.id, current?.revision, busy, modal, source]);
+  }, [current?.id, current?.revision, current?.automation?.updated_at, busy, modal, source]);
   const a = current?.analysis;
   const totals = useMemo(
     () => ({
@@ -1014,7 +1016,8 @@ function App() {
                     <Download size={16} />
                   </button>
                 </div>
-                {tab === 'research' && me.role === 'member' && <Suspense fallback={<div className="progress">Opening public research…</div>}><ResearchPanel key={current.id} caseId={current.id} api={api} changed={refresh} suggestions={(a?.requests || []).filter((w:any)=>w.publicly_obtainable)}/></Suspense>}
+                {tab === 'research' && me.role === 'member' && <Suspense fallback={<div className="progress">Opening public research…</div>}><ResearchPanel key={current.id} caseId={current.id} revision={current.revision} api={api} changed={refresh} suggestions={(a?.requests || []).filter((w:any)=>w.publicly_obtainable)}/></Suspense>}
+                {me.role === 'member' && <AutomaticInvestigation key={current.id+'-automation'} current={current} api={api} changed={refresh}/>}
                 {busy && (
                   <div className="progress" role="status">
                     <LoaderCircle size={16} className="spin" />
@@ -1031,10 +1034,10 @@ function App() {
                   <div className="stale">
                     <AlertTriangle size={16} />
                     New evidence has arrived. The previous investigation is
-                    shown until you reassess.
-                    <button onClick={() => setModal("analyze")}>
+                    shown while VERDICT updates the investigation.
+                    {!['queued','running'].includes(current.automation?.state)&&<button onClick={() => setModal("analyze")}>
                       Reassess <ArrowRight size={14} />
-                    </button>
+                    </button>}
                   </div>
                 )}
                 {tab === "investigation" && (
@@ -1050,11 +1053,11 @@ function App() {
                       </div>
                       <button
                         className="primary"
-                        disabled={!!busy}
+                        disabled={!!busy || ['queued','running'].includes(current.automation?.state)}
                         onClick={() => setModal("analyze")}
                       >
                         <ScanLine size={16} />
-                        {a ? "Reassess case" : "Investigate case"}
+                        {['queued','running'].includes(current.automation?.state) ? 'Investigation in progress' : a ? "Reassess case" : "Investigate case"}
                       </button>
                     </div>
                     <div className="investigation-grid">
@@ -1637,7 +1640,7 @@ function App() {
                 <blockquote>{claim.quote}</blockquote>
               </div>
             )}
-            {source.provenance && <div className="source-provenance"><strong>PRESERVED PUBLIC SOURCE</strong><a className="research-url" href={source.provenance.final_url} target="_blank" rel="noreferrer">{source.provenance.final_url} ↗</a><p>Retrieved: {date(source.provenance.retrieved_at)}<br/>Source-stated publication: {source.provenance.publication_date || 'Unknown — not inferred'}<br/>Reviewed classification: {readable(source.provenance.source_kind)}</p><p>Historical applicability is not established by retrieval. {source.provenance.event_date && `Relevant event: ${source.provenance.event_date}. `}{source.provenance.historical_note}</p>{source.provenance.excerpt_truncated&&<p>Only the first 30,000 extracted characters were investigated. Download the original for full review.</p>}<p>Extracted-text SHA-256<br/><code>{source.provenance.text_sha256}</code></p></div>}
+            {source.provenance && <div className="source-provenance"><strong>PRESERVED PUBLIC SOURCE</strong><a className="research-url" href={source.provenance.final_url} target="_blank" rel="noreferrer">{source.provenance.final_url} ↗</a><p>Retrieved: {date(source.provenance.retrieved_at)}<br/>Source-stated publication: {source.provenance.publication_date || 'Unknown — not inferred'}<br/>Document classification: {readable(source.provenance.source_kind)}<br/>Collection review: {readable(source.provenance.review_status || 'not recorded')}<br/>{source.provenance.classification_basis}</p>{source.provenance.parent_reference&&<p>Collected from a reference in {source.provenance.parent_reference.parent_source_id}{source.provenance.parent_reference.page&&` · PDF page ${source.provenance.parent_reference.page}`}.</p>}<p>Historical applicability is not established by retrieval. {source.provenance.event_date && `Relevant event: ${source.provenance.event_date}. `}{source.provenance.historical_note}</p>{source.provenance.excerpt_truncated&&<p>Only the first 30,000 extracted characters were investigated. Download the original for full review.</p>}<p>Extracted-text SHA-256<br/><code>{source.provenance.text_sha256}</code></p></div>}
             <span className="eyebrow">ORIGINAL EXTRACTED CONTENT</span>
             <pre>{source.text}</pre>
             {source.file_available && current && (
@@ -1824,6 +1827,7 @@ function App() {
               <>
                 <span className="eyebrow">ADD TO THE SOURCE RECORD</span>
                 <h2>A new piece of the picture.</h2>
+                {me.role === 'member' && <p className="fine">Submitting evidence authorizes Gemini investigation and safe public-reference retrieval automatically, unless you pause it for this case. Original records stay private; fetched sources remain unverified and reviewable. Only submit material you may share and preserve.</p>}
                 {me.role === 'member' && <button className="secondary" onClick={()=>{setModal('');setTab('research');}}><Link2 size={16}/> Retrieve a public webpage or PDF URL</button>}
                 <form
                   onSubmit={(e) => {
@@ -1866,7 +1870,7 @@ function App() {
                   </label>
                   <button className="primary" disabled={!!busy}>
                     <Plus size={16} />
-                    Add source
+                    {me.role==='member' ? 'Add & investigate' : 'Add source'}
                   </button>
                 </form>
                 <div className="divider">OR UPLOAD A DOCUMENT</div>
@@ -1892,7 +1896,7 @@ function App() {
                   />
                 </label>
                 <p className="fine">
-                  Uploads are reported evidence. No automatic claim of verified
+                  Evidence is saved before investigation starts. Uploads are reported evidence. No automatic claim of verified
                   origin. Scanned PDFs and images are not yet supported.
                 </p>
               </>
