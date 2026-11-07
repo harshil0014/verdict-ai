@@ -25,7 +25,8 @@ def fingerprint(case):
 
 def run(args):
     state=json.loads(args.state.read_text(encoding='utf-8')) if args.state.exists() else {'actors':[]}
-    checks={};clients=[];public_sources=[]
+    checks={};clients=[];public_sources=[];investigation_results=[]
+    acquisition_only=args.phase=='acquisition'
     def save():args.state.parent.mkdir(parents=True,exist_ok=True);args.state.write_text(json.dumps(state,indent=2),encoding='utf-8')
     def check(name,value):
         checks[name]=bool(value)
@@ -62,8 +63,12 @@ def run(args):
                     if time.monotonic()>deadline:raise AssertionError('Recovery timed out')
                     time.sleep(3)
             else:case=ok(c.get(path));workflow=case['automation']
-            check(prefix+'automatic_investigation_complete',workflow['state']=='completed' and bool(case['analysis']) and not case['analysis_stale'])
-            check(prefix+'actual_gemini',case['analysis']['model']=='gemini-3.1-flash-lite')
+            analysis=case.get('analysis') or {}
+            complete=workflow['state']=='completed' and bool(analysis) and not case['analysis_stale']
+            investigation_results.append({'actor':i+1,'workflow_state':workflow['state'],'investigation_complete':complete})
+            if not acquisition_only:
+                check(prefix+'automatic_investigation_complete',complete)
+                check(prefix+'actual_gemini',analysis['model']=='gemini-3.1-flash-lite')
             check(prefix+'original_submission_preserved',hashlib.sha256(c.get(path+'/files/'+actor['original_id']).content).hexdigest()==actor['original_sha256'])
             check(prefix+'foreign_case_denied',clients[1-i].get(path).status_code==404)
             check(prefix+'foreign_research_denied',clients[1-i].get(path+'/research').status_code==404)
@@ -72,8 +77,9 @@ def run(args):
             check(prefix+'no_human_approval_calls',not any(e['kind']=='public_evidence_approved' for e in case['timeline']))
             evidence={e['id']:e for e in case['evidence']}
             public=[e for e in case['evidence'] if e.get('origin')=='public_web_automatic'];check(prefix+'real_public_source_preserved',bool(public))
-            check(prefix+'source_claims_bound_to_preserved_text',bool(case['analysis']['claims']) and all(x['quote'] in evidence[x['source_id']]['text'] for x in case['analysis']['claims']))
-            check(prefix+'actual_public_source_used',any(evidence[x['source_id']].get('provenance') for x in case['analysis']['claims']))
+            if not acquisition_only:
+                check(prefix+'source_claims_bound_to_preserved_text',bool(analysis['claims']) and all(x['quote'] in evidence[x['source_id']]['text'] for x in analysis['claims']))
+                check(prefix+'actual_public_source_used',any(evidence[x['source_id']].get('provenance') for x in analysis['claims']))
             if i==0:
                 refusal=workflow['progress']['references'][BLOCKED];recovery=workflow['progress']['recoveries'][BLOCKED]
                 check('blocked_403_retained',refusal['status']=='unavailable' and 'HTTP 403' in refusal.get('detail',''))
@@ -94,15 +100,16 @@ def run(args):
                 check(prefix+'historical_applicability_unestablished_'+str(j),e['provenance']['historical_applicability']=='not_established')
                 public_sources.append({'url':e['provenance']['final_url'],'raw_sha256':e['sha256'],'text_sha256':e['provenance']['text_sha256']})
             value=fingerprint(case)
-            if args.phase=='wait':actor['fingerprint']=value;save()
-            check(prefix+'retained_case_analysis_audit',value==actor['fingerprint'])
+            key='acquisition_fingerprint' if acquisition_only else 'fingerprint'
+            if args.phase=='wait' or acquisition_only and key not in actor:actor[key]=value;save()
+            check(prefix+'retained_case_analysis_audit',value==actor[key])
             ok(c.post('/api/auth/logout',json={}));check(prefix+'logout_revoked',c.get(path).status_code==401)
             ok(c.post('/api/auth/login',json={k:actor[k] for k in ('username','password')}));check(prefix+'return_retains_records',fingerprint(ok(c.get(path)))==value)
-        report={'checked_at':datetime.now(timezone.utc).isoformat(),'base_url':args.base,'phase':args.phase,'checks':checks,'all_passed':all(checks.values()),'public_sources':public_sources,'blocked_url':BLOCKED,'publisher_urls_supplied_for_recovery':0,'manual_search_analysis_approval_retry_calls':0,'actors':'Two independent automated test accounts, not two humans','payment_or_dispute_writes':0}
+        report={'checked_at':datetime.now(timezone.utc).isoformat(),'base_url':args.base,'phase':args.phase,'checks':checks,'all_passed':all(checks.values()),'full_end_to_end_acceptance':not acquisition_only and all(checks.values()),'investigation_results':investigation_results,'public_sources':public_sources,'blocked_url':BLOCKED,'publisher_urls_supplied_for_recovery':0,'manual_search_analysis_approval_retry_calls':state.get('diagnostic_analysis_calls',0),'actors':'Two independent automated test accounts, not two humans','payment_or_dispute_writes':0}
         args.report.write_text(json.dumps(report,indent=2),encoding='utf-8');print(json.dumps(report,indent=2))
     finally:
         for c in clients:c.close()
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--base',default='http://127.0.0.1:8001');p.add_argument('--phase',choices=['prepare','wait','verify'],required=True);p.add_argument('--state',type=Path,default=ROOT/'runtime/saas-recovery-private.json');p.add_argument('--report',type=Path,default=ROOT/'work/recovery-verification.json');run(p.parse_args())
+    p=argparse.ArgumentParser();p.add_argument('--base',default='http://127.0.0.1:8001');p.add_argument('--phase',choices=['prepare','wait','verify','acquisition'],required=True);p.add_argument('--state',type=Path,default=ROOT/'runtime/saas-recovery-private.json');p.add_argument('--report',type=Path,default=ROOT/'work/recovery-verification.json');run(p.parse_args())

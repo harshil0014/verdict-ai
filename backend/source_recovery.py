@@ -50,7 +50,8 @@ def publisher_candidates(documents,identity,blocked_url):
     for doc in documents:
         try:url=automatic_url(doc.get('url',''))
         except (RetrievalError,TypeError):continue
-        if url in seen or urlsplit(url).hostname!=identity['publisher_host']:continue
+        p=urlsplit(url)
+        if url in seen or p.scheme!='https' or p.hostname!=identity['publisher_host']:continue
         seen.add(url);result.append({'url':url,'title':str(doc.get('title',''))[:200],
             'provider':str(doc.get('provider','Public search API'))[:100]})
         if len(result)==2:break
@@ -63,7 +64,8 @@ def check_decision(draft,identity):
         'status':'not_matched','basis':'Official publisher + document self-identification + exact neutral citation in the preserved header.',
         'text_sha256':metadata.get('text_sha256'),'byte_equivalence_to_blocked_copy':'not_verified'}
     if draft.get('status')!='ready':return {**result,'reason':'No readable source content was retrieved.'}
-    if urlsplit(metadata.get('final_url','')).hostname!=identity['publisher_host']:
+    final=urlsplit(metadata.get('final_url',''))
+    if final.scheme!='https' or final.hostname!=identity['publisher_host']:
         return {**result,'reason':'The retrieved final host is not the configured original publisher.'}
     header=draft.get('text','')[:1800]
     indexed=re.search(r'Indexed\s+as\s*:\s*([^\n]{3,200}?),\s*(20\d{2})\s+([A-Z]{2,12})\s+([1-9]\d{0,5})\b',header,re.I)

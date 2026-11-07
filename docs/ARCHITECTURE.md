@@ -41,6 +41,8 @@ The newer automatic workflow is implemented in `automatic_investigation.py` and 
 
 `public_web.py` performs a bounded single-document fetch, validates all resolved addresses/redirects and pins the actual network destination while preserving TLS SNI. `extract_public.py` runs offline Trafilatura/pypdf extraction. Cloud research drafts have forced ownership RLS; approval uses the existing atomic case/file/audit transaction, binds exact snapshot/text hashes and marks the analysis stale. Search snippets and inaccessible documents cannot be approved. [Detailed provenance and provider selection](PUBLIC_RESEARCH.md).
 
+`source_recovery.py` adds a conservative BCCRT neutral-citation adapter. After a failed CanLII reference, the worker searches a public identifier through the existing free APIs, stages original-publisher candidates, and checks the exact indexed citation in real retrieved reasons before adoption. One literal same-document publisher iframe may be followed from a retained wrapper. Original failures and wrapper bytes remain private records, linked to the recovered source's integrity metadata and audit event. Worker-version requirements protect new jobs during mixed-version deployments. [Identity rules and verified scope](SOURCE_RECOVERY.md).
+
 ## Legacy boundary
 
 `backend/app.py` remains a separate SQLite operator application with the optional snapshot mirror, fictional exploration and sandbox PayPal. It does not read account tables. Docker's module switch and the preserved legacy branch/service keep the working release recoverable. Cloud schema changes do not overwrite old data. See [deployment](DEPLOYMENT.md).

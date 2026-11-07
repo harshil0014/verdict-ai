@@ -43,7 +43,7 @@ def test_harmless_tracking_is_removed_before_automatic_fetch_but_secret_links_st
 
 
 def test_candidates_are_api_backed_original_publisher_only_and_bounded():
-    docs=[{'url':'https://lawfirm.example/commentary'},{'url':'http://127.0.0.1/private'},
+    docs=[{'url':'https://lawfirm.example/commentary'},{'url':'http://127.0.0.1/private'},{'url':PUBLISHER.replace('https:','http:')},
         {'url':PUBLISHER+'?utm_source=search'},{'url':PUBLISHER},
         {'url':PUBLISHER+'/second'},{'url':PUBLISHER+'/third'}]
     rows=publisher_candidates(docs,decision_identity(BLOCKED),BLOCKED)
@@ -61,6 +61,7 @@ def test_identity_is_bound_to_exact_preserved_header_and_not_inaccessible_bytes(
 @pytest.mark.parametrize('change',[
  lambda d:d.update(text=d['text'].replace('2024 BCCRT 149','2024 BCCRT 150')),
  lambda d:d['metadata'].update(final_url='https://lawfirm.example/decision'),
+ lambda d:d['metadata'].update(final_url=PUBLISHER.replace('https:','http:')),
  lambda d:d.update(text='An article quotes 2024 BCCRT 149. No original header.'),
  lambda d:d.update(text=d['text'].replace('REASONS FOR DECISION','Commentary')),
  lambda d:d['metadata'].pop('publication_date'),
