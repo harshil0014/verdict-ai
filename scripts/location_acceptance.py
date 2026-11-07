@@ -72,6 +72,7 @@ def run(a):
     g=m['geocode']
     if 'raw_response' in g:check(label+'_provider_response_hash_'+m['role'],hashlib.sha256(g['raw_response'].encode()).hexdigest()==g['response_sha256'])
    if label=='headphones':
+    (ROOT/'runtime/saas-location-map-private.json').write_text(json.dumps(r,indent=2),encoding='utf-8')
     check('headphones_explicit_pin_mismatch',r['status']=='LOCATION MISMATCH')
     check('headphones_real_postcode_area_points',len(mentions)>=2 and all(m['geocode'].get('precision')=='postcode_area' for m in mentions))
     check('no_fabricated_delivery_gps',all(m['geocode']['provider']=='Photon / OpenStreetMap' for m in mentions))

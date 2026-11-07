@@ -196,7 +196,8 @@ def compare_pair(a,b):
         (support if p==q else conflict).append('Explicit source PIN codes '+('agree: '+p if p==q else 'differ: '+p+' versus '+q)+'.')
     elif p or q:limits.append('One source omits a PIN code; absence is not a mismatch.')
     na,nb=building_tokens(a['address']),building_tokens(b['address'])
-    same_building=bool(na and nb and (na==nb or SequenceMatcher(None,' '.join(sorted(na)),' '.join(sorted(nb))).ratio()>=.9))
+    numbers_agree={x for x in na if any(c.isdigit() for c in x)}=={x for x in nb if any(c.isdigit() for c in x)}
+    same_building=bool(na and nb and numbers_agree and (na==nb or SequenceMatcher(None,' '.join(sorted(na)),' '.join(sorted(nb))).ratio()>=.9))
     if same_building:support.append('Property/address wording is compatible after conservative normalization.')
     ga,gb=a.get('geocode',{}),b.get('geocode',{});distance=None
     status='LOCATION MISMATCH' if conflict else 'UNVERIFIED'
@@ -258,6 +259,8 @@ async def verify_case(case_id):
     for m in mentions:
         m['geocode']=documented_gps(m) or {'status':'not_authorized','detail':'External lookup is off. Evidence is still compared locally.'}
         lookup=lookup_query(m,mode) if m['role']!='other' else None
+        if not lookup and mode!='off' and m['geocode']['status']!='resolved':
+            m['geocode']={'status':'insufficient_lookup_detail','detail':'No suitable source-supplied Indian PIN for area mode, or no safe relevant address. The full address has not been shared.'}
         if m['geocode'].get('status')=='resolved' or not lookup:continue
         query,kind=lookup;ck=digest({'query':query,'kind':kind,'provider':PROVIDER})
         prior=cache.get(ck);age=(datetime.now(timezone.utc)-datetime.fromisoformat(prior['cached_at'])).total_seconds() if prior else None

@@ -34,6 +34,11 @@ def test_different_nearby_buildings_are_never_likely_match():
     b=mention('Beta Tower, MG Road, Mumbai 400076','reported_delivery',geocode=point(precision='building'))
     assert dl.compare_pair(a,b)['status']=='POSSIBLE MATCH'
 
+def test_fuzzy_address_matching_never_erases_different_house_numbers():
+    a=mention('42 Example Avenue, Powai, Mumbai',geocode=point(precision='building'))
+    b=mention('43 Example Avenue, Powai, Mumbai','reported_delivery',geocode=point(precision='building'))
+    assert dl.compare_pair(a,b)['status']!='LIKELY MATCH'
+
 def test_precise_same_building_with_compatible_words_can_be_likely():
     a=mention('Green Heights, Powai, Mumbai 400076',geocode=point(precision='building'))
     b=mention('Green Heights Building, Powai, Mumbai','reported_delivery',geocode=point(precision='building'))
