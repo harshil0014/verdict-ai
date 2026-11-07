@@ -6,7 +6,7 @@ const {buildSync} = require('esbuild');
 const React = require('react');
 const {renderToStaticMarkup} = require('react-dom/server');
 const root = path.resolve(__dirname,'..');
-const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation'; export * from './src/automation'; export * from './src/claim-checks';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
+const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation'; export * from './src/automation'; export * from './src/claim-checks'; export * from './src/paypal-account';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
 const compiled = new Module(path.join(root,'tests','compiled.cjs'),module);
 compiled.filename=path.join(root,'tests','compiled.cjs');compiled.paths=Module._nodeModulePaths(root);
 compiled._compile(output.outputFiles[0].text,compiled.filename);
@@ -99,4 +99,19 @@ test('literal monetary matches and legacy missing fields are displayed honestly'
 test('model-extracted field/value strings stay escaped in the inspector',()=>{
  const html=render(ui.ClaimChecks,{claim:{field:'<script>alert(1)</script>',value:'<img src=x onerror=alert(1)>'}});
  assert.doesNotMatch(html,/<script|<img/);assert.match(html,/&lt;script&gt;/);assert.match(html,/&lt;img/);
+});
+
+test('PayPal import is a distinct case entry without fabricated consent or manual payment fields',()=>{
+ const html=render(ui.PayPalCaseEntry,{onImport:()=>{}});
+ assert.match(html,/Import from PayPal/);assert.match(html,/filled automatically/);assert.doesNotMatch(html,/<input|OAuth consent/);
+ const notice=render(ui.PayPalConnectionNotice,{connection:{connected:false}});
+ assert.match(notice,/No authorized connection/);assert.match(notice,/Typing a transaction ID or email does not grant access/);
+ assert.doesNotMatch(notice,/Connect any merchant|Sign in with PayPal/);
+});
+
+test('provider receipt separates amounts, account identifiers, missing fields and reported statements',()=>{
+ const html=render(ui.PayPalReceipt,{caseData:{id:'case',paypal_account:{merchant_id:'M1',dispute:{dispute_id:'PP-D-test',disputed_amount:{currency_code:'USD',value:'1.00'},reason:'ITEM_NOT_RECEIVED'},payments:[{capture_id:'CAP1',payment_amount:{currency_code:'USD',value:'5.00'},buyer_id:null,order_id:null}]}},api:()=>{throw Error('Rendering must not mutate');},onUpdated:async()=>{}});
+ assert.match(html,/USD 1.00/);assert.match(html,/USD 5.00/);assert.match(html,/Not available from PayPal/);
+ assert.match(html,/SANDBOX · TEST FUNDS/);assert.match(html,/not a finding that it is true/);
+ assert.doesNotMatch(html,/Refund payment|Submit evidence|Accept claim/);
 });

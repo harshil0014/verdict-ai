@@ -26,7 +26,18 @@ PATTERNS = {
 def git(*args):
     return subprocess.check_output(['git',*args],cwd=ROOT)
 
+
+def without_public_username_metadata(content,value,public_email,kind,public_usernames):
+    """A public Git author's email localpart is not an exposed app password.
+
+    This narrow exception applies only to a separately identified username in
+    real commit author/committer headers, never blobs, messages or credentials.
+    """
+    if kind!='commit' or value not in public_usernames:return content
+    return b'\n'.join(line.replace(value,b'') if line.startswith((b'author ',b'committer ')) and b'<'+public_email+b'>' in line else line for line in content.splitlines())
+
 def main():
+    public_email=git('config','user.email').strip();public_usernames=set();public_username_rules=set()
     private=dotenv_values(ROOT/'backend/.env')
     known={k:v.encode() for k,v in private.items() if v and len(v)>=12 and any(s in k for s in ('KEY','SECRET','PASSWORD','CLIENT_ID'))}
     if private.get('SUPABASE_URL'):
@@ -43,8 +54,9 @@ def main():
             def collect_saas(value):
                 if isinstance(value,dict):
                     for key,item in value.items():
-                        if isinstance(item,str) and len(item)>=12 and (key in ('username','password','recovery_code','portal_token','case_id','original_id','witness_id','source_id','draft_id') or key.startswith('VERDICT_')):
-                            known['saas_private_'+str(len(known))]=item.encode()
+                        if isinstance(item,str) and len(item)>=12 and (key in ('username','password','recovery_code','portal_token','case_id','original_id','witness_id','source_id','draft_id','id','owner_id','connection_id','dispute_id','capture_id','order_id','merchant_id','payer_id','buyer_transaction_id','seller_transaction_id','email','email_address','session_hash','session_cookie') or key.startswith('VERDICT_')):
+                            rule='saas_private_'+str(len(known));known[rule]=item.encode()
+                            if key=='username' and item.encode()==public_email.split(b'@')[0]:public_usernames.add(item.encode());public_username_rules.add(rule)
                         collect_saas(item)
                 elif isinstance(value,list):
                     for item in value:collect_saas(item)
@@ -67,9 +79,10 @@ def main():
                 for item in value:private_fields(item)
         private_fields(json.loads(checkout.read_text(encoding='utf-8')))
     findings=[]
-    def check(label,content):
+    def check(label,content,kind=None):
         for name,value in known.items():
-            if value and value in content:findings.append({'location':label,'rule':'exact_private_'+name})
+            checked=without_public_username_metadata(content,value,public_email,kind,public_usernames) if name in public_username_rules else content
+            if value and value in checked:findings.append({'location':label,'rule':'exact_private_'+name})
         for name,pattern in PATTERNS.items():
             if re.search(pattern,content):findings.append({'location':label,'rule':name})
     objects=[line.split() for line in git('cat-file','--batch-all-objects','--batch-check=%(objectname) %(objecttype)').decode().splitlines()]
@@ -80,7 +93,7 @@ def main():
         process.stdin.write((oid+'\n').encode());process.stdin.flush()
         header=process.stdout.readline().decode().split();size=int(header[2])
         content=process.stdout.read(size);process.stdout.read(1)
-        check('git-object:'+oid,content);count+=1
+        check('git-object:'+oid,content,header[1]);count+=1
     process.stdin.close();process.wait()
     paths=set(git('ls-files','--cached','--others','--exclude-standard','-z').decode().split('\0'))-{''}
     public_paths=[]

@@ -27,6 +27,8 @@ import saas_auth as auth
 from store import digest, now, uid
 from web_security import guard, BoundedBodyMiddleware
 from research_routes import router as research_router
+from saas_paypal import router as paypal_router
+from saas_paypal import connection_status as paypal_connection_status
 from case_investigation import run_investigation
 from source_recovery import RECOVERY_VERSION
 import automatic_investigation as automatic
@@ -57,6 +59,7 @@ async def lifespan(app):
 
 app = FastAPI(title="VERDICT", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.include_router(research_router)
+app.include_router(paypal_router)
 
 
 @app.middleware("http")
@@ -83,7 +86,7 @@ async def model_error(request, error):
 
 @app.get("/api/config")
 def config():
-    return {"auth_mode": "account", "storage": "postgres", "signup": True, "paypal": "sandbox_operator_build_only"}
+    return {"auth_mode": "account", "storage": "postgres", "signup": True, "paypal": "account_scoped_sandbox_read_only"}
 
 
 @app.get("/api/health")
@@ -307,13 +310,14 @@ async def export(id: str, user=Depends(auth.current_session)):
 
 @app.get("/api/integrations")
 async def integrations(user=Depends(auth.current_session)):
-    return {"paypal":{"configured":False,"status":"not_configured","environment":"sandbox"}, "gemini":{"configured":bool(os.getenv("GEMINI_API_KEY")),"model":MODEL}, "storage":{"configured":True,"primary":"postgres"},"webhook":{"configured":False}}
+    paypal_status=await paypal_connection_status(user)
+    return {"paypal":{**paypal_status,"configured":paypal_status['connected'],"status":paypal_status.get('last_status') or ('configured' if paypal_status['connected'] else 'not_authorized')}, "gemini":{"configured":bool(os.getenv("GEMINI_API_KEY")),"model":MODEL}, "storage":{"configured":True,"primary":"postgres"},"webhook":{"configured":False}}
 
 
 @app.api_route("/api/paypal/{path:path}", methods=["GET","POST"])
 @app.api_route("/api/cases/{id}/actions/{path:path}", methods=["POST"])
 async def provider_not_connected(path: str, user=Depends(auth.current_session), id: str=""):
-    raise HTTPException(409,"Merchant connections are not enabled for individual accounts. The protected operator build retains the PayPal sandbox adapter.")
+    raise HTTPException(409,"This account integration supports read-only PayPal sandbox import and sync. Provider actions and public merchant onboarding are not enabled.")
 
 
 DIST = Path(__file__).resolve().parents[1]/"frontend/dist"

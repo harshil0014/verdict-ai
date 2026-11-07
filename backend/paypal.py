@@ -32,11 +32,15 @@ def error_diagnostic(response):
 
 
 class PayPal:
-    def __init__(self):
+    def __init__(self, client_id=None, client_secret=None, *, read_only=False):
         self.token = None
         self.expires = 0
+        self.client_id, self.client_secret = client_id, client_secret
+        self.read_only = read_only
 
     async def request(self, method, path, payload=None, key=None, files=None, raw=None):
+        if self.read_only and (method != 'GET' or payload is not None or files is not None or raw is not None or key is not None):
+            raise ValueError('This PayPal connection permits provider reads only')
         if not path.startswith("/v1/") and not path.startswith("/v2/"):
             raise ValueError("Unapproved PayPal path")
         async with httpx.AsyncClient(timeout=35, follow_redirects=False) as c:
@@ -44,7 +48,7 @@ class PayPal:
                 try:
                     r = await c.post(
                         BASE + "/v1/oauth2/token",
-                        auth=(os.getenv("PAYPAL_CLIENT_ID", ""), os.getenv("PAYPAL_CLIENT_SECRET", "")),
+                        auth=(self.client_id if self.client_id is not None else os.getenv("PAYPAL_CLIENT_ID", ""), self.client_secret if self.client_secret is not None else os.getenv("PAYPAL_CLIENT_SECRET", "")),
                         data={"grant_type": "client_credentials"},
                     )
                 except httpx.HTTPError:

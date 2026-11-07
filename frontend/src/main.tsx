@@ -44,6 +44,10 @@ import { AccountEntry } from "./saas";
 import { CaseNavigation } from './case-navigation';
 import { AutomaticInvestigation } from './automation';
 import { ClaimChecks } from './claim-checks';
+const PayPalCaseEntry=lazy(()=>import('./paypal-account').then(m=>({default:m.PayPalCaseEntry})));
+const PayPalImport=lazy(()=>import('./paypal-account').then(m=>({default:m.PayPalImport})));
+const PayPalReceipt=lazy(()=>import('./paypal-account').then(m=>({default:m.PayPalReceipt})));
+const ProviderRecordFacts=lazy(()=>import('./paypal-account').then(m=>({default:m.ProviderRecordFacts})));
 import './research.css';
 const EvidenceDiscoveries=lazy(()=>import('./research').then(m=>({default:m.EvidenceDiscoveries})));
 const ResearchActivity=lazy(()=>import('./research').then(m=>({default:m.ResearchActivity})));
@@ -65,6 +69,7 @@ type Source = {
   superseded_by?: string;
   replaces_source_id?: string;
   provenance?: any;
+  provider_provenance?: any;
 };
 type Claim = {
   id: string;
@@ -122,8 +127,8 @@ type Case = {
   reason: string;
   mode: string;
   status: string;
-  amount: string;
-  currency: string;
+  amount: string | null;
+  currency: string | null;
   deadline: string | null;
   evidence: Source[];
   analysis: Analysis | null;
@@ -135,6 +140,8 @@ type Case = {
   audit_valid?: boolean;
   paypal_id?: string;
   paypal_snapshot?: any;
+  paypal_account?: any;
+  paypal_synced_at?: string;
   payment_record_acquisition?: { status: string; records_read: number; issues: string[] };
   automation?: any;
 };
@@ -156,7 +163,9 @@ async function api(path: string, method = "GET", body?: any, token?: string) {
   const d = await r.json();
   if (generation !== authGeneration) throw new Error("Your session changed. Please open the case again.");
   if (!r.ok) {
-    const failure = Object.assign(new Error(typeof d.detail === 'string' ? d.detail : "The request could not be completed"), {status:r.status});
+    const diagnostic=d.detail?.diagnostic;
+    const message=typeof d.detail==='string'?d.detail:d.detail?.message?`${d.detail.message}${diagnostic?.http_status?` HTTP ${diagnostic.http_status}`:''}${diagnostic?.issues?.length?` · ${diagnostic.issues.join(', ')}`:''}`:"The request could not be completed";
+    const failure = Object.assign(new Error(message), {status:r.status});
     if (r.status === 401 && ((!path.startsWith('/auth/') && path !== '/me' && path !== '/portal') || path === '/auth/logout')) window.dispatchEvent(new Event('verdict-session-ended'));
     throw failure;
   }
@@ -333,7 +342,7 @@ function App() {
         (filter === "requests" &&
           c.requests.some((r) => r.status === "open")) ||
         (filter === "review" && c.analysis && !c.analysis_stale) ||
-        (filter === "sandbox" && c.mode === "paypal_sandbox")),
+        (filter === "sandbox" && c.mode.startsWith("paypal_sandbox"))),
   );
   const graph = useMemo(() => {
     if (!current) return { nodes: [], edges: [] };
@@ -921,7 +930,7 @@ function App() {
                 <option value="all">All investigations</option>
                 <option value="requests">Awaiting witness</option>
                 <option value="review">Ready for review</option>
-                {me.role !== "member" && <option value="sandbox">PayPal sandbox</option>}
+                <option value="sandbox">PayPal sandbox</option>
               </select>
               <div className="case-list">
                 {rows.map((c) => (
@@ -934,14 +943,14 @@ function App() {
                   >
                     <div className="case-row-top">
                       <span>
-                        {c.mode === "paypal_sandbox"
+                        {c.mode.startsWith("paypal_sandbox")
                           ? "PAYPAL SANDBOX"
                           : c.mode === "synthetic"
                             ? "FICTIONAL CASE"
                             : "MANUAL CASE"}
                       </span>
                       <strong>
-                        {c.currency} {c.amount}
+                        {c.currency&&c.amount!==null?`${c.currency} ${c.amount}`:'Not available from PayPal'}
                       </strong>
                     </div>
                     <h3>{c.title}</h3>
@@ -978,7 +987,7 @@ function App() {
                       <span className="pill">
                         {current.mode === "synthetic"
                           ? "FICTIONAL SCENARIO"
-                          : readable(current.mode).toUpperCase()}
+                          : current.mode.startsWith('paypal_sandbox')?'PAYPAL SANDBOX':readable(current.mode).toUpperCase()}
                       </span>
                       <span>REV {current.revision}</span>
                     </div>
@@ -987,7 +996,7 @@ function App() {
                   </div>
                   <div className="case-amount">
                     <strong>
-                      {current.currency} {current.amount}
+                      {current.currency&&current.amount!==null?`${current.currency} ${current.amount}`:'Not available from PayPal'}
                     </strong>
                     <span>
                       {current.deadline
@@ -996,6 +1005,7 @@ function App() {
                     </span>
                   </div>
                 </div>
+                {current.paypal_account&&<Suspense fallback={<p>Loading payment records…</p>}><PayPalReceipt caseData={current} api={api} onUpdated={refresh}/></Suspense>}
                 <div className="case-tabs">
                   <CaseNavigation tab={tab} evidenceCount={current.evidence.length} witnessCount={current.requests.length} onSelect={setTab}/>
                   <button
@@ -1508,7 +1518,7 @@ function App() {
                         text="Add evidence and run an investigation first."
                       />
                     )}
-                    {current.mode === "paypal_sandbox" ? (
+                    {current.mode === 'paypal_sandbox_saas'?<p className="paypal-read-only">This account connection is read-only. Human review does not send a PayPal message, submit evidence, accept a claim or issue a refund. No provider action is available here.</p>:current.mode === "paypal_sandbox" ? (
                       <div className="paypal-review">
                         <h3>PayPal sandbox response</h3>
                         <p>
@@ -1625,6 +1635,7 @@ function App() {
                 <blockquote>{claim.quote}</blockquote>
               </div>
             )}
+            {source.provider_provenance&&<Suspense fallback={<p>Loading provider provenance…</p>}><ProviderRecordFacts source={source}/></Suspense>}
             {source.provenance && <div className="source-provenance"><strong>PRESERVED PUBLIC SOURCE</strong><a className="research-url" href={source.provenance.final_url} target="_blank" rel="noreferrer">{source.provenance.final_url} ↗</a><p>Retrieved: {date(source.provenance.retrieved_at)}<br/>Source-stated publication: {source.provenance.publication_date || 'Unknown — not inferred'}<br/>Document classification: {readable(source.provenance.source_kind)}<br/>Collection review: {readable(source.provenance.review_status || 'not recorded')}<br/>{source.provenance.classification_basis}</p>{source.provenance.parent_reference&&<p>Collected from a reference in {source.provenance.parent_reference.parent_source_id}{source.provenance.parent_reference.page&&` · PDF page ${source.provenance.parent_reference.page}`}.</p>}<p>Historical applicability is not established by retrieval. {source.provenance.event_date && `Relevant event: ${source.provenance.event_date}. `}{source.provenance.historical_note}</p>{source.provenance.excerpt_truncated&&<p>Only the first 30,000 extracted characters were investigated. Download the original for full review.</p>}<p>Extracted-text SHA-256<br/><code>{source.provenance.text_sha256}</code></p></div>}
             <span className="eyebrow">ORIGINAL EXTRACTED CONTENT</span>
             <pre>{source.text}</pre>
@@ -1708,6 +1719,7 @@ function App() {
               <>
                 <span className="eyebrow">START WITH THE RECORD</span>
                 <h2>Open an investigation.</h2>
+                {me.role==='member'&&<><Suspense fallback={<p>Loading import options…</p>}><PayPalCaseEntry onImport={()=>setModal('paypal-import')}/></Suspense><span className="eyebrow">OR CREATE A MANUAL CASE</span></>}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -1777,6 +1789,7 @@ function App() {
                 </form>
               </>
             )}
+            {modal==='paypal-import'&&me.role==='member'&&<Suspense fallback={<p>Loading import options…</p>}><PayPalImport api={api} onImported={async id=>{await load(id);setModal('');setTab('investigation');setNotice('PayPal sandbox records imported. The investigation starts automatically. No PayPal action was submitted.');}}/></Suspense>}
             {modal === "close-request" && closingRequest && (
               <>
                 <span className="eyebrow">UPDATE WITNESS AVAILABILITY</span>

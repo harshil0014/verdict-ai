@@ -121,7 +121,8 @@ def merge_records(body, records, issues, capture_count):
         if len(body["evidence"]) >= 40:
             issues.append("evidence_source_limit")
             continue
-        source = evidence(f"PayPal {record['kind']} {record['id']}",
+        title = 'PayPal sandbox dispute record' if record['kind']=='dispute' else f"PayPal {record['kind']} {record['id']}"
+        source = evidence(title,
                           json.dumps(record["body"], indent=2, sort_keys=True),
                           "payment_provider", "paypal_sandbox_api")
         source.update(origin_verified=True, synthetic=False,

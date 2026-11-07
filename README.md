@@ -18,6 +18,7 @@ VERDICT is a multi-user investigation workspace. Create a private case, preserve
 - Restricted seven-day, single-response witness links. Reply, original file, case state and audit event commit together. Links can be withdrawn or marked reported unavailable. No automatic email is sent; token possession does not verify identity.
 - Revision checks, durable investigation leases, JSON export and an integrity-checked audit trail. Logout and recovery revoke cloud sessions.
 - Public URL evidence and autonomous document discovery: official Google URL Context, free Tavily keyless search and Wikimedia/Crossref discovery preserve accessible original snapshots with permanent provenance. Collected sources remain unreviewed, not authenticated facts. Current pages never establish a past policy merely by being retrieved. [Automatic workflow](docs/AUTOMATIC_INVESTIGATION.md) · [Providers and controls](docs/PUBLIC_RESEARCH.md). Google paid Search grounding remains disabled.
+- [Account-scoped PayPal sandbox import](docs/SAAS_PAYPAL.md) for an explicitly authorized test merchant: provider-populated private cases, preserved dispute/capture/order snapshots, payment linkage, separate payment/disputed amounts, automatic investigation and idempotent sync. Public merchant onboarding and provider actions remain disabled.
 
 Free beta limits: 50 cases, 20 MB of originals and 10 investigation attempts/account/day; 5 MB/file and 40 sources/case. Shared capacity limits can refuse new work while retaining existing data. Free compute may sleep. This is a functioning beta, not an uptime, accuracy or disaster-recovery certification.
 
@@ -60,7 +61,7 @@ The separate `app:app` operator build retains the PayPal sandbox adapter, read-o
 
 An actual USD 1.00 sandbox order was approved and captured once; its buyer-created inquiry was imported with verified payment linkage. Unchanged snapshots deduplicate and changed snapshots preserve history. Two individually approved notes submissions were rejected with `EVIDENCE_TYPE_IS_NOT_ALLOWED`; successful submission remains unverified. No fulfillment evidence was invented. [Capability ledger](docs/PAYPAL.md) · [Acquisition](docs/PAYMENT_ACQUISITION.md).
 
-**Merchant connections and financial actions are not enabled for public accounts.** No live merchant capability, automatic refund or delivery verification is claimed. The legacy release branch and private configuration remain recoverable; the upgrade was validated on a separate free service before promotion.
+**Only the explicitly authorized first-party test merchant can use the account-connected sandbox integration.** Public merchant onboarding and financial actions are not enabled. No live merchant capability, automatic refund or delivery verification is claimed. The legacy release branch and private configuration remain recoverable. [Authorization and privacy boundaries](docs/SAAS_PAYPAL.md).
 
 ## Evaluation and capture
 

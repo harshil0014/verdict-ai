@@ -45,4 +45,6 @@ The newer automatic workflow is implemented in `automatic_investigation.py` and 
 
 ## Legacy boundary
 
+`saas_paypal.py` reuses the sandbox adapter and `payment_records.py` through session-authorized, read-only routes. Forced-RLS connections bind the owned test-merchant credential reference to one account; import links and unique provider snapshots live in the same cloud database. A service-only RPC atomically commits case/audit, original JSON and the investigation outbox. The frontend/AI sees a minimized projection; full originals are not exposed through normal case or file APIs. The existing manual/evidence/witness/research paths are preserved. [Integration scope and setup](SAAS_PAYPAL.md).
+
 `backend/app.py` remains a separate SQLite operator application with the optional snapshot mirror, fictional exploration and sandbox PayPal. It does not read account tables. Docker's module switch and the preserved legacy branch/service keep the working release recoverable. Cloud schema changes do not overwrite old data. See [deployment](DEPLOYMENT.md).
