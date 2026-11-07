@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-11-07T19:35:11.899412+00:00",
+  "checks": {
+    "single_public_area_tile_http_200": true,
+    "actual_png_content": true,
+    "identifying_application_user_agent": true,
+    "public_origin_only_referer": true,
+    "no_prefetch_or_bulk_download": true
+  },
+  "all_passed": true,
+  "response_sha256": "c66c004291805fc17954675734e84064a381b95d1e7509f607445bacb13cff59",
+  "cache_control": "max-age=87506, stale-while-revalidate=604800, stale-if-error=604800",
+  "scope": "One actual OSM tile at a public demo PIN area; distinct from the JSDOM component runtime test. No browser visual inspection claimed."
+}

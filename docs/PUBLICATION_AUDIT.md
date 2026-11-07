@@ -1,5 +1,13 @@
 # Public-source audit — 6 November 2026
 
+## Smart Delivery Location Verification — 8 November 2026 (IST)
+
+The release adds locked Leaflet 1.9.4 (BSD-2-Clause) and MIT Leaflet/GeoJSON type packages; full notices remain under `third_party/npm/`. OpenStreetMap data retains ODbL attribution and separate service-policy boundaries. No server geocoder is vendored and no paid resource is provisioned. The additive hosted migration adds only a service-role quota/pacing RPC and worker-compatibility trigger; private location records remain within existing forced-RLS case/audit storage. Default-off external lookup, acknowledged per-case sharing and honest geocoder precision preserve the account boundary.
+
+Application `a2ca9c2` passed 262 Python tests, 15 UI checks, production compilation and both remote CI jobs. Actual public geocoding, automatic upload/carrier reassessment, original headphones evidence, map runtime, independent-account denial and deployment persistence passed; prior account/witness/research/PayPal records remain preserved. [Executed reports and precise limits](DELIVERY_LOCATION.md). Full-browser visual testing, guaranteed provider availability and authenticated physical delivery are not claimed. The frozen 28/30 evaluation remains unchanged.
+
+Private-value/generic scans cover all Git objects including unreachable objects, commit/reflog paths and all nonignored release files, with the new test-account credentials, sessions and private case/source IDs included in exact matching. Independent redacted Gitleaks history/publication-tree checks complement them. Public results contain counts, booleans, public area separation and served-asset hashes, not account/customer/provider credentials or private identifiers. These checks are repeated before the final report push; originals, geocoder response bodies and private QA state remain ignored or cloud-private.
+
 ## Account-scoped PayPal sandbox bridge — 7 November 2026
 
 The bridge adds no dependencies or paid resources. Existing license notices remain unchanged. New forced-RLS connection/import/original-snapshot tables and a service-only security-invoker RPC bind the owned test merchant exclusively to one intended account. Names, addresses, email and free-form communications are excluded from the frontend/Gemini projection; full authenticated originals stay in the private vault. Canonical SHA-256 and projection hashes are distinct. No original records or prior accounts/cases were deleted.

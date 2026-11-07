@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-11-07T19:42:29.852339+00:00",
+  "base_url": "https://verdict-ai-harshil0014.onrender.com",
+  "checks": {
+    "new_case_has_no_external_authorization": true,
+    "automatic_local_pin_mismatch": true,
+    "zero_external_geocoding_queries": true,
+    "no_coordinates_invented": true,
+    "actual_gemini_reassessment_completed": true,
+    "audit_valid": true
+  },
+  "all_passed": true,
+  "scope": "Actual ordinary-account default-off upload and automatic investigation on primary. Public fictional PIN evidence; geocoding was never authorized. No mapping-provider coordinates or response claimed."
+}

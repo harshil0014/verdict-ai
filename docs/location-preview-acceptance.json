@@ -1,0 +1,136 @@
+{
+  "checked_at": "2026-11-07T19:33:36.035328+00:00",
+  "base_url": "https://verdict-saas-harshil0014.onrender.com",
+  "phase": "wait",
+  "checks": {
+    "headphones_source_anchored": true,
+    "headphones_original_bytes_preserved": true,
+    "headphones_real_gemini_and_fresh_analysis": true,
+    "headphones_quotes_from_actual_sources": true,
+    "headphones_location_record_in_investigation": true,
+    "headphones_provider_response_hash_intended": true,
+    "headphones_provider_response_hash_reported_delivery": true,
+    "headphones_explicit_pin_mismatch": true,
+    "headphones_real_postcode_area_points": true,
+    "no_fabricated_delivery_gps": true,
+    "headphones_foreign_case_denied": true,
+    "headphones_foreign_consent_write_denied": true,
+    "missing_pin_source_anchored": true,
+    "missing_pin_original_bytes_preserved": true,
+    "missing_pin_real_gemini_and_fresh_analysis": true,
+    "missing_pin_quotes_from_actual_sources": true,
+    "missing_pin_location_record_in_investigation": true,
+    "missing_pin_provider_response_hash_intended": true,
+    "missing_pin_provider_response_hash_reported_delivery": true,
+    "missing_pin_not_mismatch": true,
+    "missing_pin_foreign_case_denied": true,
+    "missing_pin_foreign_consent_write_denied": true,
+    "nearby_distinct_source_anchored": true,
+    "nearby_distinct_original_bytes_preserved": true,
+    "nearby_distinct_real_gemini_and_fresh_analysis": true,
+    "nearby_distinct_quotes_from_actual_sources": true,
+    "nearby_distinct_location_record_in_investigation": true,
+    "nearby_distinct_provider_response_hash_intended": true,
+    "nearby_distinct_provider_response_hash_reported_delivery": true,
+    "distinct_sites_not_exact_match": true,
+    "nearby_distinct_foreign_case_denied": true,
+    "nearby_distinct_foreign_consent_write_denied": true,
+    "different_locations_source_anchored": true,
+    "different_locations_original_bytes_preserved": true,
+    "different_locations_real_gemini_and_fresh_analysis": true,
+    "different_locations_quotes_from_actual_sources": true,
+    "different_locations_location_record_in_investigation": true,
+    "different_locations_provider_response_hash_intended": true,
+    "different_locations_provider_response_hash_reported_delivery": true,
+    "different_locations_mismatch": true,
+    "different_locations_foreign_case_denied": true,
+    "different_locations_foreign_consent_write_denied": true,
+    "vague_source_anchored": true,
+    "vague_original_bytes_preserved": true,
+    "vague_real_gemini_and_fresh_analysis": true,
+    "vague_quotes_from_actual_sources": true,
+    "vague_location_record_in_investigation": true,
+    "vague_provider_response_hash_intended": true,
+    "vague_provider_response_hash_reported_delivery": true,
+    "vague_not_precise_match": true,
+    "vague_foreign_case_denied": true,
+    "vague_foreign_consent_write_denied": true,
+    "new_carrier_receipt_automatically_reassessed": true,
+    "reanalysis_reuses_geocoder_cache": true,
+    "other_account_lists_no_cases": true,
+    "logout_revoked": true,
+    "login_preserves_location_record": true
+  },
+  "all_passed": true,
+  "scenarios": [
+    {
+      "scenario": "headphones",
+      "status": "LOCATION MISMATCH",
+      "resolved_markers": 2,
+      "precision": [
+        "postcode_area",
+        "postcode_area"
+      ],
+      "provider_status": [
+        "resolved",
+        "resolved"
+      ]
+    },
+    {
+      "scenario": "missing_pin",
+      "status": "POSSIBLE MATCH",
+      "resolved_markers": 2,
+      "precision": [
+        "site",
+        "site"
+      ],
+      "provider_status": [
+        "resolved",
+        "resolved"
+      ]
+    },
+    {
+      "scenario": "nearby_distinct",
+      "status": "POSSIBLE MATCH",
+      "resolved_markers": 1,
+      "precision": [
+        "building",
+        null
+      ],
+      "provider_status": [
+        "resolved",
+        "no_compatible_result"
+      ]
+    },
+    {
+      "scenario": "different_locations",
+      "status": "LOCATION MISMATCH",
+      "resolved_markers": 2,
+      "precision": [
+        "postcode_area",
+        "postcode_area"
+      ],
+      "provider_status": [
+        "resolved",
+        "resolved"
+      ]
+    },
+    {
+      "scenario": "vague",
+      "status": "POSSIBLE MATCH",
+      "resolved_markers": 0,
+      "precision": [
+        null,
+        null
+      ],
+      "provider_status": [
+        "ambiguous",
+        "ambiguous"
+      ]
+    }
+  ],
+  "real_public_photon_api": true,
+  "evidence": "Authored fictional delivery scenarios using public places/PINs; actual geocoder responses, cloud storage and Gemini. Two automated accounts, not two human testers.",
+  "provider_business_writes": 0,
+  "billing_enabled": false
+}

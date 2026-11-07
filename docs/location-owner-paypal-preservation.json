@@ -1,0 +1,12 @@
+{
+  "checked_at": "2026-11-07T19:41:14.052884+00:00",
+  "checks": {
+    "existing_owner_paypal_case_fingerprint_unchanged": true,
+    "provider_sources_retained": true,
+    "analysis_and_audit_retained": true,
+    "payment_linkage_retained": true,
+    "sole_authorized_connection_retained": true
+  },
+  "all_passed": true,
+  "scope": "Read-only preservation check of the intended owner PayPal case against its pre-location-release revision/source/analysis/audit fingerprint. No new provider API request, import, payment or dispute write."
+}
