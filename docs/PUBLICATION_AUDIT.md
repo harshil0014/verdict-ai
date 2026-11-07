@@ -1,5 +1,13 @@
 # Public-source audit — 6 November 2026
 
+## Account-scoped PayPal sandbox bridge — 7 November 2026
+
+The bridge adds no dependencies or paid resources. Existing license notices remain unchanged. New forced-RLS connection/import/original-snapshot tables and a service-only security-invoker RPC bind the owned test merchant exclusively to one intended account. Names, addresses, email and free-form communications are excluded from the frontend/Gemini projection; full authenticated originals stay in the private vault. Canonical SHA-256 and projection hashes are distinct. No original records or prior accounts/cases were deleted.
+
+Application commit `1525a86c80e8b03fc2421c51626db65957596f8d` passed 232 Python tests, 12 frontend component checks, production compilation and both remote application/container CI jobs. Staging passed before primary promotion. The actual $1 dispute/capture/order import, source-linked Gemini investigation, unchanged-sync deduplication, fresh-account denial, logout/login and replacement-deployment persistence passed on deployed services. Forty older account/witness/security checks and 16 original-data preservation checks passed on the primary service. [Executed reports, model retry, provider states and limitations](SAAS_PAYPAL.md).
+
+Publication scans compare all local Git blob/commit/tag objects, every reachable/reflog commit path and nonignored release files against actual local secrets and private account/provider identifiers. Independent redacted Gitleaks v8.30.1 scans cover all branch history and a separate publication-only tree. Zero findings before the application push; these scans are repeated for the final report commit. Public reports include counts, booleans, public asset hashes and deployment metadata, with no customer/provider account or case identifiers. Raw snapshots, credentials, sessions and private Supabase details remain ignored. Public merchant consent, live merchant integrations and successful PayPal business writes are not claimed.
+
 ## Original-publisher recovery — 7 November 2026
 
 The release adds exact-citation BCCRT source recovery, bounded publisher-frame inspection and additive worker-version migrations. No dependencies or licenses changed; existing upstream notices and service boundaries remain. Exact/private-value and generic scans covered all local Git objects (including unreachable objects), commit/reflog paths and nonignored publication files, including current private QA credentials/identifiers in exact matching. Independent redacted Gitleaks v8.30.1 history and publication-only tree scans found no leaks. Raw source snapshots, customer records, credentials and private Supabase identifiers are excluded from publication.

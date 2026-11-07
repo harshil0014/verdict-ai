@@ -1,0 +1,28 @@
+{
+  "checked_at": "2026-11-07T11:01:11.158Z",
+  "checks": {
+    "exactly_one_active_test_merchant": true,
+    "sandbox_only": true,
+    "all_original_snapshot_hashes_valid": true,
+    "import_ownership_consistent": true,
+    "all_new_tables_force_rls": true,
+    "client_rpc_denied": true,
+    "rpc_security_invoker": true,
+    "originals_no_application_update_delete": true,
+    "client_table_access_denied": true,
+    "owner_connection_visibility_correct": true,
+    "owner_import_visibility_correct": true,
+    "owner_snapshot_visibility_correct": true,
+    "outsider_connection_visibility_correct": true,
+    "outsider_import_visibility_correct": true,
+    "outsider_snapshot_visibility_correct": true
+  },
+  "all_passed": true,
+  "security_advisor": {
+    "warning_count": 0,
+    "error_count": 0,
+    "existing_info_count": 4,
+    "explanation": "Intentional server-only tables with RLS and no client policies; no new warning/error.",
+    "reference": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+  }
+}
