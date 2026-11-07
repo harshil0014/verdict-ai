@@ -1,5 +1,11 @@
 # Third-party notices
 
+## Delivery map additions
+
+Leaflet **1.9.4** is BSD-2-Clause, copyright Volodymyr Agafonkin and CloudMade; its full [license](third_party/npm/leaflet/LICENSE) is retained. `@types/leaflet` **1.9.21** and `@types/geojson` **7946.0.16** retain their MIT [Leaflet types](third_party/npm/@types/leaflet/LICENSE) / [GeoJSON types](third_party/npm/@types/geojson/LICENSE) notices. Package versions are locked. No geocoding server code is vendored.
+
+Photon is an Apache-2.0 open-source geocoder accessed through its documented public API at low volume, with no availability guarantee. Its service policy is separate from its software license. Geocoding and map data are from OpenStreetMap contributors under [ODbL](https://www.openstreetmap.org/copyright); this project does not relicense provider data as MIT. Visible map attribution is retained. [Photon usage/API](https://github.com/komoot/photon) · [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/). No public Nominatim service is called.
+
 VERDICT uses maintained open-source infrastructure. No application code from the five reviewed dispute projects was copied. Research credits and pinned source commits are in docs/RESEARCH.md.
 
 The frontend build bundles runtime packages. Installed package license texts are retained below, including development packages for completeness. Original notices must remain with redistributed portions.

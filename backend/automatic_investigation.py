@@ -319,7 +319,7 @@ async def worker():
         try:
             WAKE.clear()
             await repo.rpc('workflow:queue_recovery',session='')
-            claim=await repo.rpc('workflow:claim',{'worker_version':RECOVERY_VERSION},session='')
+            claim=await repo.rpc('workflow:claim',{'worker_version':max(4,RECOVERY_VERSION)},session='')
             if claim:
                 await process(claim)
                 continue

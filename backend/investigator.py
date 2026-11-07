@@ -247,6 +247,9 @@ def investigation_payload(case):
     }
     if case.get("payment_record_acquisition"):
         payload["case"]["payment_record_acquisition"] = case["payment_record_acquisition"]
+    if case.get('delivery_location'):
+        from delivery_location import investigation_record
+        payload['case']['delivery_location']=investigation_record(case['delivery_location'])
     return payload
 
 
@@ -259,6 +262,8 @@ async def investigate(case, baseline=None, *, analysis_schema=Analysis, system_p
             "Evidence exceeds the 180,000 character investigation limit. Split the case or remove irrelevant material."
         )
     instruction = SYSTEM
+    if case.get('delivery_location'):
+        instruction += ' Delivery-location comparisons are computed aids, not authenticated proof of physical delivery. Consider their supporting/conflicting facts and precision limitations when weighing competing explanations. Cite exact original source passages for address claims; distinguish source-supplied PINs/GPS from provider-inferred PINs and map estimates. A mismatch does not prove non-delivery. A map match does not prove receipt. Never invent coordinates or improve the stated precision.'
     if not baseline:
         instruction += ' For a genuinely public missing document (published policy, decision, regulation or research), set publicly_obtainable=true and suggest a public_research_query with no customer, account or transaction identifiers. Keep these fields false/empty for private shipment records, customer correspondence, tracking or records whose public availability is unknown. A suggestion does not execute a search.'
     if any(e.get('provenance') for e in evidence):

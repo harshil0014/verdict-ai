@@ -5,8 +5,9 @@ const Module = require('node:module');
 const {buildSync} = require('esbuild');
 const React = require('react');
 const {renderToStaticMarkup} = require('react-dom/server');
+require.extensions['.css']=()=>{};
 const root = path.resolve(__dirname,'..');
-const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation'; export * from './src/automation'; export * from './src/claim-checks'; export * from './src/paypal-account';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
+const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation'; export * from './src/automation'; export * from './src/claim-checks'; export * from './src/paypal-account'; export * from './src/delivery-location';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
 const compiled = new Module(path.join(root,'tests','compiled.cjs'),module);
 compiled.filename=path.join(root,'tests','compiled.cjs');compiled.paths=Module._nodeModulePaths(root);
 compiled._compile(output.outputFiles[0].text,compiled.filename);
@@ -115,4 +116,20 @@ test('provider receipt separates amounts, account identifiers, missing fields an
  assert.match(html,/SANDBOX · TEST FUNDS/);assert.match(html,/not a finding that it is true/);
  assert.match(html,/order unavailable:403/);assert.match(html,/Previously preserved sources are retained/);
  assert.doesNotMatch(html,/Refund payment|Submit evidence|Accept claim/);
+});
+const locationProps={current:{id:'case',location_authorization:{mode:'off'}},api:async()=>({}),changed:async()=>{},onSource:()=>{}};
+test('delivery verification defaults to local privacy and no third-party map',()=>{
+ const html=render(ui.DeliveryLocation,locationProps);
+ assert.match(html,/Smart Delivery Location Verification/);assert.match(html,/Local comparison only/);
+ assert.match(html,/Local comparison sends no address/);assert.doesNotMatch(html,/delivery-map|Verify GPS/);
+ assert.match(html,/authorization applies to future evidence/);
+});
+test('delivery comparison distinguishes explicit PIN, inferred PIN and approximate area points',()=>{
+ const current={id:'case',location_authorization:{mode:'area_only'},delivery_location:{status:'LOCATION MISMATCH',checked_at:'2026-11-08T00:00:00Z',extraction:'Source parser',comparisons:[{status:'LOCATION MISMATCH',distance_m:3000,distance_label:'Map estimates, not a parcel route.',supporting_facts:[],conflicting_facts:['Explicit PIN codes differ: 400076 versus 400078.'],limitations:['No proof of non-delivery.']}],mentions:[{id:'L1',source_id:'E1',role:'reported_delivery',address:'Carrier destination 400078',quote:'Reported destination PIN 400078',explicit_postcode:'400078',source_authenticity:'Reported; unverified authenticity.',source_sha256:hash,quote_sha256:textHash,geocode:{status:'resolved',provider:'Photon / OpenStreetMap',precision:'postcode_area',lat:19.149,lon:72.936,inferred_postcode:'400078',uncertainty_basis:'Policy tolerance, not provider accuracy.',response_sha256:hash}}],limitations:['A mismatch is not proof of non-delivery.'],record_sha256:hash}};
+ const html=render(ui.DeliveryLocation,{...locationProps,current});
+ for(const text of ['LOCATION MISMATCH','3.0 km','Approximate area location','Map-provider PIN (inferred)','not a PIN supplied by the carrier','Interactive source-linked','Inspect source E1','Policy tolerance'])assert.ok(html.includes(text),text);
+});
+test('malicious address and provider text are escaped and unavailable coordinates are never plotted',()=>{
+ const current={id:'case',delivery_location:{status:'UNVERIFIED',checked_at:'2026-11-08T00:00:00Z',comparisons:[],mentions:[{id:'L1',source_id:'E1',role:'intended',address:'<script>bad()</script>',quote:'<img src=x onerror=bad()>',geocode:{status:'provider_unavailable',detail:'Provider unavailable; no location invented.'}}],limitations:[],record_sha256:hash}};
+ const html=render(ui.DeliveryLocation,{...locationProps,current});assert.ok(html.includes('&lt;script&gt;'));assert.doesNotMatch(html,/<script>|<img|delivery-map/);assert.match(html,/Provider unavailable/);
 });

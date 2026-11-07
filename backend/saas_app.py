@@ -29,6 +29,7 @@ from web_security import guard, BoundedBodyMiddleware
 from research_routes import router as research_router
 from saas_paypal import router as paypal_router
 from saas_paypal import connection_status as paypal_connection_status
+from delivery_location import router as location_router
 from case_investigation import run_investigation
 from source_recovery import RECOVERY_VERSION
 import automatic_investigation as automatic
@@ -60,6 +61,7 @@ async def lifespan(app):
 app = FastAPI(title="VERDICT", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.include_router(research_router)
 app.include_router(paypal_router)
+app.include_router(location_router)
 
 
 @app.middleware("http")
@@ -132,7 +134,7 @@ async def cases(user=Depends(auth.current_session)):
 @app.post("/api/cases")
 async def create_case(data: CaseInput, user=Depends(auth.current_session)):
     return await repo.create({**data.model_dump(), "mode": "manual", "status": "OPEN", "deadline": None,
-        "story": "User-created case. Statements and uploads require assessment.", "evidence": [], "automatic_investigation":True,"automatic_workflow_version":RECOVERY_VERSION})
+        "story": "User-created case. Statements and uploads require assessment.", "evidence": [], "automatic_investigation":True,"automatic_workflow_version":max(4,RECOVERY_VERSION)})
 
 
 @app.get("/api/cases/{id}")
@@ -166,7 +168,7 @@ async def retry_automation(id:str,user=Depends(auth.current_session)):
 
 def add_source(body, data, raw=None, mime="text/plain", request_row=None, links=None):
     body.setdefault('automatic_investigation',True)
-    body['automatic_workflow_version']=RECOVERY_VERSION
+    body['automatic_workflow_version']=max(4,RECOVERY_VERSION)
     if len(body["evidence"]) >= 40: raise HTTPException(422, "Maximum 40 evidence sources per case")
     if "\x00" in data.text: raise HTTPException(422, "Null bytes are not supported")
     source = evidence(data.title, data.text, data.party, "portal_upload" if request_row else "user_upload")

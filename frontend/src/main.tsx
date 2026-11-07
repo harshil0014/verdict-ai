@@ -47,6 +47,7 @@ import { ClaimChecks } from './claim-checks';
 const PayPalCaseEntry=lazy(()=>import('./paypal-account').then(m=>({default:m.PayPalCaseEntry})));
 const PayPalImport=lazy(()=>import('./paypal-account').then(m=>({default:m.PayPalImport})));
 const PayPalReceipt=lazy(()=>import('./paypal-account').then(m=>({default:m.PayPalReceipt})));
+const DeliveryLocation=lazy(()=>import('./delivery-location').then(m=>({default:m.DeliveryLocation})));
 const ProviderRecordFacts=lazy(()=>import('./paypal-account').then(m=>({default:m.ProviderRecordFacts})));
 import './research.css';
 const EvidenceDiscoveries=lazy(()=>import('./research').then(m=>({default:m.EvidenceDiscoveries})));
@@ -1022,6 +1023,7 @@ function App() {
                   <AutomaticInvestigation key={current.id+'-automation'} current={current} api={api} changed={refresh}/>
                   <Suspense fallback={<p className="fine">Loading source retrieval history…</p>}><ResearchActivity key={current.id+'-activity'} caseId={current.id} revision={current.revision} activityVersion={current.automation?.updated_at} api={api} changed={refresh}/></Suspense>
                 </>}
+                {me.role==='member'&&['investigation','evidence'].includes(tab)&&<Suspense fallback={<p>Loading delivery location verification…</p>}><DeliveryLocation current={current} api={api} changed={refresh} onSource={(id:string)=>{setTab('evidence');setClaim(null);setSource(current.evidence.find(e=>e.id===id)||null)}}/></Suspense>}
                 {busy && (
                   <div className="progress" role="status">
                     <LoaderCircle size={16} className="spin" />
