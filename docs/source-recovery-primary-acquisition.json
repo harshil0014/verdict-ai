@@ -1,0 +1,85 @@
+{
+  "checked_at": "2026-11-07T06:01:27.137434+00:00",
+  "base_url": "https://verdict-ai-harshil0014.onrender.com",
+  "phase": "acquisition",
+  "checks": {
+    "actor_1_original_submission_preserved": true,
+    "actor_1_foreign_case_denied": true,
+    "actor_1_foreign_research_denied": true,
+    "actor_1_foreign_retry_denied": true,
+    "actor_1_audit_valid": true,
+    "actor_1_no_human_approval_calls": true,
+    "actor_1_real_public_source_preserved": true,
+    "publisher_url_not_in_original_submission": true,
+    "case_name_not_supplied_for_discovery": true,
+    "blocked_403_retained": true,
+    "original_publisher_discovered_without_supplied_url": true,
+    "same_neutral_citation_in_real_header": true,
+    "identity_bound_to_exact_passage": true,
+    "identity_bound_to_snapshot_hash": true,
+    "blocked_copy_byte_identity_not_claimed": true,
+    "recovery_is_audited": true,
+    "discovery_sent_only_public_identifier": true,
+    "failed_research_record_retained": true,
+    "publisher_wrapper_retained_with_integrity": true,
+    "actor_1_snapshot_hash_0": true,
+    "actor_1_snapshot_foreign_denied_0": true,
+    "actor_1_historical_applicability_unestablished_0": true,
+    "actor_1_retained_case_analysis_audit": true,
+    "actor_1_logout_revoked": true,
+    "actor_1_return_retains_records": true,
+    "actor_2_original_submission_preserved": true,
+    "actor_2_foreign_case_denied": true,
+    "actor_2_foreign_research_denied": true,
+    "actor_2_foreign_retry_denied": true,
+    "actor_2_audit_valid": true,
+    "actor_2_no_human_approval_calls": true,
+    "actor_2_real_public_source_preserved": true,
+    "separate_accessible_source_without_recovery": true,
+    "actor_2_snapshot_hash_0": true,
+    "actor_2_snapshot_foreign_denied_0": true,
+    "actor_2_historical_applicability_unestablished_0": true,
+    "actor_2_retained_case_analysis_audit": true,
+    "actor_2_logout_revoked": true,
+    "actor_2_return_retains_records": true
+  },
+  "all_passed": true,
+  "full_end_to_end_acceptance": false,
+  "investigation_results": [
+    {
+      "actor": 1,
+      "workflow_state": "failed",
+      "investigation_complete": false,
+      "gemini_http_status": 503
+    },
+    {
+      "actor": 2,
+      "workflow_state": "failed",
+      "investigation_complete": false,
+      "gemini_http_status": 503
+    }
+  ],
+  "public_sources": [
+    {
+      "url": "https://decisions.civilresolutionbc.ca/crt/crtd/en/item/525448/index.do?iframe=true",
+      "raw_sha256": "5c7a0cb2971c41cdc5e748e17e35bf806d353add31d0349195e007d96d8b2b8c",
+      "text_sha256": "804028ff5adc1d42c3bb19e13b532173f8318508cac97f79f52f38201400a581",
+      "retrieved_at": "2026-11-07T05:57:15.868788+00:00",
+      "publication_date": "2024-02-14",
+      "discovery_provider": "Explicit same-document publisher iframe"
+    },
+    {
+      "url": "https://www.bclaws.gov.bc.ca/civix/document/id/complete/statreg/12025_01",
+      "raw_sha256": "adeaba00815730843bd5ccb76d6c64a9e76aa4e256fb32c9b98bbd7eb30f563d",
+      "text_sha256": "4605ed51b3e456fb562e4267ba57d71f59912b702a2b78b5654e01fac2e86852",
+      "retrieved_at": "2026-11-07T05:58:13.097847+00:00",
+      "publication_date": null,
+      "discovery_provider": null
+    }
+  ],
+  "blocked_url": "https://www.canlii.org/en/bc/bccrt/doc/2024/2024bccrt149/2024bccrt149.html",
+  "publisher_urls_supplied_for_recovery": 0,
+  "manual_search_analysis_approval_retry_calls": 0,
+  "actors": "Two independent automated test accounts, not two humans",
+  "payment_or_dispute_writes": 0
+}

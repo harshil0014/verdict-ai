@@ -10,6 +10,7 @@ import hashlib
 import json
 from pathlib import Path
 import secrets
+import re
 import time
 import httpx
 
@@ -54,18 +55,22 @@ def run(args):
         if args.phase=='prepare':print(json.dumps({'phase':'prepare','single_uploads':2,'publisher_urls_supplied_for_recovery':0,'manual_search_analysis_approval_retry_calls':0}));return
         for i,c in enumerate(clients):
             actor=state['actors'][i];path='/api/cases/'+actor['case_id'];prefix='actor_'+str(i+1)+'_'
-            if args.phase=='wait':
+            if args.phase in ('wait','acquisition'):
                 deadline=time.monotonic()+480
                 while True:
                     case=ok(c.get(path));workflow=case['automation']
                     if workflow['state'] in ('completed','partial'):break
-                    if workflow['state']=='failed':state['last_failure']={'detail':workflow['detail']};save();raise AssertionError('Automatic recovery failed; private detail retained')
+                    if workflow['state']=='failed':
+                        if acquisition_only:break
+                        state['last_failure']={'detail':workflow['detail']};save();raise AssertionError('Automatic recovery failed; private detail retained')
                     if time.monotonic()>deadline:raise AssertionError('Recovery timed out')
                     time.sleep(3)
             else:case=ok(c.get(path));workflow=case['automation']
             analysis=case.get('analysis') or {}
             complete=workflow['state']=='completed' and bool(analysis) and not case['analysis_stale']
-            investigation_results.append({'actor':i+1,'workflow_state':workflow['state'],'investigation_complete':complete})
+            model_failure=re.search(r'Gemini returned HTTP (\d{3})',workflow.get('detail',''))
+            investigation_results.append({'actor':i+1,'workflow_state':workflow['state'],'investigation_complete':complete,
+                'gemini_http_status':int(model_failure[1]) if model_failure else None})
             if not acquisition_only:
                 check(prefix+'automatic_investigation_complete',complete)
                 check(prefix+'actual_gemini',analysis['model']=='gemini-3.1-flash-lite')
@@ -81,6 +86,9 @@ def run(args):
                 check(prefix+'source_claims_bound_to_preserved_text',bool(analysis['claims']) and all(x['quote'] in evidence[x['source_id']]['text'] for x in analysis['claims']))
                 check(prefix+'actual_public_source_used',any(evidence[x['source_id']].get('provenance') for x in analysis['claims']))
             if i==0:
+                original=evidence[actor['original_id']]['text']
+                check('publisher_url_not_in_original_submission','civilresolutionbc.ca' not in original and BLOCKED in original)
+                check('case_name_not_supplied_for_discovery','Moffatt' not in original)
                 refusal=workflow['progress']['references'][BLOCKED];recovery=workflow['progress']['recoveries'][BLOCKED]
                 check('blocked_403_retained',refusal['status']=='unavailable' and 'HTTP 403' in refusal.get('detail',''))
                 check('original_publisher_discovered_without_supplied_url',recovery['status']=='recovered' and recovery['recovered_url'].startswith('https://decisions.civilresolutionbc.ca/'))
@@ -93,12 +101,17 @@ def run(args):
                 check('discovery_sent_only_public_identifier','Private customer' not in recovery['query'] and '2024 BCCRT 149' in recovery['query'])
                 drafts=ok(c.get(path+'/research'));blocked=next(d for d in drafts if d['url']==BLOCKED)
                 check('failed_research_record_retained',blocked['status']=='unavailable' and not blocked['text'])
+                wrapper=recovered['provenance']['source_recovery'].get('publisher_wrapper')
+                if wrapper:
+                    check('publisher_wrapper_retained_with_integrity',any(d['id']==wrapper['draft_id'] and d['raw_sha256']==wrapper['raw_sha256'] for d in drafts))
             else:check('separate_accessible_source_without_recovery',not any(e['provenance'].get('source_recovery') for e in public))
             for j,e in enumerate(public):
                 data=c.get(path+'/files/'+e['id']);check(prefix+'snapshot_hash_'+str(j),data.status_code==200 and hashlib.sha256(data.content).hexdigest()==e['sha256'])
                 check(prefix+'snapshot_foreign_denied_'+str(j),clients[1-i].get(path+'/files/'+e['id']).status_code==404)
                 check(prefix+'historical_applicability_unestablished_'+str(j),e['provenance']['historical_applicability']=='not_established')
-                public_sources.append({'url':e['provenance']['final_url'],'raw_sha256':e['sha256'],'text_sha256':e['provenance']['text_sha256']})
+                public_sources.append({'url':e['provenance']['final_url'],'raw_sha256':e['sha256'],'text_sha256':e['provenance']['text_sha256'],
+                    'retrieved_at':e['provenance']['retrieved_at'],'publication_date':e['provenance'].get('publication_date'),
+                    'discovery_provider':e['provenance'].get('source_recovery',{}).get('discovered_via')})
             value=fingerprint(case)
             key='acquisition_fingerprint' if acquisition_only else 'fingerprint'
             if args.phase=='wait' or acquisition_only and key not in actor:actor[key]=value;save()

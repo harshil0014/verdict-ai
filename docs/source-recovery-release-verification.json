@@ -1,0 +1,58 @@
+{
+  "checked_at": "2026-11-07T06:02:26.354530+00:00",
+  "application_commit": "c4f2fbe17db5959153db7ad25c9d5e80c95f8064",
+  "ci_run": 42344496804,
+  "ci_jobs": {
+    "application": "success",
+    "container": "success"
+  },
+  "local_checks": {
+    "python_tests": 204,
+    "frontend_render_checks": 7,
+    "production_build": true
+  },
+  "preview_deploy": {
+    "id": "dep-dbnbp1gu01pc73cacmfg",
+    "status": "live",
+    "finished_at": "2026-11-07T05:52:46.645686Z"
+  },
+  "primary_deploy": {
+    "id": "dep-dbnbsf9srm7s73903ksg",
+    "status": "live",
+    "finished_at": "2026-11-07T06:00:09.421167Z"
+  },
+  "primary_reports": {
+    "acquisition": {
+      "path": "source-recovery-primary-acquisition.json",
+      "passed": true,
+      "checks": 39,
+      "checked_at": "2026-11-07T06:01:27.137434+00:00"
+    },
+    "accounts": {
+      "path": "source-recovery-primary-accounts.json",
+      "passed": true,
+      "checks": 40,
+      "checked_at": "2026-11-07T06:01:33.453007+00:00"
+    },
+    "preservation": {
+      "path": "source-recovery-primary-preservation.json",
+      "passed": true,
+      "checks": 16,
+      "checked_at": "2026-11-07T06:01:21.173573+00:00"
+    },
+    "assets": {
+      "path": "source-recovery-primary-assets.json",
+      "passed": true,
+      "checks": 7,
+      "checked_at": "2026-11-07T06:01:14.578690+00:00"
+    }
+  },
+  "fresh_full_investigation_acceptance": false,
+  "fresh_full_investigation_blocker": "Both final QA investigations returned Gemini HTTP 503; sources and prior data retained. No substitute analysis.",
+  "initial_recovery_scope": "CanLII BCCRT neutral citations to the original CRT publisher; not universal document matching.",
+  "rollback_release": "release/continuous-ui-working-20261107",
+  "paid_resources_activated": 0,
+  "payment_or_dispute_writes": 0,
+  "case_or_research_deletions": 0,
+  "visual_click_through_verified": false
+}
