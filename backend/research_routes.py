@@ -13,6 +13,7 @@ from fixtures import evidence
 from public_web import retrieve, normalize_url, public_addresses, RetrievalError
 from google_research import call_google, capabilities
 from free_search import discover
+from source_recovery import check_decision,decision_identity
 
 router=APIRouter(prefix='/api')
 
@@ -55,7 +56,7 @@ def public_draft(draft):
     return {k:v for k,v in draft.items() if k!='content'}
 
 
-async def stage_url(case_id,data):
+async def stage_url(case_id,data,*,recovery_identity=None):
     url=normalize_url(data.url)
     draft={'id':uid('D-'),'url':url,'title':urlsplit(url).hostname,'status':'unavailable','created_at':now(),
            'relevance':data.relevance,'event_date':data.event_date.isoformat() if data.event_date else None,
@@ -71,6 +72,8 @@ async def stage_url(case_id,data):
         if error.code=='unsafe_url': raise HTTPException(422,error.message) from None
     if data.google_context:
         draft['google']=await call_google('url_context',url)
+    if recovery_identity:
+        draft['identity_check']=check_decision(draft,recovery_identity)
     args={'case_id':case_id,'body':draft,'content':base64.b64encode(raw).decode() if raw is not None else None}
     return await repo.rpc('research:stage',args)
 
@@ -145,14 +148,21 @@ def inferred_kind(metadata, title, text=''):
     return 'reported_document'
 
 
-async def collect_draft(id,draft_id,*,approval=None,acquisition='human_review',parent=None):
+async def collect_draft(id,draft_id,*,approval=None,acquisition='human_review',parent=None,recovery=None):
     body=await repo.get(id)
     body.setdefault('automatic_investigation',True)
+    body['automatic_workflow_version']=2
     draft=await repo.rpc('research:get',{'case_id':id,'id':draft_id})
     if approval and not approval.consent: raise HTTPException(422,'Review the exact extracted text and authorize preservation before adding it to the case.')
     if approval and approval.snapshot_sha256!=draft['raw_sha256']: raise HTTPException(409,'The approved snapshot hash does not match the staged document')
     if draft.get('source_id'): return {'case':body,'duplicate':True}
     if draft['status']!='ready' or not draft.get('content'): raise HTTPException(409,'This proposal has no readable snapshot to approve. Upload an authorized copy or use another source.')
+    if recovery:
+        identity=decision_identity(recovery['blocked_url'])
+        if not identity:raise HTTPException(409,'No supported public document identity was established.')
+        draft['identity_check']=check_decision(draft,identity)
+        if draft['identity_check']['status']!='matched':
+            raise HTTPException(409,'The recovered document did not pass its source-identity check; it was not added to evidence.')
     if len(body['evidence'])>=40: raise HTTPException(422,'Maximum 40 evidence sources per case')
     prior=next((s for s in body['evidence'] if s.get('sha256')==draft['raw_sha256'] and s.get('provenance',{}).get('final_url')==draft['metadata']['final_url']),None)
     if prior: return {'case':body,'duplicate':True}
@@ -164,11 +174,12 @@ async def collect_draft(id,draft_id,*,approval=None,acquisition='human_review',p
           'event_date':draft.get('event_date'),'collected_at':now(),'research_proposal_id':draft_id,
           'acquisition_mode':acquisition,'review_status':'human_reviewed' if approval else 'unreviewed',
           'parent_reference':parent}
+    if recovery:meta['source_recovery']={**recovery,'identity_check':draft['identity_check']}
     automatic=acquisition=='embedded_reference'
     source=evidence(draft['title'][:160],draft['text'],'other','public_web_automatic' if automatic else 'public_web_snapshot')
     source.update(sha256=draft['raw_sha256'],synthetic=False,file_available=True,mime=meta['mime'],origin_verified=False,provenance=meta)
     body['evidence'].append(source);body['analysis_stale']=body.get('analysis') is not None
     raw=base64.b64decode(draft['content'])
     file=repo.file_record(source['id'],raw,meta['mime'],draft['title'][:150]+('.pdf' if meta['mime']=='application/pdf' else '.html' if 'html' in meta['mime'] else '.txt'))
-    mutation=repo.mutation(body,'public_evidence_approved' if approval else 'public_evidence_acquired',{'evidence_id':source['id'],'url':meta['final_url'],'raw_sha256':source['sha256'],'text_sha256':meta['text_sha256'],'source_kind':kind,'acquisition_mode':acquisition,'parent_reference':parent},file=file)
+    mutation=repo.mutation(body,'public_source_recovered' if recovery else 'public_evidence_approved' if approval else 'public_evidence_acquired',{'evidence_id':source['id'],'url':meta['final_url'],'raw_sha256':source['sha256'],'text_sha256':meta['text_sha256'],'source_kind':kind,'acquisition_mode':acquisition,'parent_reference':parent,**({'source_recovery':meta['source_recovery']} if recovery else {})},file=file)
     return await repo.rpc('research:approve',{'case_id':id,'id':draft_id,'mutation':mutation})

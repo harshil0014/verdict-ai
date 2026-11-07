@@ -6,7 +6,7 @@ const {buildSync} = require('esbuild');
 const React = require('react');
 const {renderToStaticMarkup} = require('react-dom/server');
 const root = path.resolve(__dirname,'..');
-const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
+const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation'; export * from './src/automation';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
 const compiled = new Module(path.join(root,'tests','compiled.cjs'),module);
 compiled.filename=path.join(root,'tests','compiled.cjs');compiled.paths=Module._nodeModulePaths(root);
 compiled._compile(output.outputFiles[0].text,compiled.filename);
@@ -65,4 +65,15 @@ test('optional acquisition opens one URL form and offers search without a separa
  assert.match(html,/Find more evidence/);assert.match(html,/Enter a URL/);assert.match(html,/Search the web/);
  assert.equal((html.match(/<form/g)||[]).length,1);assert.match(html,/Add &amp; investigate/);
  assert.doesNotMatch(html,/Approve this exact snapshot|Public research/);
+});
+
+test('recovered sources retain the refusal and qualify the identity match',()=>{
+ const url='https://www.canlii.org/decision',recovered='https://decisions.civilresolutionbc.ca/decision';
+ const html=render(ui.AutomaticInvestigation,{current:{id:'qa',automation:{state:'completed',stage:'complete',enabled:true,progress:{
+  references:{[url]:{status:'unavailable',detail:'HTTP 403',recovery:{status:'recovered',citation:'2024 BCCRT 149',url:recovered}}},
+  recoveries:{[url]:{citation:'2024 BCCRT 149',status:'recovered',identity_check:{status:'matched'}}}
+ }}},api:()=>{throw Error('Display must not mutate');},changed:async()=>{}});
+ assert.match(html,/HTTP 403/);assert.match(html,/original refusal is retained/);
+ assert.match(html,/2024 BCCRT 149/);assert.match(html,/https:\/\/decisions.civilresolutionbc.ca\/decision/);
+ assert.match(html,/does not verify legal truth or identical bytes/);
 });

@@ -48,6 +48,7 @@ export function PublicSourceFacts({source}:{source:any}) {
     <SourceLink url={p.requested_url||p.final_url}/>
     {p.final_url&&p.final_url!==p.requested_url&&<><small>Retrieved from</small><SourceLink url={p.final_url}/></>}
     <SourceIntegrity metadata={p} rawHash={source.sha256}/>
+    {p.source_recovery&&<p className="source-recovery-note">Recovered from the original publisher after another source was unavailable. Identity: {p.source_recovery.identity_check?.observed_citation} · {p.source_recovery.identity_check?.status}. Original failed URL: <SourceLink url={p.source_recovery.blocked_url}/></p>}
   </div>;
 }
 

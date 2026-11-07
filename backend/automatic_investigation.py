@@ -7,15 +7,16 @@ import asyncio
 from contextlib import suppress
 import logging
 import re
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import urlsplit
 from fastapi import HTTPException
 from public_web import normalize_url, RetrievalError
 from saas_store import repo, SESSION
 from research_routes import URLInput, budget, stage_url, collect_draft
 from case_investigation import run_investigation
 from investigator import investigation_payload
-from store import digest
+from store import digest,now
 from free_search import discover
+from source_recovery import automatic_url,decision_identity,recovery_query,publisher_candidates,check_decision,publisher_embed,RECOVERY_VERSION
 
 log = logging.getLogger(__name__)
 WAKE = asyncio.Event()
@@ -57,13 +58,10 @@ def references(evidence):
                        for row in source.get('embedded_links', []) if isinstance(row,dict) and isinstance(row.get('url'),str)]
         for value, context, page in candidates:
             try:
-                url = normalize_url(value)
-                parsed = urlsplit(url)
+                url = automatic_url(value)
                 # An ordinary public reference is not a credential-bearing,
                 # customer-specific or tracking link. Unknown query keys need
                 # explicit manual retrieval rather than automatic transmission.
-                if any(k.lower() not in ('id','article','document','lang','language','page') for k,v in parse_qsl(parsed.query)):
-                    raise RetrievalError('sensitive_reference', 'The link has query parameters requiring review; it was not opened automatically.')
                 failure = None
             except RetrievalError as error:
                 # Do not copy credential values into progress/audit messages.
@@ -105,6 +103,77 @@ async def process(claim):
             await asyncio.sleep(25)
             await heartbeat()
 
+    async def recover_reference(blocked_url,row):
+        nonlocal stage
+        identity=decision_identity(blocked_url)
+        if not identity or row.get('failure_code')=='http_429' or 'HTTP 429' in row.get('detail',''):
+            return
+        recoveries=progress.setdefault('recoveries',{})
+        record=recoveries.get(blocked_url)
+        if record and record.get('status') in ('recovered','unavailable','interrupted','no_publisher_candidates'):
+            return
+        if not record and len(recoveries)>=1:
+            return
+        stage='recovering_sources'
+        if not record:
+            record={'version':RECOVERY_VERSION,'citation':identity['citation'],'query':recovery_query(identity),
+                'status':'searching','started_at':now(),'candidates':[]}
+            recoveries[blocked_url]=record
+            await heartbeat()
+            await budget({'id':claim['owner_id']},'search')
+            discovery=await discover(record['query'],case_id)
+            record.update(status='checking_publisher',providers=discovery.get('provider_attempts',[]),
+                candidates=publisher_candidates(discovery.get('documents',[]),identity,blocked_url))
+            await heartbeat()
+        elif record['status']=='searching':
+            record.update(status='interrupted',detail='Discovery was interrupted before results were saved; the provider request was not blindly replayed.')
+            await heartbeat();return
+        if not record['candidates']:
+            record.update(status='no_publisher_candidates',detail='No original-publisher candidate was returned by the public discovery APIs. No document URL was invented.')
+            await heartbeat();return
+        for candidate in record['candidates']:
+            if candidate.get('status') in ('rejected','unavailable','wrapper'):
+                continue
+            if candidate.get('draft_id'):
+                draft=await repo.rpc('research:get',{'case_id':case_id,'id':candidate['draft_id']})
+            elif candidate.get('status')=='retrieving':
+                candidate.update(status='unavailable',detail='Interrupted candidate retrieval was not silently repeated.');continue
+            else:
+                candidate['status']='retrieving'
+                await heartbeat()
+                await budget({'id':claim['owner_id']},'url')
+                draft=await stage_url(case_id,URLInput(url=candidate['url'],consent=True,
+                    relevance='Original-publisher candidate for '+identity['citation']+' after the linked source was unavailable.'),recovery_identity=identity)
+                candidate.update(draft_id=draft['id'],status='retrieved')
+                await heartbeat()
+            candidate['identity_check']=check_decision(draft,identity)
+            if candidate['identity_check'].get('status')!='matched':
+                embed=publisher_embed(draft,identity)
+                if embed and len(record['candidates'])<3 and not any(c.get('publisher_wrapper') for c in record['candidates']) and not any(c['url']==embed['url'] for c in record['candidates']):
+                    candidate.update(status='wrapper',detail='Publisher wrapper preserved; checking its explicit same-document iframe.')
+                    record['candidates'].append(embed)
+                    await heartbeat();continue
+                candidate.update(status='rejected' if draft['status']=='ready' else 'unavailable',
+                    detail=candidate['identity_check'].get('reason',draft.get('failure_message','No verifiable source content was retrieved.')))
+                await heartbeat();continue
+            parent={k:row.get(k) for k in ('parent_source_id','page','context')}
+            recovery={'blocked_url':blocked_url,'original_failure':row.get('detail'),'expected_citation':identity['citation'],
+                'discovery_query':record['query'],'discovered_via':candidate.get('provider'),'recovered_at':now()}
+            if candidate.get('publisher_wrapper'):recovery['publisher_wrapper']=candidate['publisher_wrapper']
+            await heartbeat()
+            await collect_draft(case_id,draft['id'],acquisition='embedded_reference',parent=parent,recovery=recovery)
+            current=await repo.get(case_id)
+            src=next(e for e in current['evidence'] if e.get('sha256')==draft['raw_sha256'] and e.get('provenance',{}).get('final_url')==draft['metadata']['final_url'])
+            candidate.update(status='preserved',source_id=src['id'])
+            record.update(status='recovered',source_id=src['id'],recovered_url=draft['metadata']['final_url'],
+                identity_check=candidate['identity_check'])
+            row['recovery']={'status':'recovered','url':record['recovered_url'],'citation':identity['citation'],'source_id':src['id']}
+            outcomes[candidate['url']]={'status':'preserved','source_id':src['id'],'retrieved_at':draft['metadata']['retrieved_at'],
+                'recovered_from':blocked_url,**parent}
+            await heartbeat();return
+        record.update(status='unavailable',detail='No retrieved original-publisher candidate passed the exact document-identity check. Original evidence and failed attempts are retained.')
+        await heartbeat()
+
     renewal=asyncio.create_task(renew())
     try:
         async with asyncio.timeout(420):
@@ -143,7 +212,7 @@ async def process(claim):
                         continue
                     # Save checkpoint before adoption. Recovered work reuses
                     # the staged snapshot, not a newer page masquerading as it.
-                    outcomes[key]={'status':draft['status'],'draft_id':draft['id'],**parent}
+                    outcomes[key]={'status':draft['status'],'draft_id':draft['id'],'failure_code':draft.get('failure_code'),**parent}
                     await heartbeat()
                     if draft['status']=='ready':
                         await collect_draft(case_id,draft['id'],acquisition='embedded_reference',parent=parent)
@@ -173,6 +242,18 @@ async def process(claim):
                         raise
                     outcomes[key]={'status':'unavailable','detail':safe_failure(error),**parent}
                 await heartbeat()
+            # Older failed references are also eligible on a newly queued run;
+            # preserve the original failure while checking another publisher.
+            for url,row in list(outcomes.items()):
+                if row.get('status')=='unavailable':
+                    try:
+                        await recover_reference(url,row)
+                    except HTTPException as error:
+                        if error.status_code in (409,503):raise
+                        record=progress.setdefault('recoveries',{}).get(url)
+                        if record:record.update(status='unavailable',detail=safe_failure(error))
+            progress['recovery_version']=RECOVERY_VERSION
+            await heartbeat()
             # Recover a ready snapshot left between staging and atomic adoption.
             for url,row in outcomes.items():
                 if row['status']=='ready':
@@ -192,7 +273,7 @@ async def process(claim):
             # model attempt just because the final status update was lost.
             if not current.get('analysis') or current.get('analysis_stale') or current['analysis'].get('input_digest')!=digest(investigation_payload(current)):
                 await run_investigation(case_id,on_reserved=reserved,before_commit=heartbeat)
-            partial=any(r['status'] in ('unavailable','blocked') for r in outcomes.values())
+            partial=any(r['status'] in ('unavailable','blocked') and r.get('recovery',{}).get('status')!='recovered' for r in outcomes.values())
             await repo.rpc('workflow:finish',{**credentials,'generation':claim['generation'],
                 'state':'partial' if partial else 'completed','stage':'complete',
                 'detail':'Investigation updated. Some references were unavailable or blocked; inspect the source record.' if partial else 'Investigation updated from preserved evidence. Review conclusions and source passages.'},session='')
@@ -222,7 +303,8 @@ async def worker():
     while True:
         try:
             WAKE.clear()
-            claim=await repo.rpc('workflow:claim',session='')
+            await repo.rpc('workflow:queue_recovery',session='')
+            claim=await repo.rpc('workflow:claim',{'worker_version':RECOVERY_VERSION},session='')
             if claim:
                 await process(claim)
                 continue
