@@ -6,7 +6,7 @@ const {buildSync} = require('esbuild');
 const React = require('react');
 const {renderToStaticMarkup} = require('react-dom/server');
 const root = path.resolve(__dirname,'..');
-const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation'; export * from './src/automation';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
+const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation'; export * from './src/automation'; export * from './src/claim-checks';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
 const compiled = new Module(path.join(root,'tests','compiled.cjs'),module);
 compiled.filename=path.join(root,'tests','compiled.cjs');compiled.paths=Module._nodeModulePaths(root);
 compiled._compile(output.outputFiles[0].text,compiled.filename);
@@ -76,4 +76,27 @@ test('recovered sources retain the refusal and qualify the identity match',()=>{
  assert.match(html,/HTTP 403/);assert.match(html,/original refusal is retained/);
  assert.match(html,/2024 BCCRT 149/);assert.match(html,/https:\/\/decisions.civilresolutionbc.ca\/decision/);
  assert.match(html,/does not verify legal truth or identical bytes/);
+});
+
+test('claim inspector exposes which field/value failed without rejecting a valid quote',()=>{
+ const claim={field:'refund_status',value:'ordered_to_pay',source_check:'exact_quote_found',structured_check:'value_not_found_in_quote',semantic_support:'entailed'};
+ const before=JSON.stringify(claim),html=render(ui.ClaimChecks,{claim});
+ assert.match(html,/refund status/);assert.match(html,/<code>ordered_to_pay<\/code>/);
+ assert.match(html,/Literal value check/);assert.match(html,/exact quote found/);assert.match(html,/entailed/);
+ assert.match(html,/does not invalidate the source quote/);assert.match(html,/not every number/);
+ assert.equal(JSON.stringify(claim),before);
+});
+
+test('literal monetary matches and legacy missing fields are displayed honestly',()=>{
+ const html=render(ui.ClaimChecks,{claim:{field:'amount',value:'812.02',structured_check:'value_in_quote'}});
+ assert.match(html,/<code>812.02<\/code>/);assert.match(html,/Extracted value text found in quote/);
+ assert.doesNotMatch(html,/does not invalidate/);
+ const legacy=render(ui.ClaimChecks,{claim:{structured_check:'value_not_found_in_quote'}});
+ assert.match(legacy,/Not recorded in this revision/);assert.match(legacy,/does not record the field or value/);
+ assert.doesNotMatch(legacy,/refund status|ordered_to_pay|812.02/);
+});
+
+test('model-extracted field/value strings stay escaped in the inspector',()=>{
+ const html=render(ui.ClaimChecks,{claim:{field:'<script>alert(1)</script>',value:'<img src=x onerror=alert(1)>'}});
+ assert.doesNotMatch(html,/<script|<img/);assert.match(html,/&lt;script&gt;/);assert.match(html,/&lt;img/);
 });

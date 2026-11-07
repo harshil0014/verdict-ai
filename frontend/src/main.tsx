@@ -43,6 +43,7 @@ import "./style.css";
 import { AccountEntry } from "./saas";
 import { CaseNavigation } from './case-navigation';
 import { AutomaticInvestigation } from './automation';
+import { ClaimChecks } from './claim-checks';
 import './research.css';
 const EvidenceDiscoveries=lazy(()=>import('./research').then(m=>({default:m.EvidenceDiscoveries})));
 const ResearchActivity=lazy(()=>import('./research').then(m=>({default:m.ResearchActivity})));
@@ -74,6 +75,8 @@ type Claim = {
   support_reason?: string;
   source_check: string;
   structured_check?: string;
+  field?: string;
+  value?: string;
   origin_verified: boolean;
   epistemic_status?: string;
   epistemic_reason?: string;
@@ -1616,19 +1619,7 @@ function App() {
               <div className="claim-inspection">
                 <span className="eyebrow">{readable(claim.epistemic_status || 'reported claim').toUpperCase()} · {claim.id}</span>
                 <h3>{claim.text}</h3>
-                <dl>
-                  <dt>Source existence</dt>
-                  <dd>{readable(claim.source_check)}</dd>
-                  <dt>Structured value</dt>
-                  <dd>
-                    {readable(
-                      claim.structured_check ||
-                        "not assessed in prior revision",
-                    )}
-                  </dd>
-                  <dt>Semantic support</dt>
-                  <dd>{readable(claim.semantic_support)} · AI assessed</dd>
-                </dl>
+                <ClaimChecks claim={claim}/>
                 <p>{claim.support_reason}</p>
                 {claim.epistemic_reason && <p><strong>Classification review:</strong> {claim.epistemic_reason}</p>}
                 <blockquote>{claim.quote}</blockquote>
