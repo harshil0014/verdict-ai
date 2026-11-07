@@ -23,7 +23,7 @@ def test_neutral_citation_query_comes_from_public_canlii_route_only():
     identity=decision_identity(BLOCKED)
     assert identity['citation']=='2024 BCCRT 149'
     query=recovery_query(identity)
-    assert query=='"2024 BCCRT 149" British Columbia Civil Resolution Tribunal official decision'
+    assert query=='"2024 BCCRT 149"'
     assert 'site:www.canlii.org' not in query and 'Moffatt' not in query
 
 

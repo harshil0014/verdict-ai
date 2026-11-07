@@ -42,7 +42,10 @@ def decision_identity(url):
 
 def recovery_query(identity):
     # Only a structured public citation and configured authority leave the case.
-    return f'"{identity["citation"]}" {identity["publisher"]} official decision'
+    # A neutral citation is unique within its tribunal. Extra authority/topic
+    # words can exclude the relevant Wikimedia article when general search is
+    # cooling down. Publisher restrictions are enforced on returned URLs.
+    return f'"{identity["citation"]}"'
 
 
 def publisher_candidates(documents,identity,blocked_url):
