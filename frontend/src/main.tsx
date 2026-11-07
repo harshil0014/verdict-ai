@@ -41,9 +41,13 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./style.css";
 import { AccountEntry } from "./saas";
+import { CaseNavigation } from './case-navigation';
 import { AutomaticInvestigation } from './automation';
 import './research.css';
-const ResearchPanel=lazy(()=>import('./research').then(m=>({default:m.ResearchPanel})));
+const EvidenceDiscoveries=lazy(()=>import('./research').then(m=>({default:m.EvidenceDiscoveries})));
+const ResearchActivity=lazy(()=>import('./research').then(m=>({default:m.ResearchActivity})));
+const FindEvidence=lazy(()=>import('./research').then(m=>({default:m.FindEvidence})));
+const PublicSourceFacts=lazy(()=>import('./research').then(m=>({default:m.PublicSourceFacts})));
 
 type Source = {
   id: string;
@@ -990,22 +994,7 @@ function App() {
                   </div>
                 </div>
                 <div className="case-tabs">
-                  {[
-                    ["investigation", "Investigation"],
-                    ["evidence", `Evidence · ${current.evidence.length}`],
-                    ...(me.role === 'member' ? [["research", "Public research"]] : []),
-                    ["requests", `Witnesses · ${current.requests.length}`],
-                    ["timeline", "Timeline"],
-                    ["review", "Human review"],
-                  ].map(([key, label]) => (
-                    <button
-                      key={key}
-                      className={tab === key ? "selected" : ""}
-                      onClick={() => setTab(key)}
-                    >
-                      {label}
-                    </button>
-                  ))}
+                  <CaseNavigation tab={tab} evidenceCount={current.evidence.length} witnessCount={current.requests.length} onSelect={setTab}/>
                   <button
                     className="export"
                     title="Export case record"
@@ -1016,8 +1005,10 @@ function App() {
                     <Download size={16} />
                   </button>
                 </div>
-                {tab === 'research' && me.role === 'member' && <Suspense fallback={<div className="progress">Opening public research…</div>}><ResearchPanel key={current.id} caseId={current.id} revision={current.revision} api={api} changed={refresh} suggestions={(a?.requests || []).filter((w:any)=>w.publicly_obtainable)}/></Suspense>}
-                {me.role === 'member' && <AutomaticInvestigation key={current.id+'-automation'} current={current} api={api} changed={refresh}/>}
+                {me.role === 'member' && ['investigation','timeline'].includes(tab) && <>
+                  <AutomaticInvestigation key={current.id+'-automation'} current={current} api={api} changed={refresh}/>
+                  <Suspense fallback={<p className="fine">Loading source retrieval history…</p>}><ResearchActivity key={current.id+'-activity'} caseId={current.id} revision={current.revision} activityVersion={current.automation?.updated_at} api={api} changed={refresh}/></Suspense>
+                </>}
                 {busy && (
                   <div className="progress" role="status">
                     <LoaderCircle size={16} className="spin" />
@@ -1262,6 +1253,8 @@ function App() {
                         <span className="eyebrow">THE SOURCE RECORD</span>
                         <h3>Every claim starts somewhere.</h3>
                       </div>
+                      <div className="evidence-heading-actions">
+                      {me.role==='member'&&<button className="secondary" onClick={()=>setModal('find-evidence')}><Search size={16}/> Find more evidence</button>}
                       <button
                         className="primary"
                         onClick={() => setModal("evidence")}
@@ -1269,11 +1262,11 @@ function App() {
                         <Upload size={16} />
                         Add evidence
                       </button>
+                      </div>
                     </div>
                     <div className="source-list">
                       {current.evidence.map((e, i) => (
-                        <button
-                          key={e.id}
+                        <article className="evidence-source" key={e.id}><button
                           onClick={() => {
                             setSource(e);
                             setClaim(null);
@@ -1298,9 +1291,10 @@ function App() {
                             {String(i + 1).padStart(2, "0")}
                           </span>
                           <ArrowUpRight size={17} />
-                        </button>
+                        </button>{e.provenance&&<Suspense fallback={<p className="fine">Loading source provenance…</p>}><PublicSourceFacts source={e}/></Suspense>}</article>
                       ))}
                     </div>
+                    {me.role==='member'&&<Suspense fallback={<p className="fine">Loading retained discoveries…</p>}><EvidenceDiscoveries key={current.id+'-discoveries'} caseId={current.id} revision={current.revision} activityVersion={current.automation?.updated_at} api={api} changed={refresh} evidenceIds={current.evidence.map(e=>e.id)}/></Suspense>}
                     {!current.evidence.length && (
                       <Empty
                         title="No evidence yet"
@@ -1718,6 +1712,7 @@ function App() {
                 </button>
               </>
             )}
+            {modal==='find-evidence'&&current&&me.role==='member'&&<Suspense fallback={<p>Opening evidence discovery…</p>}><FindEvidence caseId={current.id} api={api} suggestions={(a?.requests||[]).filter((w:any)=>w.publicly_obtainable)} completed={async()=>{await refresh();setModal('');setTab('evidence');setNotice('Sources and retrieval attempts saved. VERDICT will update the investigation automatically.');}}/></Suspense>}
             {modal === "new-case" && (
               <>
                 <span className="eyebrow">START WITH THE RECORD</span>
@@ -1828,7 +1823,7 @@ function App() {
                 <span className="eyebrow">ADD TO THE SOURCE RECORD</span>
                 <h2>A new piece of the picture.</h2>
                 {me.role === 'member' && <p className="fine">Submitting evidence authorizes Gemini investigation and safe public-reference retrieval automatically, unless you pause it for this case. Original records stay private; fetched sources remain unverified and reviewable. Only submit material you may share and preserve.</p>}
-                {me.role === 'member' && <button className="secondary" onClick={()=>{setModal('');setTab('research');}}><Link2 size={16}/> Retrieve a public webpage or PDF URL</button>}
+                {me.role === 'member' && <button className="secondary" onClick={()=>setModal('find-evidence')}><Search size={16}/> Find more evidence</button>}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();

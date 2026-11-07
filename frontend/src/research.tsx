@@ -1,24 +1,136 @@
-import React, {useEffect,useState} from 'react';
-import {AlertTriangle,ArrowRight,Check,FileText,Globe,LoaderCircle,Search,ShieldCheck,X} from 'lucide-react';
+import React, {useEffect,useRef,useState} from 'react';
+import {AlertTriangle,ArrowRight,FileText,Globe,LoaderCircle,ShieldCheck,X,Search} from 'lucide-react';
+import {evidenceDiscoveries,researchActivity,safeSourceUrl} from './research-records';
 import './research.css';
 
-type Props={caseId:string,revision:number,api:(path:string,method?:string,body?:any)=>Promise<any>,changed:()=>Promise<void>,suggestions:any[]};
-export function ResearchPanel({caseId,revision,api,changed,suggestions}:Props){
- const [drafts,setDrafts]=useState<any[]>([]),[busy,setBusy]=useState(''),[error,setError]=useState(''),[selected,setSelected]=useState<any>(null),[config,setConfig]=useState<any>(null),[query,setQuery]=useState(''),[kind,setKind]=useState('reported_document');
- async function load(){setDrafts(await api(`/cases/${caseId}/research`));}
- useEffect(()=>{let active=true;setSelected(null);setError('');(async()=>{try{const [d,c]=await Promise.all([api(`/cases/${caseId}/research`),api('/research/config')]);if(active){setDrafts(d);setConfig(c);}}catch(e:any){if(active)setError(e.message);}})();return()=>{active=false;};},[caseId,revision]);
- async function run(label:string,fn:()=>Promise<void>){setBusy(label);setError('');try{await fn();}catch(e:any){setError(e.message);}finally{setBusy('');}}
- const date=(v:any)=>v?new Date(v).toLocaleString():'Not established';
- function choose(d:any){setSelected(d);setKind('reported_document');}
- return <section className="research-panel"><div className="section-heading"><div><span className="eyebrow">PUBLIC EVIDENCE DISCOVERY</span><h3>A source you can inspect.</h3></div><Globe size={23}/></div>
- <p className="research-intro">Evidence submission already starts investigation and follows safe public references. You can also supply a URL or public research question here: accessible snapshots are preserved and investigated automatically. Review sources and conclusions whenever needed.</p>
- <div className="research-inputs"><form onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);run('Retrieving public source',async()=>{const d=await api(`/cases/${caseId}/research/url`,'POST',{url:String(f.get('url')),consent:true,google_context:f.get('google')==='on',event_date:f.get('event_date')||null});await load();await changed();choose(d);});}}>
- <h4><Globe size={16}/> Add evidence from a URL</h4><label>Public webpage or PDF URL<input name="url" type="url" required maxLength={2048} placeholder="https://official-source.example/document.pdf"/></label><label>Dispute/event date, if known<input type="date" name="event_date"/></label><label className="research-check"><input type="checkbox" name="google"/> Also authorize Google URL Context to examine this public URL. Its answer is a research lead, not source text.</label><label className="research-check"><input type="checkbox" required/> I may preserve and investigate this public document. Retrieve it and update my case automatically.</label><button className="primary" disabled={!!busy}><FileText size={15}/> Retrieve & investigate</button><p className="fine">No login, cookies, paywall bypass or browser crawler. HTML/PDF/text only; 5 MB and 30,000 extracted characters maximum.</p></form>
- <form onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);run('Researching missing evidence',async()=>{await api(`/cases/${caseId}/research/search`,'POST',{query,consent:true,event_date:f.get('event_date')||null,google_context:f.get('google_context')==='on'});await load();await changed();});}}><h4><Search size={16}/> Search for missing public evidence</h4><label>Reviewed public research question<textarea value={query} onChange={e=>setQuery(e.target.value)} minLength={8} maxLength={600} rows={4} required placeholder="Find a dated official policy or published decision…"/></label><label>Relevant event date<input type="date" name="event_date"/></label>{suggestions.length>0&&<div className="research-suggestions"><span>Review a suggested public research question</span>{suggestions.slice(0,3).map(s=><button type="button" key={s.id} onClick={()=>setQuery((s.public_research_query || `Find public primary documents relevant to: ${s.title}`).slice(0,600))}>{s.title}<ArrowRight size={12}/></button>)}</div>}<label className="research-check"><input type="checkbox" name="google_context"/> Also authorize Gemini URL Context for discovered public URLs.</label><label className="research-check"><input type="checkbox" required/> I reviewed this query and authorize public research through Tavily, Wikimedia and Crossref. It contains no private customer, account or transaction identifiers.</label><button className="secondary" disabled={!!busy}><Search size={15}/>{config?.search_enabled?'Research public sources':'Check Search availability'}</button>{config&&<p className="research-limit">{config.free_search_notice}</p>}<p className="fine">Research retrieves up to three documents, preserves accessible snapshots and updates the investigation. It cannot contact parties or move money.</p></form></div>
- {busy&&<div className="research-working" role="status"><LoaderCircle className="spin" size={17}/>{busy}…</div>}{error&&<p className="research-error" role="alert"><AlertTriangle size={17}/>{error}</p>}
- <div className="section-heading"><h4>Discovered documents & retrieval attempts</h4><span>{drafts.length} records</span></div>{!drafts.length&&<div className="empty-small">No research yet. Start with a public source URL or a reviewed question.</div>}
- <div className="research-results">{drafts.map(d=><article className="research-card" key={d.id}><div className="research-card-top"><span className={'pill '+d.status}>{d.status==='approved'?'preserved':d.status.replaceAll('_',' ')}</span><small>{date(d.created_at)}</small></div><h4>{d.title}</h4>{!d.url.startsWith('search:')&&<a className="research-url" href={d.url} target="_blank" rel="noreferrer">{d.url} ↗</a>}<p>{d.relevance}</p>{d.failure_message&&<p className="research-error">{d.failure_message}</p>}{d.status==='research_report'?<GoogleReport data={d.google}/>:<><dl><dt>Source-stated publication</dt><dd>{d.metadata?.publication_date||'Unknown — not inferred'}{d.metadata?.publication_date_basis&&<small>{d.metadata.publication_date_basis}</small>}</dd><dt>Retrieved</dt><dd>{date(d.metadata?.retrieved_at)}</dd><dt>Historical applicability</dt><dd>Not established by retrieval{d.event_date&&` · event ${d.event_date}`}</dd></dl>{d.metadata?.excerpt_truncated&&<p className="research-limit">Extracted text is truncated at 30,000 characters. The original snapshot is preserved when collected.</p>}<div className="research-actions"><button className="secondary small" onClick={()=>choose(d)}><FileText size={13}/> Inspect source</button>{!['approved','dismissed'].includes(d.status)&&<button className="small" disabled={!!busy} onClick={()=>run('Dismissing proposal',async()=>{await api(`/cases/${caseId}/research/${d.id}/dismiss`,'POST');await load();})}>Dismiss</button>}</div></>}</article>)}</div>
- {selected&&<div className="research-overlay"><section className="research-review" role="dialog" aria-modal="true" aria-label="Review retrieved public evidence"><button className="close" aria-label="Close research review" onClick={()=>setSelected(null)}><X/></button><span className="eyebrow">PRESERVED SOURCE REVIEW</span><h2>{selected.title}</h2><a className="research-url" href={selected.url} target="_blank" rel="noreferrer">{selected.url} ↗</a><p className="research-limit"><ShieldCheck size={16}/> Current retrieval is not proof of a policy at the dispute date. A tribunal decision contains allegations as well as findings; classification does not authenticate every statement.</p>{selected.failure_message&&<p className="research-error">{selected.failure_message}</p>}{selected.text&&<><div className="snapshot-hashes"><strong>Original SHA-256</strong><code>{selected.raw_sha256}</code><strong>Extracted text SHA-256</strong><code>{selected.metadata?.text_sha256}</code></div><pre>{selected.text}</pre></>}<GoogleReport data={selected.google}/>{selected.status==='ready'&&<form onSubmit={e=>{e.preventDefault();const f=new FormData(e.currentTarget);run('Approving preserved source',async()=>{await api(`/cases/${caseId}/research/${selected.id}/approve`,'POST',{consent:true,snapshot_sha256:selected.raw_sha256,source_kind:kind,historical_note:String(f.get('historical_note')||'')});setSelected(null);await load();await changed();});}}><label>Reviewed document type<select value={kind} onChange={e=>setKind(e.target.value)}><option value="reported_document">Reported / unclassified document</option><option value="tribunal_decision">Published tribunal or court decision</option><option value="current_policy">Current policy — past applicability not established</option>{selected.metadata?.archive_capture_requested&&<option value="archived_record">Archived capture — effective dates still require proof</option>}</select></label><label>Historical context or limitations<textarea name="historical_note" maxLength={1000} rows={3} placeholder="What date does this source actually support? What remains unverified?"/></label><label className="research-check"><input type="checkbox" required/> I reviewed the preserved text and authorize storing this source in my case. I have the right to preserve it. Its publication/retrieval date does not establish historical policy applicability.</label><button className="primary" disabled={!!busy}><Check size={16}/> Approve this exact snapshot</button></form>}{selected.status==='approved'&&<p className="research-limit">Preserved in your evidence library. Collection is not factual verification; inspect the original, provenance and linked claims.</p>}</section></div>}
- </section>;
+type API=(path:string,method?:string,body?:any)=>Promise<any>;
+type Props={caseId:string;revision:number;activityVersion?:string;api:API;changed:()=>Promise<void>};
+const date=(v:any)=>v?new Date(v).toLocaleString():'Not established';
+const label=(v:string)=>v.replaceAll('_',' ');
+
+function SourceLink({url}:{url:any}) {
+  const href=safeSourceUrl(url);
+  return href?<a className="research-url" href={href} target="_blank" rel="noreferrer">{url} ↗</a>:null;
 }
-function GoogleReport({data}:{data:any}){if(!data)return null;return <div className="google-report"><span className="eyebrow">{data.provider || 'GOOGLE URL CONTEXT'} · {data.status}</span><p>{data.summary}</p>{data.url_context_metadata?.map((m:any,i:number)=><p className="fine" key={i}>Google retrieval: {m.status} · {m.url}</p>)}{data.provider_attempts?.map((p:any,i:number)=><p className="fine" key={i}>{p.provider}: {p.status}{p.retry_after_seconds ? ` · retry after ${p.retry_after_seconds}s` : ''}</p>)}{data.documents?.map((d:any)=><a className="research-url" key={d.url} href={d.url} target="_blank" rel="noreferrer">{d.title}: {d.url} ↗</a>)}{data.search_entry_point&&<iframe title="Google Search suggestions" sandbox="allow-popups allow-popups-to-escape-sandbox" srcDoc={data.search_entry_point}/>}<p className="fine">Search summaries and snippets are not original passages and cannot be approved as evidence.</p></div>}
+
+function useRecords({caseId,revision,activityVersion,api}:Props) {
+  const [records,setRecords]=useState<any[]>([]),[error,setError]=useState('');
+  useEffect(()=>{let active=true;setError('');(async()=>{try{const rows=await api(`/cases/${caseId}/research`);if(active)setRecords(rows);}catch(e:any){if(active)setError(e.message);}})();return()=>{active=false;};},[caseId,revision,activityVersion]);
+  return {records,error};
+}
+
+export function DiscoveryRecords({records,evidenceIds,onInspect}:{records:any[];evidenceIds:string[];onInspect:(r:any)=>void}) {
+  const rows=evidenceDiscoveries(records,evidenceIds);
+  if(!rows.length)return null;
+  return <section className="evidence-discoveries"><div className="section-heading"><h4>Other discoveries</h4><span>{rows.length} retained records</span></div>
+    <p className="fine">Earlier staged or dismissed documents remain available here. They are separate from the sources already in your investigation.</p>
+    <div className="research-results">{rows.map(d=><article className="research-card" key={d.id}>
+      <span className="pill">{d.source_id?'Preserved':d.status==='ready'?'Not yet in investigation':label(d.status)}</span>
+      <h4>{d.title}</h4><SourceLink url={d.metadata?.final_url||d.url}/>
+      <p>{d.relevance}</p><SourceIntegrity metadata={d.metadata} rawHash={d.raw_sha256}/>
+      <button className="secondary small" onClick={()=>onInspect(d)}><FileText size={14}/> Inspect retained source</button>
+    </article>)}</div></section>;
+}
+
+export function SourceIntegrity({metadata,rawHash}:{metadata:any;rawHash?:string}) {
+  return <div className="source-integrity"><span>Origin unverified · {metadata?.review_status==='human_reviewed'?'Human reviewed':metadata?.review_status==='unreviewed'?'Not human reviewed':'Review not recorded'}</span>
+    <span>Retrieved: {date(metadata?.retrieved_at)}</span><span>Publication: {metadata?.publication_date||'Unknown — not inferred'}</span>
+    {rawHash&&<details><summary>Integrity hashes</summary><strong>Original SHA-256</strong><code>{rawHash}</code>
+      {metadata?.text_sha256&&<><strong>Extracted text SHA-256</strong><code>{metadata.text_sha256}</code></>}</details>}
+    <small>Retrieval does not establish historical policy applicability.</small>
+  </div>;
+}
+
+export function PublicSourceFacts({source}:{source:any}) {
+  const p=source.provenance;
+  if(!p)return null;
+  return <div className="evidence-source-facts"><strong>{p.acquisition_mode==='embedded_reference'?'Automatically discovered source':'Preserved public source'}</strong>
+    <SourceLink url={p.requested_url||p.final_url}/>
+    {p.final_url&&p.final_url!==p.requested_url&&<><small>Retrieved from</small><SourceLink url={p.final_url}/></>}
+    <SourceIntegrity metadata={p} rawHash={source.sha256}/>
+  </div>;
+}
+
+export function EvidenceDiscoveries(props:Props&{evidenceIds:string[]}) {
+  const {records,error}=useRecords(props),[selected,setSelected]=useState<any>(null),[busy,setBusy]=useState(false),[actionError,setActionError]=useState('');
+  const dialog=useRef<HTMLElement>(null);
+  useEffect(()=>{if(!selected)return;const previous=document.activeElement as HTMLElement|null;dialog.current?.focus();return()=>{previous?.focus();};},[selected]);
+  async function collect(form:HTMLFormElement) {
+    const f=new FormData(form);setBusy(true);setActionError('');
+    try{await props.api(`/cases/${props.caseId}/research/${selected.id}/approve`,'POST',{consent:true,snapshot_sha256:selected.raw_sha256,source_kind:String(f.get('kind')),historical_note:String(f.get('note')||'')});setSelected(null);await props.changed();}
+    catch(e:any){setActionError(e.message);}finally{setBusy(false);}
+  }
+  return <>{error&&<p className="research-error" role="alert">Could not load retained discoveries: {error}</p>}
+    <DiscoveryRecords records={records} evidenceIds={props.evidenceIds} onInspect={setSelected}/>
+    {selected&&<div className="research-overlay" onClick={()=>setSelected(null)}><section ref={dialog} tabIndex={-1} className="research-review" role="dialog" aria-modal="true" aria-label="Retained evidence source" onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Escape'){e.stopPropagation();setSelected(null);}}}>
+      <button className="close" aria-label="Close retained source" onClick={()=>setSelected(null)}><X/></button>
+      <span className="eyebrow">PRESERVED SOURCE RECORD</span><h2>{selected.title}</h2><SourceLink url={selected.metadata?.final_url||selected.url}/>
+      <SourceIntegrity metadata={selected.metadata} rawHash={selected.raw_sha256}/>
+      <p className="research-limit"><ShieldCheck size={15}/> Collection and integrity hashes do not verify factual truth or a past policy.</p>
+      {selected.text&&<pre>{selected.text}</pre>}<ProviderReport data={selected.google}/>
+      {selected.status==='ready'&&!selected.source_id&&<form onSubmit={e=>{e.preventDefault();collect(e.currentTarget);}}>
+        <label>Document type<select name="kind"><option value="reported_document">Reported / unclassified document</option><option value="tribunal_decision">Published tribunal or court decision</option><option value="current_policy">Current policy — past applicability unestablished</option>{selected.metadata?.archive_capture_requested&&<option value="archived_record">Archived capture</option>}</select></label>
+        <label>Historical context or limitations<textarea name="note" maxLength={1000} rows={2}/></label>
+        <p className="fine">Use the exact preserved snapshot in your case only if you have permission to retain it. This will update the investigation automatically.</p>
+        <button className="primary" disabled={busy}>Use this preserved source</button>
+      </form>}{selected.status==='dismissed'&&<p className="fine">Previously dismissed. Its retained text and integrity metadata remain inspectable.</p>}
+      {actionError&&<p className="research-error" role="alert">{actionError}</p>}
+    </section></div>}
+  </>;
+}
+
+export function ActivityRecords({records}:{records:any[]}) {
+  const rows=researchActivity(records);
+  if(!rows.length)return null;
+  return <details className="retrieval-history"><summary>Source retrieval & discovery history · {rows.length}</summary>
+    <p className="fine">Provider reports and failed attempts are retained here. A failed retrieval never becomes source evidence.</p>
+    {rows.map(d=><article className="research-card" key={d.id}><div className="research-card-top"><strong>{d.title}</strong><small>{date(d.metadata?.retrieved_at||d.created_at)}</small></div>
+      <SourceLink url={d.url}/>{d.failure_message&&<p className="research-error"><AlertTriangle size={14}/>{d.failure_message}</p>}
+      <ProviderReport data={d.google}/>
+    </article>)}
+  </details>;
+}
+
+export function ResearchActivity(props:Props) {
+  const {records,error}=useRecords(props);
+  return <>{error&&<p className="research-error" role="alert">Could not load retrieval history: {error}</p>}<ActivityRecords records={records}/></>;
+}
+
+export function FindEvidence({caseId,api,suggestions,completed}:{caseId:string;api:API;suggestions:any[];completed:()=>Promise<void>}) {
+  const [mode,setMode]=useState('url'),[query,setQuery]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[config,setConfig]=useState<any>(null);
+  useEffect(()=>{let active=true;api('/research/config').then(c=>{if(active)setConfig(c);}).catch(()=>{});return()=>{active=false;};},[api]);
+  async function submit(form:HTMLFormElement) {
+    const f=new FormData(form);setBusy(true);setError('');
+    try{const result=await api(`/cases/${caseId}/research/${mode==='url'?'url':'search'}`,'POST',{
+      ...(mode==='url'?{url:String(f.get('url'))}:{query}),consent:true,event_date:f.get('event_date')||null,
+      google_context:f.get('google')==='on'});
+      if(mode==='url'&&result.status==='unavailable'){setError(result.failure_message||'This page could not be retrieved. The failed attempt is saved in Investigation and Timeline.');return;}
+      await completed();
+    }catch(e:any){setError(e.message);}finally{setBusy(false);}
+  }
+  return <><span className="eyebrow">OPTIONAL EVIDENCE ACQUISITION</span><h2>Find more evidence.</h2>
+    <p>VERDICT already follows safe public links in submitted evidence. Add another source or ask a public question when something is still missing.</p>
+    <div className="find-evidence-modes" role="group" aria-label="Evidence discovery method"><button type="button" aria-pressed={mode==='url'} onClick={()=>{setMode('url');setError('');}}><Globe size={15}/> Enter a URL</button><button type="button" aria-pressed={mode==='search'} onClick={()=>{setMode('search');setError('');}}><Search size={15}/> Search the web</button></div>
+    <form onSubmit={e=>{e.preventDefault();submit(e.currentTarget);}}>
+      {mode==='url'?<label>Public webpage or PDF URL<input name="url" type="url" required maxLength={2048} placeholder="https://…"/></label>:<>
+        <label>Public evidence to look for<textarea value={query} onChange={e=>setQuery(e.target.value)} minLength={8} maxLength={600} rows={3} required placeholder="Find an official policy or published decision…"/></label>
+        {suggestions.length>0&&<div className="research-suggestions"><span>Suggested missing public evidence</span>{suggestions.slice(0,3).map(s=><button type="button" key={s.id} onClick={()=>setQuery((s.public_research_query||`Find public primary documents relevant to: ${s.title}`).slice(0,600))}>{s.title}<ArrowRight size={12}/></button>)}</div>}
+      </>}
+      <details className="find-evidence-options"><summary>Dates & optional URL Context</summary><label>Relevant event date<input type="date" name="event_date"/></label><label className="research-check"><input type="checkbox" name="google"/> Also authorize Google URL Context for these public URLs. Its answer is a lead, not source text.</label></details>
+      <p className="fine">Submitting authorizes public retrieval, preservation and investigation. Only use sources you may retain. Search questions go to public search providers: include no customer, account or transaction identifiers.</p>
+      {mode==='search'&&config&&<p className="fine">{config.free_search_notice}</p>}
+      <button className="primary" disabled={busy}>{busy?<LoaderCircle size={16} className="spin"/>:mode==='url'?<Globe size={16}/>:<Search size={16}/>} {busy?'Finding evidence…':mode==='url'?'Add & investigate':'Find & investigate'}</button>
+    </form>{error&&<p className="research-error" role="alert">{error}</p>}
+  </>;
+}
+
+function ProviderReport({data}:{data:any}) {
+  if(!data)return null;
+  return <details className="google-report"><summary>{data.provider||'Google URL Context'} · {data.status}</summary><p>{data.summary}</p>
+    {data.url_context_metadata?.map((m:any,i:number)=><p className="fine" key={i}>Retrieval: {m.status} · {m.url}</p>)}
+    {data.provider_attempts?.map((p:any,i:number)=><p className="fine" key={i}>{p.provider}: {p.status}{p.retry_after_seconds?` · retry after ${p.retry_after_seconds}s`:''}</p>)}
+    {data.documents?.map((d:any)=><div key={d.url}><strong>{d.title}</strong><SourceLink url={d.url}/></div>)}
+    {data.search_entry_point&&<iframe title="Google Search suggestions" sandbox="allow-popups allow-popups-to-escape-sandbox" srcDoc={data.search_entry_point}/>}
+    <p className="fine">Search summaries and snippets are leads, not original source passages.</p>
+  </details>;
+}

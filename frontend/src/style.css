@@ -1052,7 +1052,7 @@ main {
   border-radius: 6px;
   overflow: hidden;
 }
-.source-list > button {
+.source-list > button, .source-list > .evidence-source > button {
   display: flex;
   width: 100%;
   text-align: left;
@@ -1064,7 +1064,7 @@ main {
 .source-list > button:last-child {
   border-bottom: 0;
 }
-.source-list > button > div {
+.source-list > button > div, .source-list > .evidence-source > button > div {
   flex: 1;
 }
 .source-list strong {
