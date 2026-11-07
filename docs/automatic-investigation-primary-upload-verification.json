@@ -1,0 +1,23 @@
+{
+  "checked_at": "2026-11-07T04:43:08.334527+00:00",
+  "base_url": "https://verdict-ai-harshil0014.onrender.com",
+  "application_commit": "6ef3b8d4897d539c1754600d90d9ea78ca0f20fd",
+  "checks": {
+    "single_upload_triggered_completion": true,
+    "actual_current_policy_retrieved": true,
+    "source_remains_unreviewed": true,
+    "historical_applicability_unestablished": true,
+    "parent_reference_preserved": true,
+    "original_preserved": true,
+    "policy_snapshot_preserved": true,
+    "real_source_linked_model_result": true,
+    "all_quotes_preserved": true,
+    "audit_valid": true
+  },
+  "all_passed": true,
+  "public_url": "https://www.aircanada.com/ca/en/aco/home/plan/special-assistance/bereavement-fares.html",
+  "source_text_characters": 2833,
+  "snapshot_sha256": "b2fed94e218ac1d1ea953d4af22c9184bfd61cb8df8c0ad229e78e6af0f4b1b7",
+  "manual_investigation_or_approval_calls": 0,
+  "payment_writes": 0
+}

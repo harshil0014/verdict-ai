@@ -61,6 +61,12 @@ def run(base, phase, state_path, report_path):
                     case = ok(c.post("/api/cases", json={"title": "Acceptance private case "+str(i+1), "reason":"ITEM_NOT_RECEIVED", "amount":"1.00", "currency":"USD"}))
                     actor["case_id"] = case["id"]; save()
                 path = "/api/cases/"+actor["case_id"]
+                # This older harness exercises explicit analysis contracts;
+                # prevent the default worker racing its deliberate analyze calls.
+                # The one-submission flow has a separate automatic acceptance.
+                if not actor.get('manual_contract_mode'):
+                    ok(c.post(path+'/automation',json={'enabled':False}))
+                    actor['manual_contract_mode']=True; save()
                 if "original_id" not in actor:
                     raw = (f"Synthetic acceptance record for actor {i+1}. Order TEST-{i+1}. Buyer reports no parcel received. Seller reports a reception scan; recipient and destination are not confirmed. No actual payment or shipment occurred.").encode()
                     case = ok(c.post(path+"/upload", files={"file":("own-record.txt",raw,"text/plain")}, data={"party":"seller"}))

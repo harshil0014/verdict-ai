@@ -1,5 +1,22 @@
 # Evidence submission starts investigation
 
+**Live in [VERDICT](https://verdict-ai-harshil0014.onrender.com). The fresh primary-site Air Canada upload acceptance passed at 10:13:08 IST / 04:43:08 UTC on 7 November 2026.** Application commit `6ef3b8d4897d539c1754600d90d9ea78ca0f20fd` passed 175 local tests, frontend compilation and both remote [application/container CI jobs](https://github.com/harshil0014/verdict-ai/actions/runs/42339476856). Main deployment `dep-dbnanhbl550s73em2n4g` became live at 04:41:21 UTC, after the separate validation service passed.
+
+| Executed check | Result | Evidence |
+|---|---|---|
+| One uploaded PDF, URLs only in hyperlink annotations; automatic real HTML/PDF acquisition and investigation | All 36 checks passed; no analyze/approve/search/retry calls | [Hosted acceptance](automatic-investigation-host-verification.json) |
+| Same research accounts/originals/analyses/audits after main replacement | All 36 checks passed | [Primary acceptance](automatic-investigation-primary-verification.json) |
+| Existing two-account originals, witness files, investigations, logout and isolation | All 40 checks passed after main replacement | [Account regression](automatic-investigation-primary-account-regression.json) |
+| One fresh upload through main containing the Air Canada policy URL | All 10 checks passed: actual 2,833-character policy, raw snapshot, unreviewed provenance, exact claims and unestablished historical applicability | [Primary upload](automatic-investigation-primary-upload-verification.json) |
+| Synthetic witness response through restricted portal | All six checks passed; response party bound to stored recipient and automatic reanalysis included it | [Witness workflow](automatic-investigation-witness-verification.json) |
+| Live policy plus an unsafe localhost reference | All six checks passed: policy was actually accessible from Render and preserved; unsafe reference blocked; investigation completed with visible partial status | [Policy/unsafe-reference probe](automatic-investigation-unavailable-verification.json) |
+| Exact validated frontend/research assets served on main | Five checks passed, byte-for-byte hashes match local build | [Frontend integrity](automatic-investigation-primary-frontend-verification.json) |
+| Queue RLS, API grants and restricted-role isolation | Actual database checks passed; no new warning/error advisors | [Database security](automatic-investigation-database-security.json) |
+
+These are automated actors and real network/model/database checks, not two-human usability testing. Visual click-through QA remains unverified because browser control was unavailable; asset integrity is not a visual pass. No paid resources or billing were activated, no third-party messages were sent, and no payment/dispute writes occurred. The previous working release remains at `release/public-research-working-20261107` (`2117bd6849f5a868bfa8798da838baeee5263bd4`). Application rollback does not reverse cloud data or constitute a database backup.
+
+[Machine-readable release ledger](automatic-investigation-release-verification.json) records the deployed application commit, CI, live deployments, passing checks, recovery reference and failed preliminary attempts. Later documentation/verification-runner commits do not change the deployed application modules or frontend assets. The older SaaS and staging acceptance runners explicitly select manual mode for their explicit analyze/approval contracts; the new automatic runner verifies the default product behavior without those calls.
+
 An uploaded document, submitted note or saved witness response is enough. VERDICT saves the original and audit record, discovers literal HTTP(S) references in its text or PDF hyperlink annotations, retrieves accessible source content, preserves original bytes and extracted text with hashes, and refreshes the real Gemini investigation. A separate approval or reassessment click is unnecessary.
 
 Automatic sources are marked **unreviewed** and origin-unverified. Collection is not a factual finding, authentication or acceptance of a party's claim. Humans review conclusions and consequential actions. The public account application cannot submit PayPal evidence, issue refunds or contact parties; its existing safeguards remain separate. Users may pause automatic work for a case before submitting material they want to store without analysis. Evidence submission is disclosed as authorization for Gemini investigation and safe public retrieval.

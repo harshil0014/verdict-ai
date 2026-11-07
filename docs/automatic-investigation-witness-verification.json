@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-11-07T04:41:01.687091+00:00",
+  "base_url": "https://verdict-saas-harshil0014.onrender.com",
+  "checks": {
+    "reply_received": true,
+    "recipient_bound_to_stored_request": true,
+    "investigation_updated_without_manual_analyze": true,
+    "new_response_reached_investigation": true,
+    "every_quote_exists": true,
+    "audit_valid": true
+  },
+  "all_passed": true,
+  "data_kind": "Synthetic user-authored portal reply; real cloud/model workflow",
+  "manual_analyze_calls": 0,
+  "messages_sent_to_third_parties": 0,
+  "payment_writes": 0
+}

@@ -1,5 +1,9 @@
 # Public-source audit — 6 November 2026
 
+## Automatic evidence investigations — 7 November 2026
+
+The automatic release adds a forced-RLS PostgreSQL workflow outbox, an in-process leased runner, offline PDF hyperlink extraction and source-linked reassessment. No dependencies, paid resources or new API credentials were added. Before publication, exact local private-value/generic scans and independent redacted Gitleaks tree/history scans found no leaks; runtime accounts, recovery keys, portal tokens, case/source IDs, deployment secrets and raw fetched documents remain excluded. Passing public reports contain booleans/counts/public URLs/hashes only. Application commit `6ef3b8d` passed 175 tests and both remote application/container jobs. [Actual hosted/main/witness acceptance and known incidents](AUTOMATIC_INVESTIGATION.md). Collection remains explicitly unreviewed and separate from adjudicated truth or financial actions; the frozen 28/30 evaluation tie is unchanged.
+
 ## Public research release — 7 November 2026
 
 The research release retains 57 locked Python distributions and adds the official Apache-2.0 Google Gen AI SDK and Trafilatura. All 26 added distributions have upstream notices under `third_party/python/`; multi-license choices and corresponding source links are recorded in `THIRD_PARTY_NOTICES.md`. Unmodified `tld` uses its MPL-1.1 option; no dependency is relabeled as project MIT code. Documented public API access does not vendor provider server software.
