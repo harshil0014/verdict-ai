@@ -38,6 +38,18 @@ def test_missing_buyer_and_disputed_amount_are_not_invented():
     assert body['paypal_account']['payments'][0]['payment_date'] is None
 
 
+def test_provider_link_order_is_deduplicated_but_changed_actions_are_preserved():
+    d,r,c=fixture();d['links']=[{'rel':'self','method':'GET','href':'https://api-m.sandbox.paypal.com/v1/customer/disputes/PP-D-UNIT'},
+        {'rel':'send-message','method':'POST','href':'https://api-m.sandbox.paypal.com/v1/customer/disputes/PP-D-UNIT/send-message'}]
+    original=copy.deepcopy(d);body,_,snapshots,_=pp.prepare_import(None,d,r,[],1,c)
+    d['links'].reverse();again,changed,second,_=pp.prepare_import(body,d,r,[],1,c)
+    assert not changed and snapshots[0]['sha256']==second[0]['sha256'] and len(again['evidence'])==3
+    assert d['links']==list(reversed(original['links']))
+    d['links'][0]['method']='PATCH'
+    updated,changed,third,_=pp.prepare_import(body,d,r,[],1,c)
+    assert changed and len(updated['evidence'])==4 and third[0]['sha256']!=snapshots[0]['sha256']
+
+
 @pytest.mark.parametrize('change',[
     lambda d,r,c:d['disputed_transactions'][0]['seller'].update(merchant_id='OTHER'),
     lambda d,r,c:r[0]['body']['payee'].update(merchant_id='OTHER'),

@@ -6,10 +6,12 @@ step for the designated controlled QA account, never a public connection flow.
 import argparse,asyncio,hashlib,json,os,secrets,sys,time
 from pathlib import Path
 from datetime import datetime,timezone
+from urllib.parse import urlsplit
 import httpx
 from dotenv import dotenv_values
 
 ROOT=Path(__file__).resolve().parents[1]
+COOKIE='verdict_account_session'
 sys.path.insert(0,str(ROOT/'backend'))
 
 
@@ -32,13 +34,19 @@ def run(a):
                 assert a.phase=='register'
                 actor={'username':'paypal_saas_qa_'+secrets.token_hex(5),'display_name':'Sandbox integration QA '+str(i+1),'password':secrets.token_urlsafe(24)}
                 r=ok(c.post('/api/auth/register',json=actor));actor.update(owner_id=r['id'],recovery_code=r['recovery_code']);state['actors'].append(actor);save()
-            else:ok(c.post('/api/auth/login',json={k:state['actors'][i][k] for k in ['username','password']}))
+            else:
+                actor=state['actors'][i]
+                if actor.get('session_cookie'):
+                    c.cookies.set(COOKIE,actor['session_cookie'],domain=urlsplit(a.base).hostname,path='/')
+                    me=c.get('/api/me')
+                    if me.status_code==401:c.cookies.clear()
+                    else:ok(me)
+                if not c.cookies.get(COOKIE):ok(c.post('/api/auth/login',json={k:actor[k] for k in ['username','password']}))
         if a.phase=='register':print(json.dumps({'normal_registrations':2,'provider_calls':0}));return
         if a.phase in ('provision','local-import'):
             config={**dotenv_values(ROOT/'backend/.env'),**json.loads((ROOT/'runtime/saas-deploy-private.json').read_text())}
             os.environ.update({k:v for k,v in config.items() if v is not None})
             from saas_store import repo,SESSION
-            from saas_auth import COOKIE
             from saas_paypal import import_for_connection,authorized_connection
             probe=json.loads((ROOT/'runtime/saas-paypal-probe-private.json').read_text())
             merchant=probe['dispute']['disputed_transactions'][0]['seller']['merchant_id']
@@ -54,11 +62,19 @@ def run(a):
                         (ROOT/'runtime/saas-paypal-preview-private.json').write_text(json.dumps(private,indent=2),encoding='utf-8')
                         print(json.dumps({'operator_provisioned_one_controlled_qa_connection':True,'public_self_service':False}));return
                     result=await import_for_connection(await authorized_connection(),state['dispute_id'])
-                    state['case_id']=result['case']['id'];state['first_source_ids']=[s['id'] for s in result['case']['evidence']];save()
+                    state['case_id']=result['case']['id'];state['creation_origin']='local_server_function_validation';state['first_source_ids']=[s['id'] for s in result['case']['evidence']];save()
                     print(json.dumps({'real_sandbox_import':True,'provider_sources':len(result['case']['evidence']),'provider_business_writes':0}))
                 finally:SESSION.reset(token);await repo.close()
             asyncio.run(work());return
-        c,other=clients;path='/api/cases/'+state['case_id'];checks={}
+        c,other=clients
+        if a.phase=='import':
+            listed=ok(c.get('/api/paypal/disputes'))['disputes']
+            selected=next(r for r in listed if r['dispute_id']==state['dispute_id'])
+            result=ok(c.post('/api/paypal/import',json={'dispute_id':selected['dispute_id']}))
+            assert result['duplicate'] is False
+            state.update(case_id=result['case']['id'],creation_origin='deployed_saas_http_import');save()
+            print(json.dumps({'deployed_http_case_creation':True,'request_fields':['dispute_id'],'provider_sources':len(result['case']['evidence']),'provider_business_writes':0}));return
+        path='/api/cases/'+state['case_id'];checks={}
         def check(name,v):
             checks[name]=bool(v)
             if not v:raise AssertionError(name)
@@ -99,11 +115,14 @@ def run(a):
         check('deployment_persistence',fingerprint(ok(c.get(path)))==state['fingerprint'])
         ok(c.post('/api/auth/logout',json={}));check('logout_revoked',c.get(path).status_code==401)
         ok(c.post('/api/auth/login',json={k:state['actors'][0][k] for k in ['username','password']}));check('login_preserves_case',fingerprint(ok(c.get(path)))==state['fingerprint'])
-        report={'checked_at':datetime.now(timezone.utc).isoformat(),'base_url':a.base,'phase':a.phase,'checks':checks,'all_passed':all(checks.values()),'provider':'real PayPal sandbox OAuth and authenticated GETs','payment_amount':payment['payment_amount'],'disputed_amount':receipt['dispute']['disputed_amount'],'capture_status':payment['status'],'order_linkage':payment['linkage'],'provider_business_writes':0,'actors':'Two controlled automated QA accounts with normal registration/login; merchant binding is operator-provisioned, not public OAuth consent.'}
+        report={'checked_at':datetime.now(timezone.utc).isoformat(),'base_url':a.base,'phase':a.phase,'creation_origin':state.get('creation_origin'),'checks':checks,'all_passed':all(checks.values()),'provider':'real PayPal sandbox OAuth and authenticated GETs','payment_amount':payment['payment_amount'],'disputed_amount':receipt['dispute']['disputed_amount'],'capture_status':payment['status'],'order_linkage':payment['linkage'],'provider_business_writes':0,'actors':'Two controlled automated QA accounts with normal registration/login; merchant binding is operator-provisioned, not public OAuth consent.'}
         a.report.write_text(json.dumps(report,indent=2),encoding='utf-8');print(json.dumps(report,indent=2))
     finally:
-        for c in clients:c.close()
+        for i,c in enumerate(clients):
+            if i<len(state['actors']) and c.cookies.get(COOKIE):state['actors'][i]['session_cookie']=c.cookies.get(COOKIE)
+            c.close()
+        save()
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--base',required=True);p.add_argument('--phase',choices=['register','provision','local-import','wait','verify'],required=True);p.add_argument('--state',type=Path,default=ROOT/'runtime/saas-paypal-acceptance-private.json');p.add_argument('--report',type=Path,default=ROOT/'work/saas-paypal-acceptance.json');run(p.parse_args())
+    p=argparse.ArgumentParser();p.add_argument('--base',required=True);p.add_argument('--phase',choices=['register','provision','local-import','import','wait','verify'],required=True);p.add_argument('--state',type=Path,default=ROOT/'runtime/saas-paypal-acceptance-private.json');p.add_argument('--report',type=Path,default=ROOT/'work/saas-paypal-acceptance.json');run(p.parse_args())

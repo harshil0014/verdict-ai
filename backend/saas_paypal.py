@@ -12,7 +12,7 @@ from saas_store import repo
 from paypal import PayPal,PayPalError
 from payment_records import ReadBudget,fetch_records,merge_records,safe_id
 from source_recovery import RECOVERY_VERSION
-from store import now,digest
+from store import now,digest,canon
 
 router=APIRouter(prefix='/api')
 MISSING='Not available from PayPal'
@@ -34,6 +34,19 @@ def money(value):
 
 
 def identifier(value):return value if safe_id(value) else None
+
+
+def canonical_provider_record(data):
+    """Top-level HATEOAS relations form a set; retain every link's content.
+
+    PayPal can return the same links in a different array order. Normalize only
+    that known envelope field, never party statements or transaction arrays.
+    The stored snapshot is explicitly canonical JSON, not original HTTP bytes.
+    """
+    out=copy.deepcopy(data);links=out.get('links')
+    if isinstance(links,list) and all(isinstance(x,dict) and isinstance(x.get('rel'),str) and isinstance(x.get('href'),str) for x in links):
+        out['links']=sorted(links,key=canon)
+    return out
 
 
 def payment_summary(detail,records,merchant):
@@ -114,7 +127,7 @@ def prepare_import(existing,detail,records,issues,count,connection):
     did=detail.get('dispute_id')
     if not isinstance(did,str) or not re.fullmatch(r'[A-Za-z0-9-]{1,80}',did):raise HTTPException(502,'PayPal returned an invalid dispute identifier.')
     merchant=connection['merchant_id'];payments=payment_summary(detail,records,merchant)
-    all_records=[{'kind':'dispute','id':did,'body':detail}]+records
+    all_records=[{**r,'body':canonical_provider_record(r['body'])} for r in [{'kind':'dispute','id':did,'body':detail}]+records]
     cap_ids={p['capture_id'] for p in payments if p['capture_id']}
     projected=[{**r,'body':project(r['kind'],r['body'],merchant,cap_ids)} for r in all_records]
     body=copy.deepcopy(existing) if existing else {'evidence':[],'requests':[],'analysis':None,'automatic_investigation':True,'automatic_workflow_version':RECOVERY_VERSION}
