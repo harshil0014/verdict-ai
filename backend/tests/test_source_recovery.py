@@ -5,6 +5,7 @@ import base64
 import pytest
 from source_recovery import decision_identity,recovery_query,publisher_candidates,check_decision,automatic_url,publisher_embed
 import automatic_investigation as auto
+import research_routes as research
 from test_automatic_investigation import fake_process
 
 BLOCKED='https://www.canlii.org/en/bc/bccrt/doc/2024/2024bccrt149/2024bccrt149.html'
@@ -134,7 +135,7 @@ def test_no_original_publisher_result_does_not_invent_url_or_document(monkeypatc
 def test_only_literal_same_document_publisher_frame_is_followed(src,allowed):
     raw=('<html><iframe src="'+src+'"></iframe></html>').encode()
     draft={'id':'D-wrapper','status':'ready','raw_sha256':hashlib.sha256(raw).hexdigest(),
-        'content':base64.b64encode(raw).decode(),'metadata':{'final_url':'https://decisions.civilresolutionbc.ca/decision/index.do','mime':'text/html'}}
+        'content':base64.encodebytes(raw).decode(),'metadata':{'final_url':'https://decisions.civilresolutionbc.ca/decision/index.do','mime':'text/html'}}
     result=publisher_embed(draft,decision_identity(BLOCKED))
     assert bool(result)==allowed
     if allowed:
@@ -167,3 +168,16 @@ def test_publisher_wrapper_frame_is_preserved_then_checked_before_adoption(monke
     assert record['status']=='recovered' and record['candidates'][0]['status']=='wrapper'
     adoption=next(c[1] for c in calls if c[0]=='collect')
     assert adoption['recovery']['publisher_wrapper']['url']==wrapper
+
+
+def test_recovery_reads_retained_raw_snapshot_after_staging_omits_content(monkeypatch):
+    calls=[];snapshot=document();snapshot['raw']=b'actual retained wrapper'
+    async def addresses(url):return ['8.8.8.8']
+    async def retrieve(url):return snapshot
+    async def rpc(op,args):
+        calls.append(op)
+        if op=='research:stage':return {'id':'D-retained','status':'ready'}
+        return {'id':'D-retained','status':'ready','content':base64.encodebytes(snapshot['raw']).decode()}
+    monkeypatch.setattr(research,'public_addresses',addresses);monkeypatch.setattr(research,'retrieve',retrieve);monkeypatch.setattr(research.repo,'rpc',rpc)
+    result=asyncio.run(research.stage_url('case',research.URLInput(url=PUBLISHER,consent=True),recovery_identity=decision_identity(BLOCKED)))
+    assert calls==['research:stage','research:get'] and base64.b64decode(result['content'])==snapshot['raw']

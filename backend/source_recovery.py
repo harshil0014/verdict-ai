@@ -90,7 +90,8 @@ def publisher_embed(draft,identity):
     if draft.get('status')!='ready' or meta.get('mime')!='text/html' or p.scheme!='https' or p.hostname!=identity['publisher_host'] or p.query:
         return None
     try:
-        raw=base64.b64decode(draft.get('content',''),validate=True)
+        # PostgreSQL encode(bytea,'base64') wraps lines at 76 characters.
+        raw=base64.b64decode(''.join(draft.get('content','').split()),validate=True)
         if len(raw)>5*1024*1024 or hashlib.sha256(raw).hexdigest()!=draft.get('raw_sha256'):return None
         from lxml import html
         tree=html.fromstring(raw)

@@ -75,7 +75,13 @@ async def stage_url(case_id,data,*,recovery_identity=None):
     if recovery_identity:
         draft['identity_check']=check_decision(draft,recovery_identity)
     args={'case_id':case_id,'body':draft,'content':base64.b64encode(raw).decode() if raw is not None else None}
-    return await repo.rpc('research:stage',args)
+    saved=await repo.rpc('research:stage',args)
+    # Stage responses deliberately omit raw bytes. Recovery needs the retained
+    # wrapper snapshot to inspect its literal same-document frame; read it using
+    # the owner-scoped server API, including when staging deduplicated a record.
+    if recovery_identity and saved['status']=='ready':
+        return await repo.rpc('research:get',{'case_id':case_id,'id':saved['id']})
+    return saved
 
 
 @router.get('/research/config')
