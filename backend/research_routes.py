@@ -157,7 +157,7 @@ def inferred_kind(metadata, title, text=''):
 async def collect_draft(id,draft_id,*,approval=None,acquisition='human_review',parent=None,recovery=None):
     body=await repo.get(id)
     body.setdefault('automatic_investigation',True)
-    body['automatic_workflow_version']=max(5,RECOVERY_VERSION)
+    body['automatic_workflow_version']=max(6,RECOVERY_VERSION)
     draft=await repo.rpc('research:get',{'case_id':id,'id':draft_id})
     if approval and not approval.consent: raise HTTPException(422,'Review the exact extracted text and authorize preservation before adding it to the case.')
     if approval and approval.snapshot_sha256!=draft['raw_sha256']: raise HTTPException(409,'The approved snapshot hash does not match the staged document')

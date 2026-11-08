@@ -19,7 +19,8 @@ from saas_store import repo
 import saas_auth as auth
 from store import digest,now
 
-VERSION=1
+VERSION=2
+MAX_QUERIES=8
 PROVIDER='Photon / OpenStreetMap'
 PROVIDER_URL='https://photon.komoot.io/api/'
 PIN=re.compile(r'(?<![\d.])[1-9]\d{5}(?![\d.])')
@@ -124,9 +125,87 @@ def lookup_query(m,mode):
     return (address,'address')
 
 
-def photon_result(data,query,kind,postcode=None):
+ALIASES={r'\biit\b':'Indian Institute of Technology',r'\biim\b':'Indian Institute of Management',
+    r'\bnit\b':'National Institute of Technology',r'\buniv\b':'University',r'\b(?:rly|railway stn)\b':'railway station'}
+SUBLOCATION=re.compile(r'\b(?:(?:main|north|south|east|west|front|back)\s+)?(?:gate|entrance)\b(?:\s+\d+)?|\b(?:block|wing)\s+[a-z0-9]+\b',re.I)
+CAMPUS_VALUES={'university','college','school','hospital'}
+
+
+def name_tokens(value):
+    for pattern,replacement in ALIASES.items():value=re.sub(pattern,replacement,value,flags=re.I)
+    value=re.sub(r'\bentrance\b','gate',value,flags=re.I)
+    return tokens(value)-{'of','the'}
+
+
+def geographic_tokens(value):
+    # Only established spelling aliases; no model-generated places or coordinates.
+    return tokens(re.sub(r'\bBombay\b','Mumbai',value,flags=re.I))-{'district','suburban','city','state','province'}
+
+
+def lookup_plan(query,kind):
+    """Keep the named place and geographic anchors, never fall back to a city alone."""
+    if kind!='address':return [(query,'original')]
+    plan=[(query,'original')];expanded=query
+    for pattern,replacement in ALIASES.items():expanded=re.sub(pattern,replacement,expanded,flags=re.I)
+    expanded=re.sub(r'\bgate\b','Entrance',expanded,flags=re.I)
+    def add(value,scope):
+        if value and not any(normalize(q)==normalize(value) for q,_ in plan):plan.append((value,scope))
+    add(expanded,'alternate_name')
+    parts=[p.strip() for p in expanded.split(',') if p.strip()]
+    parent=SUBLOCATION.sub('',parts[0]).strip(' ,-')
+    # A numbered street can fall back to the street, but a missing named building
+    # must never be replaced with an unrelated city or similarly named business.
+    parent=re.sub(r'^\d+[a-z]?\s+(?=.+\b(?:road|street|avenue|lane|marg)\b)','',parent,flags=re.I)
+    if parent and name_tokens(parent):add(', '.join([parent,*parts[1:]]),'parent_location')
+    if len(parts)>=4:add(', '.join([parent or parts[0],*parts[-2:]]),'broader_context')
+    return plan[:4]
+
+
+def address_match(properties,address):
+    """Validate against the original sanitized address, even for broader queries."""
+    parts=[p.strip() for p in address.split(',') if p.strip()]
+    if len(parts)==1:
+        # Unpunctuated addresses may end with provider-confirmed geography.
+        # Only remove complete suffix fields, never arbitrary place-name tokens.
+        for _ in range(3):
+            for key in ('country','state','city','locality'):
+                suffix=str(properties.get(key,''))
+                if suffix:parts[0]=re.sub(r'\s+'+re.escape(suffix)+r'\s*$', '',parts[0],flags=re.I)
+    geo=' '.join(str(properties.get(k,'')) for k in ('street','locality','district','city','county','state','country','postcode'))
+    geographic=geographic_tokens(geo)
+    for part in parts[1:]:
+        required=geographic_tokens(part)
+        if required and not required<=geographic:return None
+        city=geographic_tokens(str(properties.get('city','')))
+        county=geographic_tokens(str(properties.get('county','')))
+        other=geographic_tokens(' '.join(str(properties.get(k,'')) for k in ('locality','district','state','country','postcode')))
+        if required and city and required<=county and not required<=city and not required<=other:return None
+    explicit=[c for c,p in COUNTRIES.items() if re.search(p,address,re.I)]
+    if explicit and properties.get('countrycode','').upper() not in explicit:return None
+    name=str(properties.get('name',''));wanted=name_tokens(parts[0]);actual=name_tokens(name)
+    # Common directional suffixes on transit stops do not identify a platform.
+    if properties.get('osm_value') in ('bus_station','bus_stop','station','halt'):
+        actual-={'w','e','n','s'}
+    parent=name_tokens(SUBLOCATION.sub('',parts[0]))
+    requested_sub=bool(SUBLOCATION.search(parts[0]))
+    campus=properties.get('osm_value') in CAMPUS_VALUES
+    if requested_sub and campus and parent and actual==parent:return 'parent_campus'
+    if requested_sub and re.search(r'\b(?:gate|entrance)\b',parts[0],re.I):
+        if properties.get('osm_value') not in ('gate','entrance') and properties.get('osm_key')!='entrance':return None
+    if wanted==actual and wanted:return 'named_location'
+    # A provider may omit a proper name for a numbered street address.
+    street=name_tokens(str(properties.get('street','')))
+    number=str(properties.get('housenumber',''))
+    if number and wanted==street|name_tokens(number):return 'named_location'
+    # Explicit numbered street fallback remains street-level, never building-level.
+    street_wanted=name_tokens(re.sub(r'^\d+[a-z]?\s+','',parts[0],flags=re.I))
+    if street_wanted!=wanted and properties.get('type')=='street' and street_wanted==actual:return 'parent_street'
+    return None
+
+
+def photon_result(data,query,kind,postcode=None,*,address=None):
     valid=[]
-    for f in data.get('features',[])[:3]:
+    for f in data.get('features',[])[:5]:
         p=f.get('properties',{});g=f.get('geometry',{});xy=g.get('coordinates',[])
         if g.get('type')!='Point' or len(xy)!=2 or not all(isinstance(v,(int,float)) and not isinstance(v,bool) and math.isfinite(v) for v in xy):continue
         lon,lat=xy
@@ -136,11 +215,14 @@ def photon_result(data,query,kind,postcode=None):
         if postcode and inferred and inferred!=postcode:continue
         if postcode and p.get('countrycode','IN').upper()!='IN':continue
         name=p.get('name','');specific=p.get('type')=='house' and (p.get('housenumber') or name)
-        if kind=='address' and specific and name and len(tokens(name)&tokens(query))<max(1,len(tokens(name))//2):continue
-        precise_building=specific and (p.get('osm_key')=='building' or p.get('osm_value') in ('house','apartments','residential','hotel') or p.get('housenumber')) and p.get('osm_value') not in ('university','college','hospital')
+        match=address_match(p,address or query) if kind=='address' else 'postcode'
+        if not match:continue
+        precise_building=specific and (p.get('osm_key')=='building' or p.get('osm_value') in ('house','apartments','residential','hotel') or p.get('housenumber')) and p.get('osm_value') not in CAMPUS_VALUES
         precision='postcode_area' if kind=='postcode' or p.get('osm_value')=='postcode' else ('building' if precise_building else ('site' if specific else ('street' if p.get('type')=='street' else 'locality')))
+        if p.get('osm_value') in ('gate','entrance') or p.get('osm_key')=='entrance':precision='entrance'
+        if match=='parent_campus':precision='site'
         # Policy bounds, deliberately conservative; NOT provider accuracy guarantees.
-        bound={'building':100,'site':1000,'street':500,'postcode_area':5000,'locality':15000}[precision]
+        bound={'entrance':100,'building':100,'site':1000,'street':500,'postcode_area':5000,'locality':15000}[precision]
         extent=p.get('extent')
         if isinstance(extent,list) and len(extent)==4 and all(isinstance(x,(float,int)) and math.isfinite(x) for x in extent):
             bound=max(bound,round(haversine({'lon':extent[0],'lat':extent[1]},{'lon':extent[2],'lat':extent[3]})/2))
@@ -148,8 +230,18 @@ def photon_result(data,query,kind,postcode=None):
             'uncertainty_m':bound,'uncertainty_basis':'Conservative application comparison tolerance, not a provider-reported accuracy radius.',
             'label':', '.join(str(p[k]) for k in ('name','street','city','state','country') if p.get(k)),
             'inferred_postcode':inferred,'osm_type':p.get('osm_type'),'osm_id':p.get('osm_id'),
-            'provider_properties':p,'bbox':p.get('extent')})
+            'provider_properties':p,'bbox':p.get('extent'),'match_scope':match,
+            'accuracy_label':('Approximate campus location; exact gate or entrance not confirmed.' if match=='parent_campus' else
+                'Approximate campus location.' if p.get('osm_value') in CAMPUS_VALUES else
+                'Approximate transit-stop location; railway platform not confirmed.' if p.get('osm_value') in ('bus_station','bus_stop') else
+                'Map-estimated entrance location.' if precision=='entrance' else
+                'Approximate street location; building not confirmed.' if match=='parent_street' else
+                'Map-estimated location.' if precision=='building' else 'Approximate location.')})
     if not valid:return {'status':'no_compatible_result','provider':PROVIDER,'detail':'No compatible source-backed map result. No coordinates were inferred.'}
+    # A true entrance beats its parent campus. Equally plausible distinct places
+    # stay ambiguous; provider ordering or proximity to the OTHER address is not proof.
+    if kind=='address' and any(v['match_scope']=='named_location' for v in valid):
+        valid=[v for v in valid if v['match_scope']=='named_location']
     if kind=='address' and len(valid)>1:
         ids={(v.get('osm_type'),v.get('osm_id')) for v in valid}
         if len(ids)>1:return {'status':'ambiguous','provider':PROVIDER,'detail':'Multiple plausible map objects; no unique destination selected.','candidates':valid}
@@ -163,7 +255,7 @@ async def geocode(case_id,query,kind,postcode=None,*,transport=None):
     await asyncio.sleep(max(0,min(30,slot['wait_seconds'])))
     try:
         async with httpx.AsyncClient(timeout=20,follow_redirects=False,transport=transport) as c:
-            async with c.stream('GET',PROVIDER_URL,params={'q':query,'limit':3,'lang':'en'},headers={'User-Agent':'VERDICT/1.0 (+https://github.com/harshil0014/verdict-ai)'}) as r:
+            async with c.stream('GET',PROVIDER_URL,params={'q':query,'limit':5,'lang':'en'},headers={'User-Agent':'VERDICT/1.0 (+https://github.com/harshil0014/verdict-ai)'}) as r:
                 if r.status_code!=200:return {'status':'provider_unavailable','http_status':r.status_code,'detail':'Geocoder unavailable. Original address evidence is preserved; no location invented.'}
                 raw=b''
                 async for chunk in r.aiter_bytes():
@@ -260,26 +352,55 @@ async def verify_case(case_id):
             found=anchored([m.model_dump() for m in result.locations],sources)
             if found:mentions=found;extraction='Gemini extraction with deterministic source anchoring'
         except ModelError:extraction_error='Model address extraction unavailable; retained deterministic source-label extraction.'
-    cache=old.get('lookup_cache',{}).copy();mode=settings.get('mode','off');queries=0
+    cache=old.get('lookup_cache',{}).copy();mode=settings.get('mode','off');queries=0;pending=[]
     for m in mentions:
         m['geocode']=documented_gps(m) or {'status':'not_authorized','detail':'External lookup is off. Evidence is still compared locally.'}
         lookup=lookup_query(m,mode) if m['role']!='other' else None
         if not lookup and mode!='off' and m['geocode']['status']!='resolved':
             m['geocode']={'status':'insufficient_lookup_detail','detail':'No suitable source-supplied Indian PIN for area mode, or no safe relevant address. The full address has not been shared.'}
         if m['geocode'].get('status')=='resolved' or not lookup:continue
-        query,kind=lookup;ck=digest({'query':query,'kind':kind,'provider':PROVIDER})
+        query,kind=lookup
+        pending.append({'mention':m,'original':query,'kind':kind,'plan':lookup_plan(query,kind),'attempts':[],'best':None})
+    # Round robin: every relevant address gets its initial lookup before one
+    # difficult address spends the shared bounded budget on alternatives.
+    while pending:
+        item=pending.pop(0);m=item['mention'];query,scope=item['plan'].pop(0);kind=item['kind']
+        ck=digest({'version':VERSION,'query':query,'kind':kind,'provider':PROVIDER})
         prior=cache.get(ck);age=(datetime.now(timezone.utc)-datetime.fromisoformat(prior['cached_at'])).total_seconds() if prior else None
         transient=prior and (prior['result'].get('status') in ('provider_unavailable','quota_limited'))
         ttl=2592000 if prior and prior['result'].get('status')=='resolved' else (300 if transient else 3600)
-        if prior and age<ttl:m['geocode']=copy.deepcopy(prior['result']);m['geocode']['cached']=True
-        elif queries<4:
+        if prior and age<ttl:result=copy.deepcopy(prior['result']);result['cached']=True
+        elif queries<MAX_QUERIES:
             fresh=await repo.get(case_id)
             current_settings=await repo.rpc('experience:preferences') if inherited else fresh.get('location_authorization',{})
             if fresh['revision']!=body['revision'] or current_settings.get('mode','off')!=settings['mode']:
                 raise HTTPException(409,'Case or location authorization changed; further external lookups stopped.')
             result=await geocode(case_id,query,kind,m.get('explicit_postcode') if m.get('explicit_country') in (None,'IN') else None);queries+=1
-            cache[ck]={'cached_at':now(),'result':result};m['geocode']=result
-        else:m['geocode']={'status':'case_limit','detail':'At most four new geocoder queries per evidence revision.'}
+            cache[ck]={'cached_at':now(),'result':result}
+        else:result={'status':'case_limit','detail':'At most eight new geocoder queries per evidence revision.'}
+        # A broader query must still satisfy ALL geographic and identity
+        # constraints in the original address, not just its shortened query.
+        if result.get('raw_response') and kind=='address':
+            checked=photon_result(json.loads(result['raw_response']),query,kind,m.get('explicit_postcode'),address=item['original'])
+            result={k:v for k,v in result.items() if k in ('raw_response','response_sha256','retrieved_at','query','cached')}|checked
+        item['attempts'].append({'query':query,'scope':scope,'status':result['status'],
+            'response_sha256':result.get('response_sha256'),'retrieved_at':result.get('retrieved_at')})
+        previous=item['best']
+        if previous and result['status']=='resolved' and previous.get('match_scope')==result.get('match_scope'):
+            if (previous.get('osm_type'),previous.get('osm_id'))!=(result.get('osm_type'),result.get('osm_id')):
+                result={'status':'ambiguous','provider':PROVIDER,'detail':'Alternative names returned distinct plausible map objects. No unique destination selected.',
+                    'candidates':[previous,result]}
+        if result['status']=='resolved':
+            item['best']=copy.deepcopy(result)
+        stop=result['status'] not in ('resolved','no_compatible_result')
+        if result['status']=='resolved':stop=result.get('match_scope')!='parent_campus' or scope in ('parent_location','broader_context')
+        if not stop and item['plan'] and queries<MAX_QUERIES:
+            pending.append(item);continue
+        chosen=result if result['status']=='ambiguous' else (item['best'] or result)
+        chosen['attempts']=item['attempts'];chosen['original_query']=item['original']
+        chosen['fallback_used']=len(item['attempts'])>1 or chosen.get('match_scope') in ('parent_campus','parent_street')
+        if item['best'] and result['status']!='resolved':chosen['refinement_status']=result['status']
+        m['geocode']=chosen
     pairs=pair_mentions(mentions);comparisons=[compare_pair(a,b) for a,b in pairs]
     record={'version':VERSION,'input_digest':key,'checked_at':now(),'extraction':extraction,'extraction_error':extraction_error,
         'mentions':mentions,'comparisons':comparisons,'lookup_cache':dict(list(cache.items())[-16:]),
@@ -311,7 +432,7 @@ def investigation_record(record):
     if not record:return None
     return {k:record[k] for k in ('status','comparisons','limitations')} | {'mentions':[
         {k:m.get(k) for k in ('id','source_id','quote','address','role','explicit_postcode','explicit_country','source_authenticity')} |
-        {'geocode':{k:m.get('geocode',{}).get(k) for k in ('status','provider','precision','uncertainty_m','uncertainty_basis','inferred_postcode','lat','lon')}} for m in record['mentions']]}
+        {'geocode':{k:m.get('geocode',{}).get(k) for k in ('status','provider','precision','match_scope','accuracy_label','label','uncertainty_m','uncertainty_basis','inferred_postcode','lat','lon')}} for m in record['mentions']]}
 
 
 router=APIRouter()
@@ -320,7 +441,7 @@ async def authorize(id:str,data:Authorization,user=Depends(auth.current_session)
     body=await repo.get(id)
     if data.mode not in ('off','account') and not data.acknowledged:raise HTTPException(422,'Acknowledge external geocoding disclosure before authorizing location lookup.')
     body['location_authorization']={'mode':data.mode,'acknowledged_at':now() if data.mode!='off' else None,'provider':PROVIDER}
-    body['automatic_workflow_version']=max(5,body.get('automatic_workflow_version',1))
+    body['automatic_workflow_version']=max(6,body.get('automatic_workflow_version',1))
     await repo.save(body,'location_authorization_changed',{'mode':data.mode,'provider':PROVIDER})
     if body['evidence'] and body.get('automatic_investigation',True):
         await repo.rpc('workflow:retry',{'case_id':id})

@@ -48,7 +48,7 @@ export function DeliveryMap({ mentions }: { mentions: any[] }) {
               : "Reported delivery: ") +
             m.address +
             " · " +
-            g.precision.replaceAll("_", " ") +
+            (g.accuracy_label || g.precision.replaceAll("_", " ")) +
             " · " +
             m.source_id;
           L.circleMarker([g.lat, g.lon], {
@@ -272,9 +272,9 @@ export function DeliveryLocation({
             <strong>{m.address}</strong>
             <p>
               {m.geocode?.status === "resolved"
-                ? m.geocode.precision === "building"
+                ? m.geocode.accuracy_label || (m.geocode.precision === "building"
                   ? "Map-estimated location."
-                  : "Approximate location."
+                  : "Approximate location.")
                 : authorization === "off"
                   ? "Not checked on a map."
                   : "We couldn’t locate this address accurately."}
@@ -336,6 +336,7 @@ export function DeliveryLocation({
                 is not a PIN supplied by the carrier.
               </p>
             )}
+            {m.geocode?.label && <p>Map result: {m.geocode.label}</p>}
             <p>{m.geocode?.detail}</p>
             <details className="technical-record">
               <summary>Technical details</summary>
@@ -352,6 +353,9 @@ export function DeliveryLocation({
               </p>
               <p>Response SHA-256</p>
               <code>{m.geocode?.response_sha256}</code>
+              {m.geocode?.attempts?.map((a: any, i: number) => (
+                <p key={i}>Lookup {i + 1}: {a.query} · {a.status.replaceAll("_", " ")} · {a.response_sha256 || "No response retained"}</p>
+              ))}
               <p>Source hash</p>
               <code>{m.source_sha256}</code>
               <code>{m.quote_sha256}</code>

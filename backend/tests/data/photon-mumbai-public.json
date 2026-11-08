@@ -1,0 +1,320 @@
+{
+  "retrieved_at": "2026-11-08T14:03:11.117597+00:00",
+  "provider_url": "https://photon.komoot.io/api/",
+  "attribution": "Map data copyright OpenStreetMap contributors, ODbL https://www.openstreetmap.org/copyright",
+  "scope": "Public-landmark responses; frozen regression data, not a live test.",
+  "responses": [
+    {
+      "query": "IIT Bombay Main Gate, Powai, Mumbai, Maharashtra",
+      "http_status": 200,
+      "data": {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "osm_type": "R",
+              "osm_id": 8546708,
+              "osm_key": "amenity",
+              "osm_value": "university",
+              "type": "house",
+              "name": "Indian Institute of Technology Bombay",
+              "street": "Adi Shankaracharya Marg",
+              "locality": "Powai",
+              "district": "S Ward",
+              "city": "Mumbai",
+              "county": "Mumbai Suburban District",
+              "state": "Maharashtra",
+              "country": "India",
+              "postcode": "400076",
+              "countrycode": "IN",
+              "extent": [
+                72.9021996,
+                19.1413927,
+                72.9197655,
+                19.1238481
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                72.9149702,
+                19.1326186
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "osm_type": "W",
+              "osm_id": 267950643,
+              "osm_key": "landuse",
+              "osm_value": "residential",
+              "type": "locality",
+              "name": "IIT Bombay Staff CHS Ltd",
+              "street": "10E, Kopri Village",
+              "district": "S Ward",
+              "city": "Mumbai",
+              "county": "Mumbai Suburban District",
+              "state": "Maharashtra",
+              "country": "India",
+              "postcode": "400076",
+              "countrycode": "IN",
+              "extent": [
+                72.9044423,
+                19.1150163,
+                72.9057555,
+                19.1140328
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                72.9050021,
+                19.1145814
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "osm_type": "N",
+              "osm_id": 5078296181,
+              "osm_key": "highway",
+              "osm_value": "bus_stop",
+              "type": "house",
+              "name": "IIT Main Gate",
+              "street": "Main Gate Road",
+              "locality": "Tirandaz Village",
+              "district": "S Ward",
+              "city": "Mumbai",
+              "county": "Mumbai Suburban District",
+              "state": "Maharashtra",
+              "country": "India",
+              "postcode": "400076",
+              "countrycode": "IN"
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                72.9162517,
+                19.1259528
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "osm_type": "N",
+              "osm_id": 648837255,
+              "osm_key": "historic",
+              "osm_value": "ruins",
+              "type": "house",
+              "name": "Main Portuguese gate to Bombay Castle",
+              "street": "Shahid Bhagat Singh Marg",
+              "locality": "Bora Bazaar",
+              "district": "A Ward",
+              "county": "Mumbai City District",
+              "state": "Maharashtra",
+              "country": "India",
+              "postcode": "400038",
+              "countrycode": "IN"
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                72.8377568,
+                18.9319814
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "query": "IIT Bombay, Powai, Mumbai, Maharashtra",
+      "http_status": 200,
+      "data": {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "osm_type": "R",
+              "osm_id": 8546708,
+              "osm_key": "amenity",
+              "osm_value": "university",
+              "type": "house",
+              "name": "Indian Institute of Technology Bombay",
+              "street": "Adi Shankaracharya Marg",
+              "locality": "Powai",
+              "district": "S Ward",
+              "city": "Mumbai",
+              "county": "Mumbai Suburban District",
+              "state": "Maharashtra",
+              "country": "India",
+              "postcode": "400076",
+              "countrycode": "IN",
+              "extent": [
+                72.9021996,
+                19.1413927,
+                72.9197655,
+                19.1238481
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                72.9149702,
+                19.1326186
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "osm_type": "W",
+              "osm_id": 267950643,
+              "osm_key": "landuse",
+              "osm_value": "residential",
+              "type": "locality",
+              "name": "IIT Bombay Staff CHS Ltd",
+              "street": "10E, Kopri Village",
+              "district": "S Ward",
+              "city": "Mumbai",
+              "county": "Mumbai Suburban District",
+              "state": "Maharashtra",
+              "country": "India",
+              "postcode": "400076",
+              "countrycode": "IN",
+              "extent": [
+                72.9044423,
+                19.1150163,
+                72.9057555,
+                19.1140328
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                72.9050021,
+                19.1145814
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "query": "Indian Institute of Technology Bombay, Mumbai",
+      "http_status": 200,
+      "data": {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "osm_type": "R",
+              "osm_id": 8546708,
+              "osm_key": "amenity",
+              "osm_value": "university",
+              "type": "house",
+              "name": "Indian Institute of Technology Bombay",
+              "street": "Adi Shankaracharya Marg",
+              "locality": "Powai",
+              "district": "S Ward",
+              "city": "Mumbai",
+              "county": "Mumbai Suburban District",
+              "state": "Maharashtra",
+              "country": "India",
+              "postcode": "400076",
+              "countrycode": "IN",
+              "extent": [
+                72.9021996,
+                19.1413927,
+                72.9197655,
+                19.1238481
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                72.9149702,
+                19.1326186
+              ]
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "osm_type": "N",
+              "osm_id": 668511950,
+              "osm_key": "amenity",
+              "osm_value": "college",
+              "type": "house",
+              "name": "IDC - Industrial Design Center",
+              "street": "Infinity Corridor",
+              "locality": "Jyotiba Phule Nagar",
+              "district": "Powai",
+              "city": "Mumbai",
+              "county": "Mumbai Suburban District",
+              "state": "Maharashtra",
+              "country": "India",
+              "postcode": "400076",
+              "countrycode": "IN"
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                72.9171775,
+                19.1333839
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "query": "Bhandup Railway Station, Bhandup West, Mumbai, Maharashtra",
+      "http_status": 200,
+      "data": {
+        "type": "FeatureCollection",
+        "features": [
+          {
+            "type": "Feature",
+            "properties": {
+              "osm_type": "W",
+              "osm_id": 1122111841,
+              "osm_key": "amenity",
+              "osm_value": "bus_station",
+              "type": "house",
+              "name": "Bhandup Railway Station (W)",
+              "street": "Station Road",
+              "locality": "Bhandup West",
+              "district": "S Ward",
+              "city": "Mumbai",
+              "county": "Mumbai Suburban District",
+              "state": "Maharashtra",
+              "country": "India",
+              "postcode": "400078",
+              "countrycode": "IN",
+              "extent": [
+                72.9376736,
+                19.1443966,
+                72.9382686,
+                19.1440747
+              ]
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [
+                72.9379711,
+                19.1442357
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -15,7 +15,7 @@ def point(lat=19.1,lon=72.9,precision='postcode_area',**kw):
     return {'status':'resolved','lat':lat,'lon':lon,'precision':precision,'uncertainty_m':{'building':100,'postcode_area':5000,'locality':15000,'source_reported_gps':None}[precision],**kw}
 
 def feature(pin='400076',name=None,type='other',value='postcode',**kw):
-    return {'properties':{'name':name or pin,'postcode':pin,'type':type,'osm_value':value,'countrycode':'IN','osm_id':1,**kw},'geometry':{'type':'Point','coordinates':[72.9132697,19.1248612]}}
+    return {'properties':{'name':name or pin,'postcode':pin,'type':type,'osm_value':value,'countrycode':'IN','city':'Mumbai','state':'Maharashtra','osm_id':1,**kw},'geometry':{'type':'Point','coordinates':[72.9132697,19.1248612]}}
 
 def test_explicit_pin_mismatch_survives_nearby_imprecise_points():
     a=mention('Mumbai 400076',geocode=point());b=mention('Mumbai 400078','reported_delivery',geocode=point(lon=72.90001))

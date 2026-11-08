@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-11-08T14:14:12.176154+00:00",
+  "checks": {
+    "version_2_automatically_acquired": true,
+    "original_evidence_unchanged": true,
+    "previous_audit_entries_retained": true,
+    "audit_valid": true,
+    "campus_resolved_approximately": true,
+    "both_pair_points_resolved": true,
+    "assessment_updated": true
+  },
+  "all_passed": true,
+  "source_count": 4,
+  "distance_m": 2740,
+  "accuracy_label": "Approximate campus location; exact gate or entrance not confirmed.",
+  "scope": "Read-only verification of the original owner case after the automatic one-time upgrade. Prior failed comparison remains in its audit; originals are unchanged. No manual case retry, PIN entry or provider business write."
+}

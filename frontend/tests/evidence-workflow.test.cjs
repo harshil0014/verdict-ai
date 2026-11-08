@@ -150,3 +150,8 @@ test('temporary failure message promises recovery only for an actual scheduled r
 test('currency field is a keyboard-selectable searchable combobox with a form value',()=>{
  const html=render(ui.CurrencyField,{});assert.match(html,/role="combobox"/);assert.match(html,/name="currency" value="USD"/);assert.match(html,/US Dollar/);
 });
+test('campus fallback shows its actual map identity and never claims the exact gate',()=>{
+ const current={id:'case',location_authorization:{mode:'address'},delivery_location:{status:'POSSIBLE MATCH',comparisons:[],mentions:[{id:'L1',source_id:'E1',role:'intended',address:'IIT Bombay Main Gate, Powai, Mumbai, Maharashtra',quote:'Intended destination: IIT Bombay Main Gate, Powai, Mumbai, Maharashtra',geocode:{status:'resolved',precision:'site',accuracy_label:'Approximate campus location; exact gate or entrance not confirmed.',label:'Indian Institute of Technology Bombay, Mumbai, Maharashtra, India',attempts:[{query:'Indian Institute of Technology Bombay, Mumbai, Maharashtra',status:'resolved',response_sha256:hash}]}}]}};
+ const html=render(ui.DeliveryLocation,{...locationProps,current});assert.match(html,/Approximate campus location; exact gate or entrance not confirmed/);assert.match(html,/Map result: Indian Institute of Technology Bombay/);assert.match(html,/IIT Bombay Main Gate, Powai, Mumbai, Maharashtra/);
+ assert.match(html,/Lookup 1:/);assert.doesNotMatch(html,/Map-estimated entrance location/);
+});
