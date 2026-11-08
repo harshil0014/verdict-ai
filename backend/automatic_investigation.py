@@ -355,10 +355,11 @@ async def worker():
                     await tick()
             except TimeoutError:
                 log.warning('Sandbox polling timed out; durable dispatch barriers retained')
+            await repo.rpc('workflow:queue_location_experience_upgrade',session='')
             await repo.rpc('workflow:queue_recovery',session='')
             await repo.rpc('workflow:queue_location_upgrade',session='')
             await repo.rpc('workflow:queue_location_comparison_upgrade',session='')
-            claim=await repo.rpc('workflow:claim',{'worker_version':max(9,RECOVERY_VERSION)},session='')
+            claim=await repo.rpc('workflow:claim',{'worker_version':max(10,RECOVERY_VERSION)},session='')
             if claim:
                 await process(claim)
                 continue

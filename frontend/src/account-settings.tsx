@@ -42,7 +42,7 @@ export function AccountSettings({
       });
       setPref(p);
       setAck(false);
-      setMessage("Saved. Existing case-specific choices stay in effect.");
+      setMessage("Saved for existing and future investigations. Stricter case restrictions stay in effect.");
       await changed();
     } catch {
       setMessage("Couldn’t save this change. Please try again.");
@@ -58,8 +58,8 @@ export function AccountSettings({
       <section>
         <h3>Automatic address checks</h3>
         <p>
-          Choose once for future eligible investigations. You can override this
-          in any case.
+          Choose once for existing and future eligible investigations. This
+          preference is remembered until you change or revoke it.
         </p>
         {pref ? (
           <>
@@ -108,9 +108,9 @@ export function AccountSettings({
               {busy ? "Saving…" : "Save address-check preference"}
             </button>
             <p className="fine">
-              Turning this off stops future inherited lookups. Explicit per-case
-              permissions remain until changed in that case. Previously
-              preserved results stay in your records.
+              Turning this off stops all future external lookups for your account,
+              including older case permissions. Requests already sent cannot be
+              recalled. Previously preserved results stay in your records.
             </p>
           </>
         ) : (
@@ -133,8 +133,10 @@ export function AccountSettings({
       <section>
         <h3>External actions</h3>
         <p>
-          VERDICT prepares evidence requests for your review. It does not send
-          messages, issue refunds or decide disputes automatically.
+          VERDICT prepares the next useful evidence requests automatically.
+          Sharing a private response link requires your authorization; VERDICT
+          does not contact witnesses automatically. Eligible PayPal Sandbox
+          resolutions run only within a separately enabled, bounded merchant policy.
         </p>
         <p className="fine">
           PayPal imports use test payments only and are available to the

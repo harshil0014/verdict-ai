@@ -217,7 +217,7 @@ export function AccountEntry({
         <section className="public-trust">
           <ShieldCheck size={28} />
           <div>
-            <h2>Private records. Human decisions.</h2>
+            <h2>Private records. Automatic investigation.</h2>
             <p>
               Your cases, original records and responses stay in your private
               account. Submitting evidence authorizes AI investigation and safe

@@ -140,7 +140,7 @@ async def cases(user=Depends(auth.current_session)):
 @app.post("/api/cases")
 async def create_case(data: CaseInput, user=Depends(auth.current_session)):
     return await repo.create({**data.model_dump(), "mode": "manual", "status": "OPEN", "deadline": None,
-        "story": "User-created case. Statements and uploads require assessment.", "evidence": [], "automatic_investigation":True,"automatic_workflow_version":max(8,RECOVERY_VERSION)})
+        "story": "User-created case. Statements and uploads require assessment.", "evidence": [], "automatic_investigation":True,"automatic_workflow_version":max(10,RECOVERY_VERSION)})
 
 
 @app.get("/api/cases/{id}")
@@ -176,7 +176,7 @@ async def retry_automation(id:str,user=Depends(auth.current_session)):
 
 def add_source(body, data, raw=None, mime="text/plain", request_row=None, links=None, extraction=None):
     body.setdefault('automatic_investigation',True)
-    body['automatic_workflow_version']=max(9,RECOVERY_VERSION,body.get('automatic_workflow_version',1))
+    body['automatic_workflow_version']=max(10,RECOVERY_VERSION,body.get('automatic_workflow_version',1))
     if len(body["evidence"]) >= 40: raise HTTPException(422, "Maximum 40 evidence sources per case")
     if "\x00" in data.text: raise HTTPException(422, "Null bytes are not supported")
     source = evidence(data.title, data.text, data.party, "portal_upload" if request_row else "user_upload")
@@ -184,7 +184,7 @@ def add_source(body, data, raw=None, mime="text/plain", request_row=None, links=
     if links: source['embedded_links']=links
     if extraction:
         source['extraction']=extraction
-        body['automatic_workflow_version']=max(9,body['automatic_workflow_version'])
+        body['automatic_workflow_version']=max(10,body['automatic_workflow_version'])
     body["evidence"].append(source)
     if request_row:
         for request in body["requests"]:
@@ -259,7 +259,8 @@ async def create_request(id: str, data: RequestInput, user=Depends(auth.current_
     witness = {**original, **{k:v for k,v in data.model_dump().items() if k in ('title','question','recipient') and v is not None}}
     if any(r["question"]==witness["question"] and r["status"]=="open" for r in body["requests"]): raise HTTPException(409, "This request is already open")
     token = secrets.token_urlsafe(32)
-    request = {**witness, "id": uid("R-"), "created_at": now(), "status": "open", "expires_at": time.time()+7*86400}
+    request = {**witness, "id": uid("R-"), "created_at": now(), "status": "open", "expires_at": time.time()+7*86400,
+        'delivery_status':'private_link_created','message_sent_by_verdict':False}
     body["requests"].append(request)
     saved = await repo.save(body, "witness_requested", {"request_id":request["id"],"recipient":request["recipient"],"question":request["question"]},
         request_action="create", request_hash=auth.token_hash(token), request=request)

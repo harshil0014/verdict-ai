@@ -223,10 +223,10 @@ async def ensure_current_investigation(case):
     if case.get('automatic_investigation') is False or case.get('sandbox_reassessment_digest')==target:return
     workflow=await repo.rpc('workflow:status',{'case_id':case['id']})
     if workflow.get('state') in ('queued','running'):return
-    case.update(automatic_workflow_version=max(9,case.get('automatic_workflow_version',1)),
+    case.update(automatic_workflow_version=max(10,case.get('automatic_workflow_version',1)),
         analysis_stale=True,sandbox_reassessment_digest=target)
     await repo.rpc('agent:reassess',{'case_id':case['id'],
-        'mutation':repo.mutation(case,'autonomous_reassessment_requested',{'input_digest':target,'required_worker_version':9})})
+        'mutation':repo.mutation(case,'autonomous_reassessment_requested',{'input_digest':target,'required_worker_version':10})})
 
 
 async def tick():

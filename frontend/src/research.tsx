@@ -33,7 +33,7 @@ export function DiscoveryRecords({records,evidenceIds,onInspect}:{records:any[];
 }
 
 export function SourceIntegrity({metadata,rawHash}:{metadata:any;rawHash?:string}) {
-  return <div className="source-integrity"><span>Origin unverified · {metadata?.review_status==='human_reviewed'?'Human reviewed':metadata?.review_status==='unreviewed'?'Not human reviewed':'Review not recorded'}</span>
+  return <div className="source-integrity"><span>Origin unverified · {metadata?.review_status==='human_reviewed'?'Owner inspected':metadata?.review_status==='unreviewed'?'Not independently verified':'Inspection not recorded'}</span>
     <span>Retrieved: {date(metadata?.retrieved_at)}</span><span>Publication: {metadata?.publication_date||'Unknown — not inferred'}</span>
     {rawHash&&<details><summary>Integrity hashes</summary><strong>Original SHA-256</strong><code>{rawHash}</code>
       {metadata?.text_sha256&&<><strong>Extracted text SHA-256</strong><code>{metadata.text_sha256}</code></>}</details>}

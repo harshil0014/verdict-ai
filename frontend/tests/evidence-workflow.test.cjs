@@ -26,7 +26,7 @@ test('case navigation is one investigation with no standalone research destinati
  const html=render(ui.CaseNavigation,{tab:'evidence',evidenceCount:3,witnessCount:2,onSelect:()=>{}});
  assert.equal((html.match(/<button/g)||[]).length,5);
  assert.match(html,/aria-current="page">Evidence · 3/);
- for(const label of ['Investigation','Witnesses · 2','Timeline','Human review'])assert.ok(html.includes(label));
+ for(const label of ['Investigation','Witnesses · 2','Timeline','Findings'])assert.ok(html.includes(label));
  assert.doesNotMatch(html,/Public research/);
 });
 
@@ -48,7 +48,7 @@ test('retrieval failures and provider leads remain accessible as investigation h
 
 test('evidence provenance shows requested and final URLs, both hashes and honest review status',()=>{
  const html=render(ui.PublicSourceFacts,{source:{sha256:hash,provenance:{requested_url:'https://agency.gov/original',final_url:'https://agency.gov/resolved',text_sha256:textHash,acquisition_mode:'embedded_reference',review_status:'unreviewed'}}});
- assert.match(html,/Automatically discovered source/);assert.match(html,/Not human reviewed/);assert.match(html,/Origin unverified/);
+ assert.match(html,/Automatically discovered source/);assert.match(html,/Not independently verified/);assert.match(html,/Origin unverified/);
  assert.ok(html.includes(hash)&&html.includes(textHash));assert.match(html,/original/);assert.match(html,/resolved/);
  assert.match(html,/Unknown — not inferred/);assert.match(html,/does not establish historical policy/);
 });
@@ -131,10 +131,10 @@ test('malicious address and provider text are escaped and unavailable coordinate
  const current={id:'case',delivery_location:{status:'UNVERIFIED',checked_at:'2026-11-08T00:00:00Z',comparisons:[],mentions:[{id:'L1',source_id:'E1',role:'intended',address:'<script>bad()</script>',quote:'<img src=x onerror=bad()>',geocode:{status:'provider_unavailable',detail:'Provider unavailable; no location invented.'}}],limitations:[],record_sha256:hash}};
  const html=render(ui.DeliveryLocationDiagnostics,{...locationProps,current});assert.ok(html.includes('&lt;script&gt;'));assert.doesNotMatch(html,/<script>|<img|delivery-map/);assert.match(html,/Provider unavailable/);
 });
-test('overview leads with findings and a reviewed evidence request, without model or hash jargon',()=>{
+test('overview leads with findings and an automatically prepared evidence request, without model or hash jargon',()=>{
  const current={evidence:[{id:'E1'}],analysis:{finding:'conflicting',summary:'The buyer reports no delivery; the carrier lists another postcode.',claims:[{id:'C1',text:'The carrier names a different PIN.',source_id:'E1',quote:'400078',semantic_support:'entailed',source_check:'exact_quote_found'}],requests:[{id:'W1',title:'Delivery receipt',recipient:'carrier',priority:'first',rationale:'It can establish the reported destination.'}],unknowns:['Who received the parcel?']}};
  const html=render(ui.CaseOverview,{current,onEvidence:()=>{},onRequest:()=>{},onSource:()=>{}});
- for(const t of ['What does the evidence suggest?','Why this matters','Request evidence','Delivery company','reported information, not independent proof'])assert.ok(html.includes(t),t);
+ for(const t of ['What does the evidence suggest?','Why this matters','Share request','Delivery company','reported information, not independent proof'])assert.ok(html.includes(t),t);
  assert.doesNotMatch(html,/Gemini|SHA-256|PostgreSQL|Reassess case|Investigate case/);
 });
 test('timeline shows changed assessment with technical hashes only inside disclosure',()=>{
@@ -166,11 +166,30 @@ test('legacy possible-area conclusions are not presented as an address match',()
  const current=JSON.parse(JSON.stringify(quietCase));current.delivery_location.version=2;current.delivery_location.status='POSSIBLE MATCH';current.delivery_location.comparisons[0]={status:'POSSIBLE MATCH',source_ids:['E1','E2']};
  const html=render(ui.DeliveryLocation,{...locationProps,current});assert.match(html,/Couldn&#x27;t verify delivery address/);assert.doesNotMatch(html,/same area|appears to match/);
 });
-test('affirmative disclosure is present only after entering the permission flow',()=>{
+test('ordinary investigations never prompt for per-case geocoding consent',()=>{
  const current={...quietCase,location_authorization:{mode:'off'}};
- const ordinary=render(ui.DeliveryLocation,{...locationProps,current});assert.match(ordinary,/Allow automatic address checks/);assert.doesNotMatch(ordinary,/Photon|OpenStreetMap|select|checkbox/);
- const consent=render(ui.DeliveryLocationDiagnostics,{...locationProps,current,consentOnly:true});assert.match(consent,/Photon\/OpenStreetMap/);assert.match(consent,/Only allow this for information/);assert.match(consent,/Remember for my other investigations/);assert.doesNotMatch(consent,/delivery-map|Approximate separation/);
+ const ordinary=render(ui.DeliveryLocation,{...locationProps,current});
+ assert.doesNotMatch(ordinary,/Allow automatic|Photon|OpenStreetMap|select|checkbox|Map settings/);
+ const diagnostics=render(ui.DeliveryLocationDiagnostics,{...locationProps,current});
+ assert.match(diagnostics,/account Settings/);assert.match(diagnostics,/Local comparison continues/);
+ assert.doesNotMatch(diagnostics,/<select|type="checkbox"|delivery-map/);
 });
+
+test('prepared requests offer sharing directly without a reviewer form or a claim of contact',()=>{
+ const witness={id:'W1',recipient:'seller',question:'Supply the original order.'};
+ const html=render(ui.EvidenceRequestAction,{current:{requests:[],analysis:{acquisition_plan:[{suggestion_id:'W1',state:'prepared'}]}},witness,onShare:()=>{}});
+ assert.match(html,/Share request/);assert.match(html,/Prepared automatically/);assert.match(html,/VERDICT sends no message/);
+ assert.doesNotMatch(html,/Human review|reviewed invitation|<form|<input|<textarea/);
+});
+for(const [status,message] of [['open','Waiting for the requested response'],['received','Response received'],['unavailable','Source reported unavailable'],['withdrawn','Request closed']]){
+ test(`prepared requests preserve ${status} outcomes and do not offer duplicate invitations`,()=>{
+  const witness={id:'W1',recipient:'seller',question:'Supply the original order.'};
+  const current={requests:[{...witness,status}],analysis:{acquisition_plan:[{suggestion_id:'W1',state:'prepared'}]}};
+  const html=render(ui.EvidenceRequestAction,{current,witness,onShare:()=>{}});
+  assert.ok(html.includes(message));assert.doesNotMatch(html,/<button|Share request/);
+ });
+}
+
 test('ordinary overview suppresses technical location narrative while retaining source access',()=>{
  const current={...quietCase,evidence:[{id:'E1'}],analysis:{finding:'conflicting',summary:'Photon found destinations 2.7 km apart at 19.1326186, 72.9149702.',claims:[{id:'C1',text:'The GPS estimates are 2.7 km apart.',source_id:'E1',quote:'IIT Bombay',semantic_support:'entailed',source_check:'exact_quote_found'}],requests:[{id:'W1',title:'GPS coordinates',recipient:'carrier',priority:'first',rationale:'Verify proximity threshold.'}],unknowns:['Exact GPS accuracy?']}};
  const html=render(ui.CaseOverview,{current,onEvidence:()=>{},onRequest:()=>{},onSource:()=>{}});assert.doesNotMatch(html.replace(/<svg[\s\S]*?<\/svg>/g,''),/Photon|19\.132|72\.914|2\.7|GPS|proximity threshold/);assert.match(html,/source-backed findings/);assert.match(html,/Inspect the supporting address evidence/);assert.match(html,/Delivery destination evidence/);

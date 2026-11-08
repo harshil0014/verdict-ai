@@ -124,6 +124,8 @@ def fake_repo(monkeypatch,mode='off'):
     calls=[]
     async def get(id):return copy.deepcopy(case)
     async def save(body,kind,data,**kw):case.update(copy.deepcopy(body));case['revision']+=1;calls.append(kind);return copy.deepcopy(case)
+    async def prefs(*a,**k):return {'mode':'off','acknowledged_at':None,'has_account_choice':False}
+    monkeypatch.setattr(dl.repo,'rpc',prefs)
     monkeypatch.setattr(dl.repo,'get',get);monkeypatch.setattr(dl.repo,'save',save)
     return case,calls
 

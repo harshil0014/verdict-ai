@@ -94,7 +94,7 @@ def test_comparison_upgrade_reuses_original_preserved_locations_without_external
     async def forbidden(*a,**k):raise AssertionError('Comparison-only upgrade must not send addresses or invoke extraction')
     monkeypatch.setattr(dl,'geocode',forbidden);monkeypatch.setattr(dl,'generate',forbidden)
     r=asyncio.run(dl.verify_case('case'))
-    assert r['version']==3 and r['status']=='LOCATION MISMATCH' and r['comparison_only_upgrade'] and r['new_provider_queries']==0
+    assert r['version']==4 and r['status']=='LOCATION MISMATCH' and r['comparison_only_upgrade'] and r['new_provider_queries']==0
     assert r['mentions']==old['mentions'] and case['evidence']==original and calls==['delivery_location_verified']
     assert asyncio.run(dl.verify_case('case'))==r
 

@@ -110,8 +110,8 @@ const locationMessages: Record<string, string> = {
 export function DeliveryLocation({
   current, api, changed, onSource,
 }: { current: any; api: API; changed: () => Promise<void>; onSource: (id: string) => void }) {
-  const [advanced, setAdvanced] = React.useState(false), [consent, setConsent] = React.useState(false);
-  React.useEffect(() => { setAdvanced(false); setConsent(false); }, [current.id]);
+  const [advanced, setAdvanced] = React.useState(false);
+  React.useEffect(() => { setAdvanced(false); }, [current.id]);
   const record = current.delivery_location;
   const mentions = (record?.mentions || []).filter((m: any) => m.role !== "other");
   if (!mentions.length) return null;
@@ -121,8 +121,6 @@ export function DeliveryLocation({
     ? "The submitted records identify different delivery destinations. This does not establish physical delivery."
     : "The submitted address information isn't sufficient to confirm one matching delivery destination.");
   const sources = [...new Set<string>(pair?.source_ids || mentions.map((m: any) => m.source_id))];
-  const override = current.location_authorization?.mode;
-  const authorization = override && override !== "account" ? override : current.effective_map_preference?.mode || "off";
   return <section className="delivery-location address-result" aria-label="Delivery address">
     <h3>{locationMessages[status] || locationMessages.UNVERIFIED}</h3>
     <p>{explanation}</p>
@@ -130,9 +128,7 @@ export function DeliveryLocation({
       {sources.slice(0, 2).map((id, i) => <button key={id} className="text-btn" onClick={() => onSource(id)}>
         {sources.length === 1 ? "View supporting evidence" : i === 0 ? "View intended address" : "View delivery record"}
       </button>)}
-      {authorization === "off" && <button className="text-btn" onClick={() => setConsent(true)}>Allow automatic address checks</button>}
     </div>
-    {consent && <DeliveryLocationDiagnostics current={current} api={api} changed={changed} onSource={onSource} consentOnly onClose={() => setConsent(false)} />}
     <details className="technical-record address-advanced" open={advanced} onToggle={(e) => setAdvanced(e.currentTarget.open)}>
       <summary>Advanced review</summary>
       {advanced && <DeliveryLocationDiagnostics current={current} api={api} changed={changed} onSource={onSource} />}
@@ -145,129 +141,26 @@ export function DeliveryLocationDiagnostics({
   api,
   changed,
   onSource,
-  consentOnly = false,
-  onClose,
 }: {
   current: any;
   api: API;
   changed: () => Promise<void>;
   onSource: (id: string) => void;
-  consentOnly?: boolean;
-  onClose?: () => void;
 }) {
-  const record = current.delivery_location,
-    override = current.location_authorization?.mode;
-  const account = current.effective_map_preference?.mode || "off";
-  const authorization = override && override !== "account" ? override : account;
-  const [choice, setChoice] = React.useState("address"),
-    [remember, setRemember] = React.useState(true),
-    [busy, setBusy] = React.useState(false),
-    [error, setError] = React.useState(""),
-    [settings, setSettings] = React.useState(consentOnly);
-  React.useEffect(() => {
-    setError("");
-    setSettings(consentOnly);
-  }, [current.id, consentOnly]);
-  async function save(mode: string) {
-    setBusy(true);
-    setError("");
-    try {
-      if (remember) {
-        await api("/preferences/maps", "POST", {
-          mode,
-          acknowledged: mode !== "off",
-        });
-        await api(`/cases/${current.id}/location-authorization`, "POST", {
-          mode: "account",
-          acknowledged: false,
-        });
-      } else
-        await api(`/cases/${current.id}/location-authorization`, "POST", {
-          mode,
-          acknowledged: mode !== "off",
-        });
-      setSettings(false);
-      await changed();
-      onClose?.();
-    } catch {
-      setError(
-        "We couldn’t finish updating your preference. Check Settings before trying again.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-  if (!record?.mentions?.length && !settings) return null;
+  const record = current.delivery_location;
+  const account = current.effective_map_preference;
+  const choice = current.location_authorization?.mode || "account";
+  const configured = account?.has_account_choice ?? !!account?.acknowledged_at;
+  const authorization = (configured && account.mode === "off") || choice === "off" ? "off"
+    : configured && account.mode === "area_only" ? "area_only"
+    : choice === "account" ? account?.mode || "off" : choice;
+  if (!record?.mentions?.length) return null;
   const pair = record?.comparisons?.[0];
   const paired = pair ? [pair.intended_id, pair.reported_delivery_id] : [];
   const mentions = (record?.mentions || []).filter(
     (m: any) => m.role !== "other" && (!paired.length || paired.includes(m.id)),
   );
   const plotted = mentions.filter((m: any) => m.geocode?.status === "resolved");
-  const permission = (
-    <div className="map-permission">
-      <h4>
-        {authorization === "off"
-          ? "Allow automatic address checks?"
-          : "Address-check permission"}
-      </h4>
-      <p>
-        We’ll share a delivery address with Photon/OpenStreetMap, omitting unit
-        and floor details. Opening a map shares your IP address and the area
-        viewed. Only allow this for information you’re authorized to share.
-      </p>
-      <label className="map-choice">
-        Information to share
-        <select value={choice} onChange={(e) => setChoice(e.target.value)}>
-          <option value="address">
-            Delivery addresses · works without a PIN
-          </option>
-          <option value="area_only">Only supplied Indian PIN areas</option>
-        </select>
-      </label>
-      <label className="map-remember">
-        <input
-          type="checkbox"
-          checked={remember}
-          onChange={(e) => setRemember(e.target.checked)}
-        />
-        Remember for my other investigations
-      </label>
-      <div className="map-permission-actions">
-        <button
-          className="primary small"
-          disabled={busy}
-          onClick={() => save(choice)}
-        >
-          {busy ? "Saving…" : "Allow automatic address checks"}
-        </button>
-        {authorization !== "off" && (
-          <button
-            className="secondary small"
-            disabled={busy}
-            onClick={() => save("off")}
-          >
-            Turn off external address checks
-          </button>
-        )}
-        <button className="text-btn" onClick={() => { setSettings(false); onClose?.(); }}>
-          Not now
-        </button>
-      </div>
-      <details className="technical-record">
-        <summary>Privacy details</summary>
-        <p>
-          Original documents are not sent to the geocoder. Address text may
-          itself contain personal information; it cannot be perfectly redacted.
-          Current choice: {authorization}. Existing explicit per-case choices
-          override the account preference. Revocation stops future lookups,
-          retains prior evidence, and cannot recall requests already sent.
-          Public services are best effort.
-        </p>
-      </details>
-    </div>
-  );
-  if (consentOnly) return <div className="address-consent">{permission}{error && <p role="alert">{error}</p>}</div>;
   return (
     <section
       className="delivery-location simple-location"
@@ -280,22 +173,8 @@ export function DeliveryLocationDiagnostics({
             {locationMessages[record?.status] || locationMessages.UNVERIFIED}
           </h3>
         </div>
-        <button className="text-btn" onClick={() => setSettings(!settings)}>
-          {authorization === "off" ? "Enable maps" : "Map settings"}
-        </button>
       </div>
-      {settings ? (
-        permission
-      ) : authorization === "off" ? (
-        <p className="location-caption">
-          We compared the supplied wording privately.{" "}
-          <button className="text-btn" onClick={() => setSettings(true)}>
-            Allow map checks
-          </button>{" "}
-          to compare the locations too.
-        </p>
-      ) : null}
-      {error && <p role="alert">{error}</p>}
+      <p className="location-caption">{labels[authorization]}. External-check privacy preferences are managed once in account Settings. Local comparison continues when external checks are off.</p>
       {plotted.length > 0 && authorization !== "off" && (
         <DeliveryMap mentions={plotted} />
       )}

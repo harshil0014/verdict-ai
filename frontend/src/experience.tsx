@@ -59,6 +59,24 @@ export function Money({ amount, currency }: { amount: any; currency: any }) {
   }
 }
 
+export function EvidenceRequestAction({ current, witness, onShare, busy = false }: {
+  current: any; witness: any; onShare: (w: any) => void; busy?: boolean;
+}) {
+  const existing = [...(current.requests || [])].reverse().find((r: any) =>
+    r.recipient === witness.recipient && r.question?.trim() === witness.question?.trim());
+  const prepared = current.analysis?.acquisition_plan?.find((p: any) => p.suggestion_id === witness.id);
+  const state = existing?.status || prepared?.state || "prepared";
+  if (state !== "prepared") return <p role="status" className="fine">{
+    state === "open" || state === "link_ready" ? "Waiting for the requested response. No duplicate invitation was created."
+      : state === "received" || state === "response_received" ? "Response received. New evidence is investigated automatically."
+      : state === "unavailable" || state === "reported_unavailable" ? "Source reported unavailable. This limitation is preserved."
+      : "Request closed; its history is preserved."
+  }</p>;
+  return <div><button className="primary" disabled={busy || !!current.analysis_stale} onClick={() => onShare(witness)}>
+    Share request <ArrowUpRight size={16} />
+  </button><p className="fine">Prepared automatically. Sharing creates a private response link; VERDICT sends no message.</p></div>;
+}
+
 export function CaseOverview({
   current,
   onEvidence,
@@ -76,6 +94,14 @@ export function CaseOverview({
     ? fallback : text;
   const w =
     a?.requests.find((x: any) => x.priority === "first") || a?.requests[0];
+  const prepared = a?.acquisition_plan?.find((p: any) => p.suggestion_id === w?.id);
+  const prior = current.requests?.find((r: any) => r.recipient === w?.recipient && r.question?.trim() === w?.question?.trim());
+  const state = prior?.status || prepared?.state;
+  const shareable = !state || state === "prepared";
+  const requestStatus = state === "open" || state === "link_ready" ? "Waiting for a response. The existing private link is ready."
+    : state === "received" || state === "response_received" ? "Response received; new evidence is investigated automatically."
+    : state === "unavailable" || state === "reported_unavailable" ? "This source reported the evidence unavailable. The investigation retains that limitation."
+    : "Request closed. VERDICT has retained its history.";
   const claims = (a?.claims || [])
     .filter(
       (c: any) =>
@@ -141,10 +167,10 @@ export function CaseOverview({
           <div className="overview-next">
             <div>
               <span className="eyebrow">WHAT HAPPENS NEXT</span>
-              <h4>{w ? plain(w.title, "Delivery destination evidence") : "Review the evidence before deciding."}</h4>
+              <h4>{w ? plain(w.title, "Delivery destination evidence") : "Investigation updated"}</h4>
               <p>
                 {w
-                  ? `Best person to ask: ${people[w.recipient] || w.recipient}.`
+                  ? `Prepared for ${people[w.recipient] || w.recipient}: ${plain(w.question, "Please supply the original delivery destination record.") || plain(w.title, "Delivery destination evidence")}`
                   : plain(a.recommendation, "Review the original delivery records before deciding.")}
               </p>
               {w && (
@@ -154,20 +180,21 @@ export function CaseOverview({
                 </details>
               )}
             </div>
-            {w ? (
+            {w && shareable ? (
               <button
                 className="primary"
                 disabled={!!current.analysis_stale}
                 onClick={() => onRequest(w)}
               >
-                Request evidence <ArrowRight size={16} />
+                Share request <ArrowRight size={16} />
               </button>
-            ) : (
+            ) : w ? <p role="status">{requestStatus}</p> : (
               <button className="secondary" onClick={onEvidence}>
                 Add evidence <Plus size={16} />
               </button>
             )}
           </div>
+          {w && shareable && <p className="fine">Request prepared automatically. Sharing creates a private response link; VERDICT sends no message.</p>}
           {!!a.unknowns?.length && (
             <details className="overview-unknowns">
               <summary>

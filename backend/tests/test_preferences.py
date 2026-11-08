@@ -38,6 +38,8 @@ def test_unavailable_geocoder_sets_durable_retry_but_permanent_refusal_does_not(
     async def get(id):return copy.deepcopy(case)
     async def save(body,*a,**k):case.update(body);return body
     async def unavailable(*a,**k):return {'status':'provider_unavailable','http_status':503}
+    async def preferences(*a,**k):return {'mode':'off','has_account_choice':False}
+    monkeypatch.setattr(dl.repo,'rpc',preferences)
     monkeypatch.setattr(dl.repo,'get',get);monkeypatch.setattr(dl.repo,'save',save);monkeypatch.setattr(dl,'geocode',unavailable)
     assert asyncio.run(dl.verify_case('case'))['retry_at']
     case.clear();case.update(copy.deepcopy(initial))

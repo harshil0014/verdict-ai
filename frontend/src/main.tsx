@@ -47,6 +47,7 @@ import { AutomaticInvestigation } from "./automation";
 import { ClaimChecks } from "./claim-checks";
 import {
   CaseOverview,
+  EvidenceRequestAction,
   CaseTimeline,
   CurrencyField,
   Money,
@@ -620,8 +621,17 @@ function App() {
     });
   }
   async function createRequest(w: Witness) {
-    setReviewedWitness(w);
-    setModal("request-review");
+    if (w.id === "manual") {
+      setReviewedWitness(w);
+      setModal("compose-request");
+      return;
+    }
+    await run("Preparing private response link", async () => {
+      const d = await api(`/cases/${current!.id}/requests`, "POST", { witness_id: w.id });
+      setPortalLink(location.origin + "/" + d.portal_fragment);
+      await refresh();
+      setModal("request-link");
+    });
   }
   async function issueRequest(form: HTMLFormElement) {
     await run("Creating secure request", async () => {
@@ -831,7 +841,7 @@ function App() {
           </h1>
           <p>
             Investigate competing accounts. Find the next useful witness. Keep
-            the human in the decision.
+            you informed as the investigation progresses.
           </p>
           <label className="demo-code">
             Judge access code (hosted demo only)
@@ -950,11 +960,11 @@ function App() {
         <div className="sidebar-note">
           <div className="live-dot" />
           <span>
-            Human judgment.
+            Clear outcomes.
             <br />
             <strong>Better evidence.</strong>
           </span>
-          <p>AI assessments are reviewable. Decisions stay with you.</p>
+          <p>Automatic investigation. Source-backed findings. Authorized actions.</p>
         </div>
         <button
           className="sidebar-bottom"
@@ -1118,7 +1128,7 @@ function App() {
               </small>
             </div>
             <div>
-              <span>Ready for human review</span>
+              <span>Findings available</span>
               <strong>{String(totals.review).padStart(2, "0")}</strong>
               <small>
                 Current analysis available <ShieldCheck size={15} />
@@ -1163,7 +1173,7 @@ function App() {
               >
                 <option value="all">All investigations</option>
                 <option value="requests">Awaiting witness</option>
-                <option value="review">Ready for review</option>
+                <option value="review">Findings available</option>
                 <option value="sandbox">PayPal sandbox</option>
               </select>
               <div className="case-list">
@@ -1463,18 +1473,7 @@ function App() {
                                       competing explanations
                                     </small>
                                   </div>
-                                  <button
-                                    disabled={
-                                      !!busy || !!current.analysis_stale
-                                    }
-                                    onClick={() => createRequest(w)}
-                                  >
-                                    Request evidence <ArrowUpRight size={17} />
-                                  </button>
-                                  <small className="witness-fine">
-                                    Creates a restricted response link. Nothing
-                                    is sent automatically.
-                                  </small>
+                                  <EvidenceRequestAction current={current} witness={w} onShare={createRequest} busy={!!busy} />
                                 </>
                               );
                             })()
@@ -1495,7 +1494,7 @@ function App() {
                                 <ScanLine size={52} />
                                 <span>
                                   {a
-                                    ? "Human review remains required"
+                                    ? "Investigation complete"
                                     : "Awaiting investigation"}
                                 </span>
                               </div>
@@ -1535,7 +1534,7 @@ function App() {
                             {!a.unknowns.length && (
                               <p>
                                 No additional unknowns identified by the model.
-                                Human verification is still required.
+                                Source authenticity is not independently established.
                               </p>
                             )}
                           </div>
@@ -1796,19 +1795,12 @@ function App() {
                     {a?.requests.map((w) => (
                       <div className="request-card suggested" key={w.id}>
                         <span className="eyebrow">
-                          SUGGESTED · {w.priority}
+                          PREPARED · {w.priority}
                         </span>
                         <h3>{w.title}</h3>
                         <p>{w.question}</p>
                         <p className="fine">{w.rationale}</p>
-                        <button
-                          className="secondary"
-                          disabled={!!busy || !!current.analysis_stale}
-                          onClick={() => createRequest(w)}
-                        >
-                          Create restricted response link{" "}
-                          <ArrowUpRight size={16} />
-                        </button>
+                        <EvidenceRequestAction current={current} witness={w} onShare={createRequest} busy={!!busy} />
                       </div>
                     ))}
                   </div>
@@ -1828,8 +1820,8 @@ function App() {
                   <div className="tab-content">
                     <div className="section-heading">
                       <div>
-                        <span className="eyebrow">HUMAN IN THE DECISION</span>
-                        <h3>Review before you respond.</h3>
+                        <span className="eyebrow">SOURCE-BACKED FINDINGS</span>
+                        <h3>What the investigation found.</h3>
                       </div>
                       <ShieldCheck size={24} />
                     </div>
@@ -1906,7 +1898,7 @@ function App() {
                         <p>
                           Actions are bound to the exact payload, evidence
                           revision and current PayPal state. Every execution
-                          requires a separate explicit review.
+                          requires separate explicit authorization.
                         </p>
                         {current.payment_record_acquisition && (
                           <p className="fine">
@@ -2009,7 +2001,7 @@ function App() {
           <footer>
             VERDICT <span>THE MISSING WITNESS</span>
             <small>
-              Investigative assistance. Human decisions. No win-rate
+              Automatic investigation. Bounded, authorized actions. No win-rate
               predictions.
             </small>
           </footer>
@@ -2119,7 +2111,7 @@ function App() {
                     Document classification:{" "}
                     {readable(source.provenance.source_kind)}
                     <br />
-                    Collection review:{" "}
+                    Collection status:{" "}
                     {readable(
                       source.provenance.review_status || "not recorded",
                     )}
@@ -2508,15 +2500,15 @@ function App() {
                 </p>
               </>
             )}
-            {modal === "request-review" && reviewedWitness && (
+            {modal === "compose-request" && reviewedWitness && (
               <>
                 <span className="eyebrow">
-                  HUMAN REVIEW · EVIDENCE ACQUISITION
+                  OPTIONAL EVIDENCE REQUEST
                 </span>
                 <h2>Ask the right source.</h2>
                 <p>
-                  Check who actually holds this record. Edit the question and
-                  intended recipient before creating the restricted invitation.
+                  Write an additional question for someone with first-hand evidence.
+                  Creating a private response link does not contact them.
                 </p>
                 <form
                   onSubmit={(e) => {
@@ -2563,20 +2555,19 @@ function App() {
                     </select>
                   </label>
                   <p className="fine">
-                    The model's suggested recipient may need correction. The
-                    invitation does not authenticate a respondent's identity. No
+                    The invitation does not authenticate a respondent's identity. No
                     message is sent automatically.
                   </p>
                   <button className="primary" disabled={!!busy}>
-                    Create reviewed invitation <ArrowRight size={16} />
+                    Create private response link <ArrowRight size={16} />
                   </button>
                 </form>
               </>
             )}
             {modal === "request-link" && (
               <>
-                <span className="eyebrow">A RESTRICTED INVITATION</span>
-                <h2>Ask the next witness.</h2>
+                <span className="eyebrow">PRIVATE RESPONSE LINK</span>
+                <h2>Your evidence request is ready.</h2>
                 <p>
                   This link allows one response to the requested question. It
                   does not reveal the case file or the other party’s evidence.
@@ -2681,7 +2672,7 @@ function App() {
                   <span>
                     {me.role === "member"
                       ? "Merchant actions are not enabled for public accounts"
-                      : "Sandbox only · human review · snapshot binding · durable dispatch reservation"}
+                      : "Sandbox only · explicit authorization · snapshot binding · durable dispatch reservation"}
                   </span>
                 </div>
                 <p className="fine">

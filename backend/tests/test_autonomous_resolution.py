@@ -125,7 +125,7 @@ def test_current_payload_reassessment_is_atomic_compatible_and_once(monkeypatch)
     asyncio.run(agent.ensure_current_investigation(c))
     assert calls[-1][0]=='agent:reassess'
     body=calls[-1][1]['mutation']['body']
-    assert body['automatic_workflow_version']==9 and body['analysis_stale']
+    assert body['automatic_workflow_version']==10 and body['analysis_stale']
     assert body['evidence']==[] and body['analysis']==c['analysis']
     count=len(calls);asyncio.run(agent.ensure_current_investigation(c))
     assert len(calls)==count
