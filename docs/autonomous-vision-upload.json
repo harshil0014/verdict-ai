@@ -1,0 +1,20 @@
+{
+  "checked_at": "2026-11-08T17:41:23.776608+00:00",
+  "checks": {
+    "two_real_api_uploads": true,
+    "handwriting_vision_used": true,
+    "blank_classified_unreadable": true,
+    "blank_no_amount_inferred": true,
+    "source_quotes_in_preserved_transcription": true,
+    "machine_quotes_labeled": true,
+    "automatic_analysis_completed": true,
+    "audit_valid": true,
+    "blank_claim_limited_to_readability_metadata": true
+  },
+  "passed": true,
+  "explicit_qa_account_vision_consent": true,
+  "manual_analysis_calls": 0,
+  "financial_actions": 0,
+  "scope": "Real private cloud ingestion of a public-domain handwritten manuscript and an authored blank page, actual Gemini image requests and source-linked investigation; API QA, not a general OCR benchmark.",
+  "blank_claim_review": "The model made one source-linked readability claim: unreadable. It inferred no transaction content. An initial blanket assertion requiring zero blank-source claims was too broad."
+}

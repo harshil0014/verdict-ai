@@ -11,7 +11,7 @@ The account application provides durable private workspaces. It is a public beta
 - Atomic case/original/request/audit commits, revision checks and durable investigation leases. Corrupt originals fail closed. Cloud failure produces an error, never local fallback.
 - Bounded TXT/JSON/text-PDF ingestion; no HTML/executable/image upload. PDFs run in timed subprocesses with additional POSIX resource bounds. This is not malware scanning or a complete document sandbox. Originals download as attachments.
 - Scoped single-response witness portals with expiry/revocation and stored recipient binding. A link does not authenticate its holder's identity.
-- Gemini receives case evidence under the account's investigation consent; provider data terms still apply. No automatic email or financial action in account mode. The account-scoped PayPal bridge is sandbox-only and read-only, with separately restricted operator functionality. [Authorization, private originals and minimized projections](SAAS_PAYPAL.md).
+- Gemini receives case evidence under the account's investigation consent; provider data terms still apply. No automatic email is sent. The account-scoped PayPal bridge defaults to reads; a separately enabled, bounded merchant policy can concede eligible unfulfilled Sandbox test orders. No production-money execution is exposed. [Authorization, private originals and minimized projections](SAAS_PAYPAL.md).
 
 ## Evidence and limits
 
@@ -25,10 +25,14 @@ Public web proposals use a separate private RLS table and server-only RPC. Direc
 
 The cloud security advisor returned informational RLS-without-policy notices for server-only accounts/sessions/rate-limits and legacy snapshots, with no warning/error finding at that check. These tables deliberately have no ordinary-role grants or policies. This is not proof of absence of vulnerabilities.
 
-Remaining: organization sharing, SSO/MFA, verified email, malware scanning, OCR, independent source identity verification, externally anchored audit, comprehensive redaction, independent penetration testing and certified backup restoration. Self-service account deletion/retention controls are not implemented; do not use the beta for records requiring a verified retention/deletion process. Export important cases. Free cloud quotas/suspension may cause downtime; paid capacity is never enabled automatically.
+Remaining: organization sharing, SSO/MFA, verified email, malware scanning, broad OCR/handwriting validation, independent source identity verification, externally anchored audit, comprehensive redaction, independent penetration testing and certified backup restoration. Self-service account deletion/retention controls are not implemented; do not use the beta for records requiring a verified retention/deletion process. Export important cases. Free cloud quotas/suspension may cause downtime; paid capacity is never enabled automatically.
 
 An administrator/server-key holder can alter data and recompute hashes. Prompt-injection detection is incomplete; the model has no external action tools or authorization bypass. Exact quotes and model support judgments do not prove real-world truth.
 
 ## Publication
 
 Never publish `.env`, runtime databases, user credentials, recovery/session/portal tokens, private sandbox details or customer records. Ignore rules and the publication audit cover these paths. The scanner inspects all local Git objects including unreachable ones, history paths and nonignored release files against patterns and exact private values. Independent Gitleaks checks complement it. Public reports omit account identifiers. Dependency license texts remain in `third_party/`.
+
+## Document reading and Sandbox dispatch
+
+Image/PDF decoders run in bounded disposable processes. Originals remain private; machine transcription is never authenticated fulfillment proof. Optional Gemini image disclosure requires account consent and has shared/per-account quotas. New policy, action, observation, event and consent tables have forced tenant RLS and no client-role grants. Financial requests target the fixed Sandbox host, require an eligible bounded merchant policy and source-independent checks, reserve budget atomically and retain a committed dispatch barrier. A dispute or capture cannot receive a second full action after a timeout, restart or policy replacement. Provider-confirmed status and actual refund amounts are distinguished from an accepted HTTP request. [Detailed limits and verification](AUTONOMOUS_RESOLUTION.md).

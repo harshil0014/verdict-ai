@@ -237,8 +237,9 @@ export function AccountEntry({
           <strong>Honest by design.</strong> PayPal sandbox imports are
           available only to explicitly authorized test-merchant workspaces.
           Public merchant onboarding and live payments are not enabled. VERDICT
-          does not verify delivery, predict win rates or submit financial
-          actions for you.
+          does not authenticate delivery or predict win rates. Limited sandbox
+          resolution requires deliberate merchant opt-in; live-money actions
+          are unavailable.
         </section>
       </main>
       <footer className="public-footer">

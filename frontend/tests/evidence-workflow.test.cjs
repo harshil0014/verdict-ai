@@ -7,7 +7,7 @@ const React = require('react');
 const {renderToStaticMarkup} = require('react-dom/server');
 require.extensions['.css']=()=>{};
 const root = path.resolve(__dirname,'..');
-const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation'; export * from './src/automation'; export * from './src/claim-checks'; export * from './src/paypal-account'; export * from './src/delivery-location'; export * from './src/experience'; export * from './src/account-settings';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
+const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation'; export * from './src/automation'; export * from './src/claim-checks'; export * from './src/paypal-account'; export * from './src/delivery-location'; export * from './src/experience'; export * from './src/account-settings'; export * from './src/evidence-reading'; export * from './src/autonomous-resolution';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
 const compiled = new Module(path.join(root,'tests','compiled.cjs'),module);
 compiled.filename=path.join(root,'tests','compiled.cjs');compiled.paths=Module._nodeModulePaths(root);
 compiled._compile(output.outputFiles[0].text,compiled.filename);
@@ -175,4 +175,18 @@ test('ordinary overview suppresses technical location narrative while retaining 
  const current={...quietCase,evidence:[{id:'E1'}],analysis:{finding:'conflicting',summary:'Photon found destinations 2.7 km apart at 19.1326186, 72.9149702.',claims:[{id:'C1',text:'The GPS estimates are 2.7 km apart.',source_id:'E1',quote:'IIT Bombay',semantic_support:'entailed',source_check:'exact_quote_found'}],requests:[{id:'W1',title:'GPS coordinates',recipient:'carrier',priority:'first',rationale:'Verify proximity threshold.'}],unknowns:['Exact GPS accuracy?']}};
  const html=render(ui.CaseOverview,{current,onEvidence:()=>{},onRequest:()=>{},onSource:()=>{}});assert.doesNotMatch(html.replace(/<svg[\s\S]*?<\/svg>/g,''),/Photon|19\.132|72\.914|2\.7|GPS|proximity threshold/);assert.match(html,/source-backed findings/);assert.match(html,/Inspect the supporting address evidence/);assert.match(html,/Delivery destination evidence/);
  assert.match(render(ui.DeliveryLocationDiagnostics,{...locationProps,current}),/Full investigation assessment/);
+});
+
+
+test('machine reading exposes uncertainty and original integrity without claiming authenticity',()=>{
+ const html=render(ui.ExtractionDetails,{source:{extraction:{status:'uncertain',original_sha256:hash,text_sha256:textHash,warning:'Machine transcription may contain errors.',pages:[{page:1,method:'tesseract',status:'uncertain',vision:{writing:'handwritten',uncertainty:['Faded total is unclear']}}]}}});
+ assert.match(html,/inspect the original/);assert.match(html,/Faded total is unclear/);assert.match(html,/authenticity unverified/);assert.match(html,RegExp(hash));
+});
+test('unreadable originals are retained with no invented content',()=>{
+ const html=render(ui.ExtractionDetails,{source:{extraction:{status:'unreadable',original_sha256:hash,warning:'Original file preserved.'}}});
+ assert.match(html,/Couldn’t reliably read/);assert.match(html,/Original file preserved/);assert.doesNotMatch(html,/Refunded|Resolved/);
+});
+test('sandbox financial opt-in is explicit limited and never shown as a completed refund',()=>{
+ const html=render(ui.SandboxAutonomy,{api:async()=>({enabled:false})});
+ assert.match(html,/sandbox merchant/);assert.match(html,/24 hours/);assert.match(html,/required/);assert.match(html,/Enable sandbox autonomy/);assert.doesNotMatch(html,/Resolved —/);
 });

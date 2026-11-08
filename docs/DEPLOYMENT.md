@@ -45,3 +45,7 @@ The original URL was promoted only after that pass. It became live at 17:21:31 U
 The compatibility Docker default is `app:app`; legacy source and private configuration remain recoverable. That SQLite application cannot read SaaS account tables. Do not route user accounts there as if it provided their workspaces. Rolling back an application does not delete or roll back cloud data; avoid destructive down migrations. A retained source branch is not a database backup.
 
 Operational references: [Render deploy lifecycle](https://render.com/docs/deploys), [database-aware HTTP health checks](https://render.com/docs/health-checks). A successful deploy trigger alone is not a live verification.
+
+## Document reading and bounded sandbox autonomy
+
+Apply the four 20261108 document/agent migrations after earlier migrations, then deploy the Docker build (Tesseract is included). `TESSERACT_CMD` is only needed for a custom local executable path. Image-processing consent and Sandbox merchant policies are private database records, default-off, with no new Render secret or paid resource. `VERDICT_ALLOW_SANDBOX_ACTIONS=false` still disables the separate legacy operator action routes; account-mode dispatch is governed by its new explicit merchant policy and server merchant allowlist. Do not mistake the legacy flag for merchant opt-in. [Controls, acceptance and current pending-refund blocker](AUTONOMOUS_RESOLUTION.md).

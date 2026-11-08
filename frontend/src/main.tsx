@@ -1,3 +1,4 @@
+import {ReadingPreference, ExtractionDetails} from "./evidence-reading";
 import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -98,6 +99,7 @@ type Source = {
   replaces_source_id?: string;
   provenance?: any;
   provider_provenance?: any;
+  extraction?: any;
 };
 type Claim = {
   id: string;
@@ -750,10 +752,10 @@ function App() {
                 </button>
               </form>
               <label className="upload-alt">
-                Or submit a TXT, JSON or text PDF
+                Or upload an image, PDF, TXT or JSON
                 <input
                   type="file"
-                  accept=".txt,.json,.pdf"
+                  accept={config?.auth_mode === "account" ? ".txt,.json,.pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff" : ".txt,.json,.pdf"}
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (f)
@@ -1893,9 +1895,10 @@ function App() {
                     )}
                     {current.mode === "paypal_sandbox_saas" ? (
                       <p className="paypal-read-only">
-                        No PayPal action has been performed. This test
-                        connection can import records; it cannot send a message,
-                        issue a refund or accept the claim.
+                        The connected merchant can deliberately enable limited
+                        sandbox resolution in the PayPal record. The provider’s
+                        confirmed outcome and any action record appear there.
+                        An investigation finding alone does not execute an action.
                       </p>
                     ) : current.mode === "paypal_sandbox" ? (
                       <div className="paypal-review">
@@ -2163,7 +2166,7 @@ function App() {
                 Download original document
               </a>
             )}
-            <dl className="source-metadata">
+            <ExtractionDetails source={source}/><dl className="source-metadata">
               <dt>Received</dt>
               <dd>{date(source.received_at)}</dd>
               <dt>Origin</dt>
@@ -2475,14 +2478,14 @@ function App() {
                     {me.role === "member" ? "Add & investigate" : "Add source"}
                   </button>
                 </form>
-                <div className="divider">OR UPLOAD A DOCUMENT</div>
+                {config?.auth_mode === "account" && <ReadingPreference api={api}/>}<div className="divider">OR UPLOAD A DOCUMENT</div>
                 <label className="file-drop">
                   <Upload size={22} />
                   <strong>Select a document</strong>
-                  <span>TXT, JSON or text PDF · 5 MB maximum</span>
+                  <span>Images, scanned or digital PDF, TXT, JSON · 5 MB maximum</span>
                   <input
                     type="file"
-                    accept=".txt,.json,.pdf"
+                    accept={config?.auth_mode === "account" ? ".txt,.json,.pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff" : ".txt,.json,.pdf"}
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (f)
@@ -2500,7 +2503,8 @@ function App() {
                 <p className="fine">
                   Evidence is saved before investigation starts. Uploads are
                   reported evidence. No automatic claim of verified origin.
-                  Scanned PDFs and images are not yet supported.
+                  Images and scanned PDFs are read automatically. Unclear text
+                  stays uncertain; the original remains available to inspect.
                 </p>
               </>
             )}

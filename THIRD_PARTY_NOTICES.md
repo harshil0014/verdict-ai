@@ -1,5 +1,13 @@
 # Third-party notices
 
+## Document reading additions
+
+Pillow **12.2.0** retains its [HPND license](third_party/python/pillow/). pypdfium2 **5.15.1** offers Apache-2.0/BSD-3-Clause licensing; its wrapper, PDFium and bundled dependency notices are retained in [the notice directory](third_party/python/pypdfium2/), including the PDFium BSD license and component licenses. No PDFium source or binaries are copied into this Git repository. Installed wheels retain their notices in the application container.
+
+Tesseract is an unmodified, separate **Apache-2.0** executable installed from Debian packages in the container. [Tesseract](third_party/tesseract/LICENSE) and [Leptonica](third_party/tesseract/leptonica-license.txt) notices are retained; Debian package copyright/license files remain in `/usr/share/doc`. This subprocess integration does not relicense the engine. Windows local validation used the upstream-linked Tesseract 5.5.3 installer, retained only in ignored local work files.
+
+The printed receipt and scan fixtures are authored synthetic records under this repository's MIT license. The evaluated handwritten manuscript is public domain, credited to Library of Congress, Manuscript Division, Abraham Lincoln Papers; its image is not vendored. These are evaluation materials, not real customer transactions.
+
 ## Delivery map additions
 
 Leaflet **1.9.4** is BSD-2-Clause, copyright Volodymyr Agafonkin and CloudMade; its full [license](third_party/npm/leaflet/LICENSE) is retained. `@types/leaflet` **1.9.21** and `@types/geojson` **7946.0.16** retain their MIT [Leaflet types](third_party/npm/@types/leaflet/LICENSE) / [GeoJSON types](third_party/npm/@types/geojson/LICENSE) notices. Package versions are locked. No geocoding server code is vendored.

@@ -1,0 +1,12 @@
+{
+  "actual_gemini_call": true,
+  "source": "https://www.loc.gov/exhibits/gettysburg-address/exhibitionitems/Assets/Nicolay1_enlarge.jpg",
+  "rights": "Public domain; Library of Congress, Manuscript Division, Abraham Lincoln Papers",
+  "expected_reference": "https://www.loc.gov/exhibits/gettysburg-address/ext/trans-nicolay-copy.html",
+  "writing": "mixed",
+  "opening_phrase_read": true,
+  "uncertainty": [
+    "The final words 'we here be [unclear]' are written in a different, lighter ink and are partially obscured or faded."
+  ],
+  "scope": "One public handwritten historical manuscript page; no general handwriting accuracy claim. AI transcription remains unverified."
+}

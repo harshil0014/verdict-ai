@@ -1,0 +1,9 @@
+{
+  "actual_gemini_image_request": true,
+  "fixture": "backend/tests/fixtures/ocr/receipt.png",
+  "amount_read": true,
+  "tracking_read": true,
+  "writing": "printed",
+  "uncertainty": [],
+  "scope": "One authored printed receipt, not an accuracy benchmark. AI transcription stays unverified."
+}

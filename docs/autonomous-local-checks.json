@@ -1,0 +1,8 @@
+{
+  "checked_at": "2026-11-08T17:40:54.188904+00:00",
+  "backend_passed": 341,
+  "backend_failed": 0,
+  "frontend_passed": 27,
+  "frontend_failed": 0,
+  "scope": "Local Python and React rendering tests, including actual offline Tesseract on authored image/scan/blank originals. Mocked provider fault tests do not represent real refunds."
+}

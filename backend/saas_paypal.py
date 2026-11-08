@@ -194,7 +194,7 @@ async def connection_status(user=Depends(auth.current_session)):
     c=await repo.rpc('paypal:connection')
     if not c:return {'connected':False,'environment':'sandbox','self_service_onboarding':False,'notice':'Restricted test merchant only. Your workspace has no authorized connection.'}
     configured=c['owner_id']==os.getenv('VERDICT_PAYPAL_DEMO_OWNER_ID') and c['merchant_id']==os.getenv('VERDICT_PAYPAL_DEMO_MERCHANT_ID') and bool(os.getenv('PAYPAL_CLIENT_ID') and os.getenv('PAYPAL_CLIENT_SECRET'))
-    return {'connected':configured,'environment':'sandbox','read_only':True,'self_service_onboarding':False,
+    return {'connected':configured,'environment':'sandbox','read_only':True,'autonomy':'separate_opt_in_sandbox_policy','self_service_onboarding':False,
         **select(c,('merchant_id','last_checked_at','last_status','last_error'))}
 
 

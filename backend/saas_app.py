@@ -31,6 +31,8 @@ from saas_paypal import router as paypal_router
 from saas_paypal import connection_status as paypal_connection_status
 from delivery_location import router as location_router
 from preferences import router as preferences_router
+from document_reading import router as reading_router
+from autonomous_resolution import router as agent_router
 from case_investigation import run_investigation
 from source_recovery import RECOVERY_VERSION
 import automatic_investigation as automatic
@@ -64,6 +66,8 @@ app.include_router(research_router)
 app.include_router(paypal_router)
 app.include_router(location_router)
 app.include_router(preferences_router)
+app.include_router(reading_router)
+app.include_router(agent_router)
 
 
 @app.middleware("http")
@@ -90,7 +94,7 @@ async def model_error(request, error):
 
 @app.get("/api/config")
 def config():
-    return {"auth_mode": "account", "storage": "postgres", "signup": True, "paypal": "account_scoped_sandbox_read_only"}
+    return {"auth_mode": "account", "storage": "postgres", "signup": True, "paypal": "account_scoped_sandbox", "paypal_autonomy":"merchant_opt_in_test_orders"}
 
 
 @app.get("/api/health")
@@ -170,14 +174,17 @@ async def retry_automation(id:str,user=Depends(auth.current_session)):
     return {'ok':True}
 
 
-def add_source(body, data, raw=None, mime="text/plain", request_row=None, links=None):
+def add_source(body, data, raw=None, mime="text/plain", request_row=None, links=None, extraction=None):
     body.setdefault('automatic_investigation',True)
-    body['automatic_workflow_version']=max(8,RECOVERY_VERSION)
+    body['automatic_workflow_version']=max(8,RECOVERY_VERSION,body.get('automatic_workflow_version',1))
     if len(body["evidence"]) >= 40: raise HTTPException(422, "Maximum 40 evidence sources per case")
     if "\x00" in data.text: raise HTTPException(422, "Null bytes are not supported")
     source = evidence(data.title, data.text, data.party, "portal_upload" if request_row else "user_upload")
     source.update(synthetic=False, mime=mime, sha256=digest(raw if raw is not None else data.text.encode()), file_available=raw is not None)
     if links: source['embedded_links']=links
+    if extraction:
+        source['extraction']=extraction
+        body['automatic_workflow_version']=max(9,body['automatic_workflow_version'])
     body["evidence"].append(source)
     if request_row:
         for request in body["requests"]:
@@ -201,9 +208,13 @@ async def text_evidence(id: str, data: EvidenceInput, user=Depends(auth.current_
 @app.post("/api/cases/{id}/upload")
 async def upload(id: str, file: UploadFile=File(...), party: Literal["buyer","seller","carrier","payment_provider","other"]=Form("seller"), user=Depends(auth.current_session)):
     body = await repo.get(id)
-    raw, text, mime, links = await extract_file(file,include_links=True)
+    raw, text, mime, links, extraction = await extract_file(file,include_links=True,deferred=True)
+    if any(s.get('sha256')==digest(raw) and s.get('party')==party and s.get('file_available') for s in body['evidence']):
+        # Same original from the same party: a retried upload must not create
+        # duplicate originals, sources, audit entries or paid-looking work.
+        return body
     data = EvidenceInput(title=Path(file.filename or "Evidence").name[:160], text=text, party=party)
-    event, original = add_source(body, data, raw, mime,links=links)
+    event, original = add_source(body, data, raw, mime,links=links,extraction=extraction)
     result=await repo.save(body, "evidence_received", event, file=original)
     automatic.WAKE.set()
     return result
@@ -288,12 +299,12 @@ async def portal(request: Request):
     return {k:context["request"][k] for k in ("id","title","question","recipient","expires_at")}
 
 
-async def portal_save(request, data, raw=None, mime="text/plain",links=None):
+async def portal_save(request, data, raw=None, mime="text/plain",links=None,extraction=None):
     hashed = portal_hash(request)
     context = await repo.rpc("portal_context", {"request_hash": hashed}, session="")
     body = {**context["case"], "timeline": context["timeline"]}
     data.party = context["request"]["recipient"]
-    event, original = add_source(body, data, raw, mime, context["request"],links)
+    event, original = add_source(body, data, raw, mime, context["request"],links,extraction)
     await repo.rpc("portal_submit", repo.mutation(body, "evidence_received", event,
         request_action="reply", request_hash=hashed, file=original), session="")
     automatic.WAKE.set()
@@ -308,13 +319,15 @@ async def portal_reply(request: Request, data: EvidenceInput):
 @app.post("/api/portal/upload")
 async def portal_upload(request: Request, file: UploadFile=File(...)):
     await repo.rpc("portal_context", {"request_hash": portal_hash(request)}, session="")
-    raw,text,mime,links = await extract_file(file,include_links=True)
-    return await portal_save(request, EvidenceInput(title=Path(file.filename or "Evidence").name[:160], text=text),raw,mime,links)
+    raw,text,mime,links,extraction = await extract_file(file,include_links=True,deferred=True)
+    return await portal_save(request, EvidenceInput(title=Path(file.filename or "Evidence").name[:160], text=text),raw,mime,links,extraction)
 
 
 @app.get("/api/cases/{id}/export")
 async def export(id: str, user=Depends(auth.current_session)):
-    return Response(json.dumps(await repo.get(id),indent=2),media_type="application/json",headers={"Content-Disposition":"attachment; filename=verdict-case.json"})
+    body=await repo.get(id)
+    if body.get('mode')=='paypal_sandbox_saas':body['sandbox_resolution']=await repo.rpc('agent:status',{'case_id':id})
+    return Response(json.dumps(body,indent=2),media_type="application/json",headers={"Content-Disposition":"attachment; filename=verdict-case.json"})
 
 
 @app.get("/api/integrations")
@@ -326,7 +339,7 @@ async def integrations(user=Depends(auth.current_session)):
 @app.api_route("/api/paypal/{path:path}", methods=["GET","POST"])
 @app.api_route("/api/cases/{id}/actions/{path:path}", methods=["POST"])
 async def provider_not_connected(path: str, user=Depends(auth.current_session), id: str=""):
-    raise HTTPException(409,"This account integration supports read-only PayPal sandbox import and sync. Provider actions and public merchant onboarding are not enabled.")
+    raise HTTPException(409,"This route is unavailable. PayPal actions require the connected merchant’s bounded Sandbox autonomy policy. Public merchant onboarding is not enabled.")
 
 
 DIST = Path(__file__).resolve().parents[1]/"frontend/dist"

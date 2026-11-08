@@ -54,6 +54,10 @@ def references(evidence):
         if source.get('origin') in ('public_web_automatic', 'public_web_snapshot'):
             continue
         text = source.get('text', '')
+        if source.get('extraction'):
+            # Model-authored image transcriptions never become invented URL
+            # discovery leads. Only the offline reader's literal text is used.
+            text='\n'.join(p.get('offline_text',p.get('text','')) for p in source['extraction'].get('pages',[]))
         candidates = [(m.group().rstrip('.,;:!?)]}'), text[max(0,m.start()-100):m.end()+100], None)
                       for m in URL_PATTERN.finditer(text)]
         candidates += [(row['url'], 'Embedded PDF reference', row.get('page'))
@@ -195,6 +199,11 @@ async def process(claim):
     try:
         async with asyncio.timeout(420):
             body=await repo.get(case_id)
+            stage='checking_evidence'
+            await heartbeat()
+            from document_reading import extract_pending
+            await extract_pending(case_id,heartbeat)
+            body=await repo.get(case_id)
             pending=[ref for ref in references(body['evidence']) if ref['url'] not in outcomes or outcomes[ref['url']].get('status')=='retrieving'][:MAX_REFERENCES]
             for ref in pending:
                 key=ref['url']
@@ -297,6 +306,17 @@ async def process(claim):
             if location_record and location_record.get('retry_at'):
                 await repo.rpc('workflow:reschedule',{**credentials,'delay_seconds':320,'progress':progress},session='')
                 return
+            stage='checking_resolution'
+            await heartbeat()
+            from autonomous_resolution import evaluate_case
+            try:
+                await evaluate_case(case_id)
+            except Exception as error:
+                # Optional provider resolution must not undo a committed
+                # investigation. A durable dispatch barrier, if present,
+                # remains intact and the policy scheduler reconciles reads.
+                progress['resolution_check_unavailable']=True
+                log.warning('Sandbox resolution check unavailable (%s)',type(error).__name__)
             partial=any(r['status'] in ('unavailable','blocked') and r.get('recovery',{}).get('status')!='recovered' for r in outcomes.values())
             await repo.rpc('workflow:finish',{**credentials,'generation':claim['generation'],
                 'state':'partial' if partial else 'completed','stage':'complete',
@@ -329,10 +349,12 @@ async def worker():
     while True:
         try:
             WAKE.clear()
+            from autonomous_resolution import tick
+            await tick()
             await repo.rpc('workflow:queue_recovery',session='')
             await repo.rpc('workflow:queue_location_upgrade',session='')
             await repo.rpc('workflow:queue_location_comparison_upgrade',session='')
-            claim=await repo.rpc('workflow:claim',{'worker_version':max(8,RECOVERY_VERSION)},session='')
+            claim=await repo.rpc('workflow:claim',{'worker_version':max(9,RECOVERY_VERSION)},session='')
             if claim:
                 await process(claim)
                 continue

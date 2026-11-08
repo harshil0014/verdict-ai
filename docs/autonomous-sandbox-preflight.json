@@ -1,0 +1,17 @@
+{
+  "checked_at": "2026-11-08T17:15:04.023903+00:00",
+  "dispute_status": "WAITING_FOR_SELLER_RESPONSE",
+  "refunds": [
+    {
+      "status": "PENDING",
+      "amount": {
+        "currency_code": "USD",
+        "value": "0.60"
+      },
+      "status_details": null
+    }
+  ],
+  "safe_action": "abstain_existing_refund",
+  "business_writes": 0,
+  "provider_issues": []
+}

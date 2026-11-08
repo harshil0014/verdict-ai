@@ -18,6 +18,8 @@ export function AutomaticInvestigation({
   const labels: Record<string, string> = {
     queued: "Your evidence is saved. We’ll investigate it.",
     finding_references: "Reading your evidence…",
+    checking_evidence: "Checking evidence…",
+    checking_resolution: "Checking the supported next step…",
     retrieving_references: "Checking a referenced document…",
     recovering_sources: "Looking for another accessible source…",
     verifying_delivery_locations: "Comparing delivery locations…",

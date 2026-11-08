@@ -1,0 +1,45 @@
+begin;
+do $test$
+declare conn verdict_saas.paypal_connections; ctx jsonb; pol jsonb; r jsonb; act jsonb; cid text; rev integer; sh text;
+begin
+ select * into conn from verdict_saas.paypal_connections where active;
+ if conn.id is null then raise exception 'No configured merchant fixture'; end if;
+ ctx:=public.verdict_paypal_api('operator_context','',jsonb_build_object('connection_id',conn.id));sh:=ctx->>'session_hash';
+ select case_id into cid from verdict_saas.paypal_imports where connection_id=conn.id limit 1;
+ select revision into rev from verdict_saas.cases where id=cid;
+ pol:=public.verdict_agent_api('enable',sh,jsonb_build_object('connection_id',conn.id,'enabled',true,'per_claim_usd','1.00','total_usd','1.00','max_actions',1,'hours',1,'unfulfilled_test_orders',true));
+ execute 'reset role';
+ r:=public.verdict_agent_api('reserve',sh,jsonb_build_object('connection_id',conn.id,'case_id',cid,'policy_id',pol->'policy'->>'id','amount','1.00','expected_revision',rev,'basis',jsonb_build_object('test','ROLLBACK-only; no provider HTTP','case_revision',rev,'capture_id','TEST-ROLLBACK-CAPTURE')));
+ execute 'reset role';
+ if not (r->>'created')::boolean then raise exception 'First reservation failed'; end if;
+ act:=r->'action';
+ update verdict_saas.agent_actions set basis=jsonb_set(basis,'{case_revision}',to_jsonb(rev+1)) where id=(act->>'id')::uuid;
+ r:=public.verdict_agent_api('sending',sh,jsonb_build_object('id',act->>'id'));
+ execute 'reset role';
+ if (r->>'send')::boolean then raise exception 'Stale evidence permitted dispatch'; end if;
+ update verdict_saas.agent_actions set basis=jsonb_set(basis,'{case_revision}',to_jsonb(rev)) where id=(act->>'id')::uuid;
+ 
+ r:=public.verdict_agent_api('reserve',sh,jsonb_build_object('connection_id',conn.id,'case_id',cid,'policy_id',pol->'policy'->>'id','amount','1.00','expected_revision',rev,'basis',jsonb_build_object('capture_id','TEST-ROLLBACK-CAPTURE','case_revision',rev)));
+ execute 'reset role';
+ if (r->>'created')::boolean then raise exception 'Duplicate reserved'; end if;
+ r:=public.verdict_agent_api('sending',sh,jsonb_build_object('id',act->>'id'));
+ execute 'reset role';
+ if not (r->>'send')::boolean then raise exception 'First dispatch barrier failed'; end if;
+ r:=public.verdict_agent_api('sending',sh,jsonb_build_object('id',act->>'id'));
+ execute 'reset role';
+ if (r->>'send')::boolean then raise exception 'Duplicate dispatch permitted'; end if;
+ perform public.verdict_agent_api('action_result',sh,jsonb_build_object('id',act->>'id','result',jsonb_build_object('state','uncertain','automatic_retry',false)));
+ execute 'reset role';
+ pol:=public.verdict_agent_api('enable',sh,jsonb_build_object('connection_id',conn.id,'enabled',true,'per_claim_usd','1.00','total_usd','1.00','max_actions',1,'hours',1,'unfulfilled_test_orders',true));
+ execute 'reset role';
+ r:=public.verdict_agent_api('reserve',sh,jsonb_build_object('connection_id',conn.id,'case_id',cid,'policy_id',pol->'policy'->>'id','amount','1.00','expected_revision',rev,'basis',jsonb_build_object('capture_id','TEST-ROLLBACK-CAPTURE','case_revision',rev)));
+ execute 'reset role';
+ if (r->>'created')::boolean then raise exception 'Replacement policy bypassed lifetime deduplication'; end if;
+ perform public.verdict_agent_api('enable',sh,jsonb_build_object('connection_id',conn.id,'enabled',false));
+ execute 'reset role';
+ r:=public.verdict_agent_api('policy',sh,jsonb_build_object('connection_id',conn.id));
+ execute 'reset role';
+ if (r->>'enabled')::boolean then raise exception 'Revocation failed'; end if;
+ if (select count(*) from verdict_saas.agent_actions where id=(act->>'id')::uuid and state='uncertain')<>1 then raise exception 'Uncertain barrier lost'; end if;
+end $test$;
+rollback;

@@ -5,6 +5,8 @@ from investigator import investigate, MODEL
 
 
 async def run_investigation(case_id, on_reserved=None, before_commit=None):
+    from document_reading import extract_pending
+    await extract_pending(case_id,before_commit)
     from delivery_location import verify_case
     await verify_case(case_id)
     body = await repo.get(case_id)

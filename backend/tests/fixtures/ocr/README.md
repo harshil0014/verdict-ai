@@ -1,0 +1,1 @@
+Authored synthetic OCR fixtures, released under the repository MIT license. Not real transactions or customer evidence. receipt.png and its image-only PDF contain identical printed text. The blank page tests abstention. Expected amount USD 812.02, order TEST-2048, date 2026-11-08, tracking TEST123456789. These fixtures test extraction, not authentication or handwriting accuracy.

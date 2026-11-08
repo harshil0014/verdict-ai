@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowDownToLine, RefreshCw, ShieldCheck } from "lucide-react";
 import "./paypal-account.css";
+import {SandboxAutonomy} from './autonomous-resolution';
 
 type API = (path: string, method?: string, body?: any) => Promise<any>;
 const missing = "Not available from PayPal";
@@ -29,7 +30,7 @@ export function PayPalCaseEntry({ onImport }: { onImport: () => void }) {
 export function PayPalConnectionNotice({ connection }: { connection: any }) {
   return (
     <div className="paypal-connection">
-      <span className="pill">SANDBOX · READ ONLY</span>
+      <span className="pill">PAYPAL SANDBOX</span>
       {connection?.connected ? (
         <>
           <h3>Authorized test merchant connected</h3>
@@ -129,13 +130,17 @@ export function PayPalImport({
       <h2>Import from PayPal</h2>
       <p>
         A seller-authorized sandbox connection supplies the records. Importing
-        starts VERDICT’s investigation; it does not create a dispute, capture a
-        payment or send a PayPal response.
+        starts VERDICT’s investigation. No payment is created or captured here.
+        An explicitly enabled merchant policy may act on an eligible sandbox
+        dispute after investigation.
       </p>
       {loading ? (
         <p role="status">Checking the authorized sandbox connection…</p>
       ) : (
+        <>
         <PayPalConnectionNotice connection={connection} />
+        {connection?.connected&&<SandboxAutonomy api={api}/>}
+        </>
       )}
       {connection?.connected && (
         <>
@@ -221,6 +226,7 @@ export function PayPalReceipt({
         <span className="pill">PayPal · test payment</span>
         <p>Sandbox uses test funds. No real money moves.</p>
       </div>
+      <SandboxAutonomy api={api} caseId={caseData.id}/>
       <dl>
         <dt>Disputed amount</dt>
         <dd>{amount(p.dispute?.disputed_amount)}</dd>

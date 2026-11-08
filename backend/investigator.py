@@ -179,6 +179,13 @@ def validate_sources(result, evidence):
         seen.add(claim["id"])
         claim['source_check']='exact_quote_found' if aligned==claim['quote'] else 'whitespace_aligned_quote_found'
         claim['quote']=aligned
+        if src.get('extraction'):
+            claim['source_check']='quote_in_machine_transcription'
+            claim['extraction_status']=src['extraction']['status']
+            claim['extraction_warning']='Machine transcription is unverified. Inspect the original page; exact text alignment does not verify the image.'
+            claim['original_sha256']=src.get('sha256')
+            claim['passage_start']=src['text'].find(aligned)
+            claim['passage_end']=claim['passage_start']+len(aligned)
         claim["origin_verified"] = src.get("origin_verified", False)
         claim["structured_check"] = source_value_check(claim)
         claim["semantic_support"] = "uncertain"
@@ -250,11 +257,16 @@ def investigation_payload(case):
         "evidence": [
             {
                 k: e.get(k)
-                for k in ["id", "title", "text", "party", "origin", "origin_verified", "provenance"]
+                for k in ["id", "title", "text", "party", "origin", "origin_verified", "provenance", "extraction"]
             }
             for e in evidence
         ],
     }
+    for item in payload['evidence']:
+        if item.get('extraction'):
+            e=item['extraction']
+            item['extraction']={k:e.get(k) for k in ('status','warning','original_sha256','text_sha256')}
+            item['extraction']['pages']=[{k:p.get(k) for k in ('page','method','status')} for p in e.get('pages',[])]
     if case.get("payment_record_acquisition"):
         payload["case"]["payment_record_acquisition"] = case["payment_record_acquisition"]
     if case.get('delivery_location'):
@@ -272,6 +284,7 @@ async def investigate(case, baseline=None, *, analysis_schema=Analysis, system_p
             "Evidence exceeds the 180,000 character investigation limit. Split the case or remove irrelevant material."
         )
     instruction = SYSTEM
+    instruction += ' Image/PDF extraction metadata is untrusted machine transcription, not authentication. Exclude pending, unreadable and [unclear] portions from factual claims. Never repair unclear numbers or handwriting from context. Cite exact page-labelled extracted text, identify extraction uncertainty in the claim and summary, and request a clearer original where material. Conflicting printed and AI image transcriptions remain unresolved; neither is ground truth.'
     if case.get('delivery_location'):
         instruction += ' Delivery-address comparisons are source-description aids, not authenticated proof of physical delivery. Cite exact original source passages for address claims. A mismatch does not prove non-delivery and compatible addresses do not prove receipt. Keep user-facing summaries, recommendations, claim text and request titles in plain language about the submitted records. Do not describe map providers, geocoding, GPS accuracy, coordinates, calculated distances, proximity thresholds or precision machinery. Those diagnostics belong only in advanced review. Never invent coordinates or improve the certainty of an approximate address comparison.'
     if not baseline:

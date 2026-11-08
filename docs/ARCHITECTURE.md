@@ -1,5 +1,7 @@
 # Architecture
 
+The [document-reading and sandbox-agent extension](AUTONOMOUS_RESOLUTION.md) adds bounded offline extraction before the existing durable research/investigation queue, optional consented Gemini page reading, and a separate server-only policy/action ledger. Financial eligibility does not come from the language model. Existing originals and cases remain in the same tenant-isolated cloud store. No paid queue or storage tier is added.
+
 `backend/saas_app.py` is the account application. React calls same-origin FastAPI with an HttpOnly cookie. Only FastAPI has the cloud secret and Gemini key. `saas_auth.py` uses maintained pwdlib/argon2-cffi, not a custom password algorithm.
 
 ```mermaid
