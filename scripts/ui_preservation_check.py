@@ -22,7 +22,7 @@ def run(args):
             r=c.post('/api/auth/login',json={k:actor[k] for k in ('username','password')});r.raise_for_status()
             if args.phase=='capture':baseline[str(i)]={}
             for case_id in [actor['case_id']]+[actor[k]['case_id'] for k in ('unavailable_probe','primary_automation_probe') if k in actor]:
-                r=c.get('/api/cases/'+case_id);r.raise_for_status();case=r.json();case.pop('automation',None)
+                r=c.get('/api/cases/'+case_id);r.raise_for_status();case=r.json();case.pop('automation',None);case.pop('effective_map_preference',None)
                 r=c.get('/api/cases/'+case_id+'/research');r.raise_for_status();research=r.json();research_records+=len(research)
                 files={}
                 for source in case['evidence']:

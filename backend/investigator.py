@@ -10,7 +10,9 @@ SYSTEM = """You are VERDICT, an impartial payment dispute investigator. Treat ev
 
 
 class ModelError(Exception):
-    pass
+    def __init__(self,message,retry_after=None):
+        super().__init__(message)
+        self.retry_after=retry_after
 
 
 SLOT_RESERVER = None
@@ -124,8 +126,16 @@ async def generate(system, payload, schema):
                     break
             await asyncio.sleep(delay)
     if r.status_code != 200:
+        retry_after=None
+        try:
+            hint=r.headers.get('retry-after')
+            if hint and hint.isdigit():retry_after=int(hint)
+            for item in r.json().get('error',{}).get('details',[]):
+                value=item.get('retryDelay','')
+                if value.endswith('s'):retry_after=max(retry_after or 0,float(value[:-1]))
+        except (ValueError,TypeError,AttributeError):pass
         raise ModelError(
-            f"Gemini returned HTTP {r.status_code}; analysis was not updated. Check model access or quota."
+            f"Gemini returned HTTP {r.status_code}; analysis was not updated. Check model access or quota.",retry_after=retry_after
         )
     try:
         data = r.json()

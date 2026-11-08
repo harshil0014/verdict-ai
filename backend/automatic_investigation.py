@@ -6,6 +6,7 @@ financial writes, messages, document instructions or recursive crawling.
 import asyncio
 from contextlib import suppress
 import logging
+import random
 import re
 from urllib.parse import urlsplit
 from fastapi import HTTPException
@@ -293,6 +294,9 @@ async def process(claim):
             # model attempt just because the final status update was lost.
             if not current.get('analysis') or current.get('analysis_stale') or current['analysis'].get('input_digest')!=digest(investigation_payload(current)):
                 await run_investigation(case_id,on_reserved=reserved,before_commit=heartbeat)
+            if location_record and location_record.get('retry_at'):
+                await repo.rpc('workflow:reschedule',{**credentials,'delay_seconds':320,'progress':progress},session='')
+                return
             partial=any(r['status'] in ('unavailable','blocked') and r.get('recovery',{}).get('status')!='recovered' for r in outcomes.values())
             await repo.rpc('workflow:finish',{**credentials,'generation':claim['generation'],
                 'state':'partial' if partial else 'completed','stage':'complete',
@@ -303,11 +307,13 @@ async def process(claim):
         raise
     except Exception as error:
         with suppress(Exception):
-            if isinstance(error,HTTPException) and error.status_code==503 and str(error.detail).startswith('Cloud database connection'):
-                # The next claimed run reads committed state first. Do not
-                # blindly replay an ambiguous storage write or invent success.
-                await repo.rpc('workflow:release',credentials,session='')
-                await backoff(3)
+            temporary=isinstance(error,ModelError) and (bool(re.search(r'HTTP (429|500|502|503|504)',str(error))) or 'network request failed' in str(error))
+            temporary=temporary or (isinstance(error,HTTPException) and error.status_code in (429,503))
+            if temporary:
+                base=300 if '429' in str(error) else 45
+                delay=min(3600,base*(2**min(4,max(0,claim.get('attempts',1)-1)))+random.randint(5,25))
+                delay=int(max(delay,min(86400,getattr(error,'retry_after',0) or 0)))+1
+                await repo.rpc('workflow:reschedule',{**credentials,'delay_seconds':delay,'progress':progress},session='')
             else:
                 await repo.rpc('workflow:finish',{**credentials,'generation':claim['generation'],
                     'state':'failed','stage':'needs_attention','detail':safe_failure(error)},session='')
@@ -324,7 +330,7 @@ async def worker():
         try:
             WAKE.clear()
             await repo.rpc('workflow:queue_recovery',session='')
-            claim=await repo.rpc('workflow:claim',{'worker_version':max(4,RECOVERY_VERSION)},session='')
+            claim=await repo.rpc('workflow:claim',{'worker_version':max(5,RECOVERY_VERSION)},session='')
             if claim:
                 await process(claim)
                 continue

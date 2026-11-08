@@ -8,6 +8,7 @@ import re
 import unicodedata
 from datetime import datetime,timezone
 from difflib import SequenceMatcher
+from datetime import timedelta
 import httpx
 from fastapi import APIRouter,Depends,HTTPException
 from pydantic import Field
@@ -41,7 +42,7 @@ class Extraction(StrictModel):
 
 
 class Authorization(StrictModel):
-    mode:str=Field(pattern='^(off|area_only|address)$')
+    mode:str=Field(pattern='^(off|area_only|address|account)$')
     acknowledged:bool=False
 
 
@@ -241,10 +242,14 @@ def pair_mentions(mentions):
 
 
 async def verify_case(case_id):
-    body=await repo.get(case_id);sources=active_sources(body['evidence']);settings=body.get('location_authorization',{'mode':'off'})
+    body=await repo.get(case_id);sources=active_sources(body['evidence']);settings=body.get('location_authorization',{})
+    inherited=not settings or settings.get('mode')=='account'
+    if inherited:settings=await repo.rpc('experience:preferences')
+    settings={'mode':settings.get('mode','off'),'acknowledged_at':settings.get('acknowledged_at')}
     key=digest({'version':VERSION,'evidence':[(s['id'],s.get('sha256') or digest(s['text'].encode())) for s in sources],'authorization':settings})
     old=body.get('delivery_location',{})
-    if old.get('input_digest')==key:return old
+    retry_due=old.get('retry_at') and datetime.fromisoformat(old['retry_at'])<=datetime.now(timezone.utc)
+    if old.get('input_digest')==key and not retry_due:return old
     candidates=[s for s in sources if ADDRESS_HINT.search(s['text'])]
     if not candidates and not old:return None
     mentions=local_mentions(candidates);extraction='local source-label parser';extraction_error=None
@@ -264,11 +269,13 @@ async def verify_case(case_id):
         if m['geocode'].get('status')=='resolved' or not lookup:continue
         query,kind=lookup;ck=digest({'query':query,'kind':kind,'provider':PROVIDER})
         prior=cache.get(ck);age=(datetime.now(timezone.utc)-datetime.fromisoformat(prior['cached_at'])).total_seconds() if prior else None
-        ttl=2592000 if prior and prior['result'].get('status')=='resolved' else 3600
+        transient=prior and (prior['result'].get('status') in ('provider_unavailable','quota_limited'))
+        ttl=2592000 if prior and prior['result'].get('status')=='resolved' else (300 if transient else 3600)
         if prior and age<ttl:m['geocode']=copy.deepcopy(prior['result']);m['geocode']['cached']=True
         elif queries<4:
             fresh=await repo.get(case_id)
-            if fresh['revision']!=body['revision'] or fresh.get('location_authorization',{'mode':'off'})!=settings:
+            current_settings=await repo.rpc('experience:preferences') if inherited else fresh.get('location_authorization',{})
+            if fresh['revision']!=body['revision'] or current_settings.get('mode','off')!=settings['mode']:
                 raise HTTPException(409,'Case or location authorization changed; further external lookups stopped.')
             result=await geocode(case_id,query,kind,m.get('explicit_postcode') if m.get('explicit_country') in (None,'IN') else None);queries+=1
             cache[ck]={'cached_at':now(),'result':result};m['geocode']=result
@@ -279,6 +286,19 @@ async def verify_case(case_id):
         'status':('LOCATION MISMATCH' if any(c['status']=='LOCATION MISMATCH' for c in comparisons) else comparisons[0]['status']) if len(comparisons)==1 or any(c['status']=='LOCATION MISMATCH' for c in comparisons) else 'UNVERIFIED',
         'limitations':[DISCLAIMER]+([] if pairs else ['A unique intended/reported-delivery pair is not established; multiple or unrelated addresses are not compared automatically.']),
         'authorization_mode':mode,'provider':PROVIDER,'new_provider_queries':queries}
+    temporary=[m['geocode'] for m in mentions if m.get('geocode',{}).get('status')=='provider_unavailable' and m.get('geocode',{}).get('http_status') not in (400,401,403,404,410,422)]
+    if temporary:
+        record['retry_at']=(datetime.now(timezone.utc)+timedelta(seconds=310)).isoformat()
+    # A retry of an unchanged unavailable response should not spend another
+    # model assessment solely because the retrieval timestamp changed.
+    if retry_due and old.get('input_digest')==key:
+        def meaningful(r):
+            return [{k:v for k,v in m.items() if k!='geocode'}|{'geocode':{k:v for k,v in m.get('geocode',{}).items() if k not in ('cached','retrieved_at','raw_response','response_sha256')}} for m in r.get('mentions',[])]
+        if meaningful(old)==meaningful(record):
+            record['record_sha256']=digest(record)
+            body['delivery_location']=record
+            await repo.save(body,'location_lookup_retried',{'status':record['status'],'source_ids':[m['source_id'] for m in mentions]})
+            return record
     record['record_sha256']=digest(record)
     latest=await repo.get(case_id)
     if latest['revision']!=body['revision']:raise HTTPException(409,'Evidence changed during location verification; retained originals for the queued reassessment.')
@@ -289,18 +309,18 @@ async def verify_case(case_id):
 
 def investigation_record(record):
     if not record:return None
-    return {k:record[k] for k in ('status','comparisons','limitations','record_sha256')} | {'mentions':[
+    return {k:record[k] for k in ('status','comparisons','limitations')} | {'mentions':[
         {k:m.get(k) for k in ('id','source_id','quote','address','role','explicit_postcode','explicit_country','source_authenticity')} |
-        {'geocode':{k:m.get('geocode',{}).get(k) for k in ('status','provider','precision','uncertainty_m','uncertainty_basis','inferred_postcode','lat','lon','response_sha256')}} for m in record['mentions']]}
+        {'geocode':{k:m.get('geocode',{}).get(k) for k in ('status','provider','precision','uncertainty_m','uncertainty_basis','inferred_postcode','lat','lon')}} for m in record['mentions']]}
 
 
 router=APIRouter()
 @router.post('/api/cases/{id}/location-authorization')
 async def authorize(id:str,data:Authorization,user=Depends(auth.current_session)):
     body=await repo.get(id)
-    if data.mode!='off' and not data.acknowledged:raise HTTPException(422,'Acknowledge external geocoding disclosure before authorizing location lookup.')
+    if data.mode not in ('off','account') and not data.acknowledged:raise HTTPException(422,'Acknowledge external geocoding disclosure before authorizing location lookup.')
     body['location_authorization']={'mode':data.mode,'acknowledged_at':now() if data.mode!='off' else None,'provider':PROVIDER}
-    body['automatic_workflow_version']=max(4,body.get('automatic_workflow_version',1))
+    body['automatic_workflow_version']=max(5,body.get('automatic_workflow_version',1))
     await repo.save(body,'location_authorization_changed',{'mode':data.mode,'provider':PROVIDER})
     if body['evidence'] and body.get('automatic_investigation',True):
         await repo.rpc('workflow:retry',{'case_id':id})

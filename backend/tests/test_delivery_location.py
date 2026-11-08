@@ -160,3 +160,14 @@ def test_consent_endpoint_requires_acknowledgement_and_authentication(account_cl
     monkeypatch.setattr(dl.repo,'get',get)
     assert client.post('/api/cases/owned/location-authorization',json={'mode':'address','acknowledged':False}).status_code==422
     assert client.post('/api/cases/not-owned/location-authorization',json={'mode':'address','acknowledged':True}).status_code==404
+
+@pytest.mark.parametrize('text,expected',[('12000','12000.00'),('12000.00','12000.00'),('12,000.5','12000.50'),('0','0.00')])
+def test_case_amount_accepts_normal_currency_input(text,expected):
+    from domain import CaseInput
+    assert CaseInput(title='A normal case',amount=text,currency='INR').amount==expected
+
+@pytest.mark.parametrize('text',['-1','NaN','1e3','1.234','9999999999','1,00'])
+def test_case_amount_rejects_invalid_or_overprecision_values(text):
+    from domain import CaseInput
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError):CaseInput(title='Case title',amount=text,currency='INR')

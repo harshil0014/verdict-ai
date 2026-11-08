@@ -41,19 +41,46 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./style.css";
 import { AccountEntry } from "./saas";
-import { CaseNavigation } from './case-navigation';
-import { AutomaticInvestigation } from './automation';
-import { ClaimChecks } from './claim-checks';
-const PayPalCaseEntry=lazy(()=>import('./paypal-account').then(m=>({default:m.PayPalCaseEntry})));
-const PayPalImport=lazy(()=>import('./paypal-account').then(m=>({default:m.PayPalImport})));
-const PayPalReceipt=lazy(()=>import('./paypal-account').then(m=>({default:m.PayPalReceipt})));
-const DeliveryLocation=lazy(()=>import('./delivery-location').then(m=>({default:m.DeliveryLocation})));
-const ProviderRecordFacts=lazy(()=>import('./paypal-account').then(m=>({default:m.ProviderRecordFacts})));
-import './research.css';
-const EvidenceDiscoveries=lazy(()=>import('./research').then(m=>({default:m.EvidenceDiscoveries})));
-const ResearchActivity=lazy(()=>import('./research').then(m=>({default:m.ResearchActivity})));
-const FindEvidence=lazy(()=>import('./research').then(m=>({default:m.FindEvidence})));
-const PublicSourceFacts=lazy(()=>import('./research').then(m=>({default:m.PublicSourceFacts})));
+import { CaseNavigation } from "./case-navigation";
+import { AutomaticInvestigation } from "./automation";
+import { ClaimChecks } from "./claim-checks";
+import {
+  CaseOverview,
+  CaseTimeline,
+  CurrencyField,
+  Money,
+  humanError,
+} from "./experience";
+import "./experience.css";
+import { AccountSettings } from "./account-settings";
+const PayPalCaseEntry = lazy(() =>
+  import("./paypal-account").then((m) => ({ default: m.PayPalCaseEntry })),
+);
+const PayPalImport = lazy(() =>
+  import("./paypal-account").then((m) => ({ default: m.PayPalImport })),
+);
+const PayPalReceipt = lazy(() =>
+  import("./paypal-account").then((m) => ({ default: m.PayPalReceipt })),
+);
+const DeliveryLocation = lazy(() =>
+  import("./delivery-location").then((m) => ({ default: m.DeliveryLocation })),
+);
+const ProviderRecordFacts = lazy(() =>
+  import("./paypal-account").then((m) => ({ default: m.ProviderRecordFacts })),
+);
+import "./research.css";
+const EvidenceDiscoveries = lazy(() =>
+  import("./research").then((m) => ({ default: m.EvidenceDiscoveries })),
+);
+const ResearchActivity = lazy(() =>
+  import("./research").then((m) => ({ default: m.ResearchActivity })),
+);
+const FindEvidence = lazy(() =>
+  import("./research").then((m) => ({ default: m.FindEvidence })),
+);
+const PublicSourceFacts = lazy(() =>
+  import("./research").then((m) => ({ default: m.PublicSourceFacts })),
+);
 
 type Source = {
   id: string;
@@ -143,41 +170,68 @@ type Case = {
   paypal_snapshot?: any;
   paypal_account?: any;
   paypal_synced_at?: string;
-  payment_record_acquisition?: { status: string; records_read: number; issues: string[] };
+  payment_record_acquisition?: {
+    status: string;
+    records_read: number;
+    issues: string[];
+  };
   automation?: any;
 };
 let authGeneration = 0;
 async function api(path: string, method = "GET", body?: any, token?: string) {
-  if (path.startsWith('/auth/')) authGeneration++;
+  if (path.startsWith("/auth/")) authGeneration++;
   const generation = authGeneration;
   const headers: any = {};
   if (body && !(body instanceof FormData))
     headers["Content-Type"] = "application/json";
   if (token) headers.Authorization = "Bearer " + token;
   const r = await fetch("/api" + path, {
+    signal: AbortSignal.timeout(45000),
     method,
     headers,
     body:
       body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
     credentials: "same-origin",
   });
-  const d = await r.json();
-  if (generation !== authGeneration) throw new Error("Your session changed. Please open the case again.");
+  let d: any;
+  try {
+    d = await r.json();
+  } catch {
+    throw new Error(
+      "We couldn’t connect just now. Your saved records are unchanged. Try again in a moment.",
+    );
+  }
+  if (generation !== authGeneration)
+    throw new Error("Your session changed. Please open the case again.");
   if (!r.ok) {
-    const diagnostic=d.detail?.diagnostic;
-    const message=typeof d.detail==='string'?d.detail:d.detail?.message?`${d.detail.message}${diagnostic?.http_status?` HTTP ${diagnostic.http_status}`:''}${diagnostic?.issues?.length?` · ${diagnostic.issues.join(', ')}`:''}`:"The request could not be completed";
-    const failure = Object.assign(new Error(message), {status:r.status});
-    if (r.status === 401 && ((!path.startsWith('/auth/') && path !== '/me' && path !== '/portal') || path === '/auth/logout')) window.dispatchEvent(new Event('verdict-session-ended'));
+    const diagnostic = d.detail?.diagnostic;
+    const message =
+      typeof d.detail === "string"
+        ? d.detail
+        : d.detail?.message
+          ? `${d.detail.message}${diagnostic?.http_status ? ` HTTP ${diagnostic.http_status}` : ""}${diagnostic?.issues?.length ? ` · ${diagnostic.issues.join(", ")}` : ""}`
+          : "The request could not be completed";
+    const failure = Object.assign(new Error(message), { status: r.status });
+    if (
+      r.status === 401 &&
+      ((!path.startsWith("/auth/") && path !== "/me" && path !== "/portal") ||
+        path === "/auth/logout")
+    )
+      window.dispatchEvent(new Event("verdict-session-ended"));
     throw failure;
   }
   return d;
 }
 const readable = (s: string) => s.replaceAll("_", " ").replaceAll("-", " ");
 const sellerEvidenceTypes = (c: Case | null): string[] =>
-  ["PROOF_OF_FULFILLMENT", "OTHER"].filter(type =>
-    c?.paypal_snapshot?.evidences?.some((e: any) =>
-      e.source === "REQUESTED_FROM_SELLER" && e.evidence_type === type &&
-      (!e.action_info?.action || e.action_info.action === "PROVIDE_EVIDENCE")));
+  ["PROOF_OF_FULFILLMENT", "OTHER"].filter((type) =>
+    c?.paypal_snapshot?.evidences?.some(
+      (e: any) =>
+        e.source === "REQUESTED_FROM_SELLER" &&
+        e.evidence_type === type &&
+        (!e.action_info?.action || e.action_info.action === "PROVIDE_EVIDENCE"),
+    ),
+  );
 const date = (s: string) =>
   new Date(s).toLocaleString(undefined, {
     month: "short",
@@ -211,28 +265,86 @@ function App() {
     [reviewedWitness, setReviewedWitness] = useState<Witness | null>(null),
     [integration, setIntegration] = useState<any>(null),
     [approval, setApproval] = useState<any>(null);
+  const [graphExpanded, setGraphExpanded] = useState(false);
   const hash = new URLSearchParams(location.hash.slice(1));
   const portalToken = hash.get("request");
   const [portal, setPortal] = useState<any>(null),
     [portalDone, setPortalDone] = useState(false),
     [demoCode, setDemoCode] = useState("");
   const [closingRequest, setClosingRequest] = useState<any>(null);
-  const [evidenceParty, setEvidenceParty] = useState('other');
+  const [evidenceParty, setEvidenceParty] = useState("other");
   function clearPrivateState() {
-    setItems([]); setCurrent(null); setSource(null); setClaim(null); setIntegration(null);
-    setApproval(null); setPortalLink(''); setReviewedWitness(null); setClosingRequest(null);
-    setModal(''); setNotice(''); setError(''); setQuery(''); setFilter('all'); setTab('investigation'); setEvidenceParty('other');
+    setItems([]);
+    setCurrent(null);
+    setSource(null);
+    setClaim(null);
+    setIntegration(null);
+    setApproval(null);
+    setPortalLink("");
+    setReviewedWitness(null);
+    setClosingRequest(null);
+    setModal("");
+    setNotice("");
+    setError("");
+    setQuery("");
+    setFilter("all");
+    setTab("investigation");
+    setEvidenceParty("other");
   }
+  useEffect(() => {
+    if (!modal && !source) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const dialog = document.querySelector<HTMLElement>(
+      source ? ".drawer" : ".modal",
+    );
+    if (!dialog) return;
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute(
+      "aria-label",
+      source ? "Evidence record" : "Case action",
+    );
+    const controls = () =>
+      Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          "button:not([disabled]),input:not([disabled]),select,textarea,a[href],summary",
+        ),
+      ).filter((x) => x.offsetParent !== null);
+    controls()[0]?.focus();
+    const key = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const all = controls(),
+        first = all[0],
+        last = all[all.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", key);
+    return () => {
+      document.removeEventListener("keydown", key);
+      previous?.focus();
+    };
+  }, [modal, !!source]);
   async function authenticated() {
     clearPrivateState();
-    const profile = await api('/me');
+    const profile = await api("/me");
     await load();
     setMe(profile);
   }
   useEffect(() => {
-    const ended = () => { authGeneration++; clearPrivateState(); setMe(null); setError('Your session has ended. Sign in to return to your workspace.'); };
-    window.addEventListener('verdict-session-ended', ended);
-    return () => window.removeEventListener('verdict-session-ended', ended);
+    const ended = () => {
+      authGeneration++;
+      clearPrivateState();
+      setMe(null);
+      setError("Your session has ended. Sign in to return to your workspace.");
+    };
+    window.addEventListener("verdict-session-ended", ended);
+    return () => window.removeEventListener("verdict-session-ended", ended);
   }, []);
   async function run(label: string, fn: () => Promise<any>) {
     setBusy(label);
@@ -248,7 +360,9 @@ function App() {
   async function load(id?: string) {
     const rows = await api("/cases");
     setItems(rows);
-    const choice = [id, current?.id, rows[0]?.id].find(value => rows.some((c: Case) => c.id === value));
+    const choice = [id, current?.id, rows[0]?.id].find((value) =>
+      rows.some((c: Case) => c.id === value),
+    );
     setCurrent(choice ? await api("/cases/" + choice) : null);
   }
   async function choose(id: string) {
@@ -265,14 +379,14 @@ function App() {
   useEffect(() => {
     (async () => {
       try {
-        const settings = await api('/config');
+        const settings = await api("/config");
         setConfig(settings);
         if (portalToken) {
           setPortal(await api("/portal", "GET", undefined, portalToken));
           return;
         }
         const bootstrap = hash.get("bootstrap");
-        if (bootstrap && settings.auth_mode === 'legacy') {
+        if (bootstrap && settings.auth_mode === "legacy") {
           history.replaceState(null, "", location.pathname);
           setMe(await api("/auth/login", "POST", { bootstrap }));
           await load();
@@ -310,18 +424,31 @@ function App() {
   }, [notice]);
   useEffect(() => {
     if (!current || busy || modal || source) return;
-    const timer = setInterval(async () => {
-      if (document.visibilityState !== "visible") return;
-      try {
-        const latest = await api("/cases/" + current.id);
-        if (latest.revision !== current.revision || latest.automation?.updated_at !== current.automation?.updated_at) {
-          setCurrent(latest);
-          setItems((v) => v.map((c) => (c.id === latest.id ? latest : c)));
-        }
-      } catch {}
-    }, ['queued','running'].includes(current.automation?.state) ? 4000 : 15000);
+    const timer = setInterval(
+      async () => {
+        if (document.visibilityState !== "visible") return;
+        try {
+          const latest = await api("/cases/" + current.id);
+          if (
+            latest.revision !== current.revision ||
+            latest.automation?.updated_at !== current.automation?.updated_at
+          ) {
+            setCurrent(latest);
+            setItems((v) => v.map((c) => (c.id === latest.id ? latest : c)));
+          }
+        } catch {}
+      },
+      ["queued", "running"].includes(current.automation?.state) ? 4000 : 15000,
+    );
     return () => clearInterval(timer);
-  }, [current?.id, current?.revision, current?.automation?.updated_at, busy, modal, source]);
+  }, [
+    current?.id,
+    current?.revision,
+    current?.automation?.updated_at,
+    busy,
+    modal,
+    source,
+  ]);
   const a = current?.analysis;
   const totals = useMemo(
     () => ({
@@ -381,7 +508,15 @@ function App() {
             <>
               <span className="node-kind">REPORTED CLAIM · {c.id}</span>
               <strong>{c.text}</strong>
-              <small>{readable(c.epistemic_status || 'reported claim')} · {readable(c.semantic_support)} · inspect</small>
+              <small>
+                {readable(c.epistemic_status || "reported claim")} ·{" "}
+                {c.semantic_support === "entailed"
+                  ? "Supported by the document"
+                  : c.semantic_support === "partial"
+                    ? "Partly supported"
+                    : "Needs review"}{" "}
+                · inspect
+              </small>
             </>
           ),
         },
@@ -504,7 +639,15 @@ function App() {
       {error && (
         <div className="toast error" role="alert">
           <AlertTriangle size={17} />
-          <span>{error}</span>
+          <span>
+            {humanError(error)}
+            {humanError(error) !== error && (
+              <details className="error-detail">
+                <summary>Technical details</summary>
+                <pre>{error}</pre>
+              </details>
+            )}
+          </span>
           <button aria-label="Dismiss error" onClick={() => setError("")}>
             <X size={16} />
           </button>
@@ -527,6 +670,21 @@ function App() {
         <div className="brand-mark">V</div>
         <LoaderCircle className="spin" />
         <span>Opening your investigation workspace…</span>
+      </div>
+    );
+  if (!config && !loading)
+    return (
+      <div className="loading-screen">
+        <div className="brand-mark">V</div>
+        <h2>We couldn’t reach your workspace.</h2>
+        <p>
+          Your saved cases are safe. Free hosting can take a little time to wake
+          up.
+        </p>
+        <button className="primary" onClick={() => location.reload()}>
+          Try again
+        </button>
+        <a href="https://verdict-ai-harshil0014.onrender.com">Open VERDICT</a>
       </div>
     );
   if (portalToken)
@@ -582,8 +740,9 @@ function App() {
                 </label>
                 <p className="fine">
                   Share only evidence you have permission to provide. The
-                  investigator can see your response and may investigate it with Gemini and retrieve its safe public references automatically. This link gives access
-                  only to this request.
+                  investigator can see your response and may investigate it with
+                  Gemini and retrieve its safe public references automatically.
+                  This link gives access only to this request.
                 </p>
                 <button className="primary" disabled={!!busy}>
                   <Send size={16} />
@@ -619,8 +778,23 @@ function App() {
       </div>
     );
   if (!me)
-    if (!config) return <div className="loading-screen"><h1>Workspace temporarily unavailable</h1><p>{error || 'Unable to load account configuration.'}</p><button className="primary" onClick={() => location.reload()}>Try again</button></div>;
-    else if (config.auth_mode === 'account') return <><AccountEntry api={api} onAuthenticated={authenticated}/>{alert}</>;
+    if (!config)
+      return (
+        <div className="loading-screen">
+          <h1>Workspace temporarily unavailable</h1>
+          <p>{error || "Unable to load account configuration."}</p>
+          <button className="primary" onClick={() => location.reload()}>
+            Try again
+          </button>
+        </div>
+      );
+    else if (config.auth_mode === "account")
+      return (
+        <>
+          <AccountEntry api={api} onAuthenticated={authenticated} />
+          {alert}
+        </>
+      );
   if (!me)
     return (
       <div className="entry">
@@ -726,8 +900,9 @@ function App() {
             <small>
               {me.role === "operator"
                 ? "Private operator workspace"
-                : me.role === "member" ? "Your private cloud workspace"
-                : "Isolated fictional workspace"}
+                : me.role === "member"
+                  ? "Your private cloud workspace"
+                  : "Isolated fictional workspace"}
             </small>
           </div>
         </div>
@@ -735,31 +910,39 @@ function App() {
         <nav>
           <button
             className={tab === "investigation" ? "active" : ""}
+            aria-label="Cases"
+            title="Cases"
             onClick={() => setTab("investigation")}
           >
             <FolderOpen size={18} />
-            Case investigations<span>{totals.open}</span>
+            Cases<span>{totals.open}</span>
           </button>
           <button
             className={tab === "requests" ? "active" : ""}
+            aria-label="Evidence requests"
+            title="Evidence requests"
             onClick={() => setTab("requests")}
           >
             <ScanLine size={18} />
-            Witness requests<span>{totals.requests}</span>
+            Requests<span>{totals.requests}</span>
           </button>
           <button
             className={tab === "evidence" ? "active" : ""}
+            aria-label="Evidence"
+            title="Evidence"
             onClick={() => setTab("evidence")}
           >
             <FileText size={18} />
-            Evidence library
+            Evidence
           </button>
           <button
             className={tab === "timeline" ? "active" : ""}
+            aria-label="History"
+            title="History"
             onClick={() => setTab("timeline")}
           >
             <Clock3 size={18} />
-            Investigation trail
+            History
           </button>
         </nav>
         <div className="sidebar-note">
@@ -773,10 +956,12 @@ function App() {
         </div>
         <button
           className="sidebar-bottom"
+          aria-label="Settings"
+          title="Settings"
           onClick={() => {
             if (me.role === "operator" || me.role === "member")
               run("Checking integrations", async () => {
-                if (me.role === 'member') setMe(await api('/me'));
+                if (me.role === "member") setMe(await api("/me"));
                 setIntegration(await api("/integrations"));
                 setModal("integrations");
               });
@@ -787,10 +972,12 @@ function App() {
           }}
         >
           <Settings2 size={17} />
-          Connections & safeguards
+          Settings
         </button>
         <button
           className="identity"
+          aria-label="Sign out"
+          title="Sign out"
           onClick={() =>
             run("Signing out", async () => {
               await api("/auth/logout", "POST");
@@ -799,10 +986,20 @@ function App() {
             })
           }
         >
-          <span className="avatar">{me.role === "operator" ? "OP" : me.role === "member" ? me.user.display_name.slice(0,2).toUpperCase() : "DE"}</span>
+          <span className="avatar">
+            {me.role === "operator"
+              ? "OP"
+              : me.role === "member"
+                ? me.user.display_name.slice(0, 2).toUpperCase()
+                : "DE"}
+          </span>
           <span>
             <strong>
-              {me.role === "operator" ? "Operator" : me.role === "member" ? me.user.display_name : "Demo investigator"}
+              {me.role === "operator"
+                ? "Operator"
+                : me.role === "member"
+                  ? me.user.display_name
+                  : "Demo investigator"}
             </strong>
             <small>Sign out</small>
           </span>
@@ -818,7 +1015,11 @@ function App() {
           </div>
           <span className="sandbox-tag">
             <span className="live-dot" />
-            {me.role === "operator" ? "SANDBOX ONLY" : me.role === "member" ? "PRIVATE WORKSPACE" : "FICTIONAL DATA"}
+            {me.role === "operator"
+              ? "SANDBOX ONLY"
+              : me.role === "member"
+                ? "PRIVATE WORKSPACE"
+                : "FICTIONAL DATA"}
           </span>
           <button
             className="secondary small"
@@ -829,45 +1030,75 @@ function App() {
           </button>
         </header>
         <main>
-          {me.role === 'member' && <div className="account-mobile"><strong>{me.user.display_name}</strong><button onClick={() => run('Checking account',async () => {setMe(await api('/me'));setIntegration(await api('/integrations'));setModal('integrations');})}>Safeguards</button><button onClick={() => run('Signing out',async () => {await api('/auth/logout','POST');setMe(null);clearPrivateState();})}>Sign out <LogOut size={13}/></button></div>}
+          {me.role === "member" && (
+            <div className="account-mobile">
+              <strong>{me.user.display_name}</strong>
+              <button
+                onClick={() =>
+                  run("Checking account", async () => {
+                    setMe(await api("/me"));
+                    setIntegration(await api("/integrations"));
+                    setModal("integrations");
+                  })
+                }
+              >
+                Settings
+              </button>
+              <button
+                onClick={() =>
+                  run("Signing out", async () => {
+                    await api("/auth/logout", "POST");
+                    setMe(null);
+                    clearPrivateState();
+                  })
+                }
+              >
+                Sign out <LogOut size={13} />
+              </button>
+            </div>
+          )}
           {me.ephemeral_storage && (
             <div className="consent-box" role="note">
               <AlertTriangle size={20} />
-              <p>Temporary demo workspace. Use fictional records only. Cases and request links can disappear when this free host restarts; export work you want to keep.</p>
+              <p>
+                Temporary demo workspace. Use fictional records only. Cases and
+                request links can disappear when this free host restarts; export
+                work you want to keep.
+              </p>
             </div>
           )}
           <div className="page-heading">
             <div>
               <span className="eyebrow">EVIDENCE BEFORE CERTAINTY</span>
               <h1>
-                The investigation room<span>.</span>
+                Your investigations<span>.</span>
               </h1>
-              <p>
-                Follow the facts. Question the gaps. Find the missing witness.
-              </p>
+              <p>Add the evidence. We’ll connect the dots.</p>
             </div>
-            {me.role !== "member" && <button
-              className="secondary"
-              disabled={!!busy || me.role !== "operator"}
-              title={
-                me.role !== "operator"
-                  ? "Operator access required"
-                  : "Retrieve actual sandbox disputes"
-              }
-              onClick={() =>
-                run("Syncing PayPal sandbox", async () => {
-                  const r = await api("/paypal/sync", "POST");
-                  await load();
-                  setNotice(r.message);
-                })
-              }
-            >
-              <RefreshCw
-                size={16}
-                className={busy === "Syncing PayPal sandbox" ? "spin" : ""}
-              />
-              Sync PayPal
-            </button>}
+            {me.role !== "member" && (
+              <button
+                className="secondary"
+                disabled={!!busy || me.role !== "operator"}
+                title={
+                  me.role !== "operator"
+                    ? "Operator access required"
+                    : "Retrieve actual sandbox disputes"
+                }
+                onClick={() =>
+                  run("Syncing PayPal sandbox", async () => {
+                    const r = await api("/paypal/sync", "POST");
+                    await load();
+                    setNotice(r.message);
+                  })
+                }
+              >
+                <RefreshCw
+                  size={16}
+                  className={busy === "Syncing PayPal sandbox" ? "spin" : ""}
+                />
+                Sync PayPal
+              </button>
+            )}
           </div>
           <section className="metrics">
             <div>
@@ -951,7 +1182,9 @@ function App() {
                             : "MANUAL CASE"}
                       </span>
                       <strong>
-                        {c.currency&&c.amount!==null?`${c.currency} ${c.amount}`:'Not available from PayPal'}
+                        {c.currency && c.amount !== null
+                          ? `${c.currency} ${c.amount}`
+                          : "Not available from PayPal"}
                       </strong>
                     </div>
                     <h3>{c.title}</h3>
@@ -965,7 +1198,7 @@ function App() {
                           ? "New evidence"
                           : c.analysis
                             ? findings[c.analysis.finding]
-                            : "Not investigated"}
+                            : "Waiting for evidence"}
                       </span>
                       <ChevronRight size={14} />
                     </div>
@@ -988,27 +1221,44 @@ function App() {
                       <span className="pill">
                         {current.mode === "synthetic"
                           ? "FICTIONAL SCENARIO"
-                          : current.mode.startsWith('paypal_sandbox')?'PAYPAL SANDBOX':readable(current.mode).toUpperCase()}
+                          : current.mode.startsWith("paypal_sandbox")
+                            ? "PAYPAL SANDBOX"
+                            : readable(current.mode).toUpperCase()}
                       </span>
-                      <span>REV {current.revision}</span>
+                      <span className="scope-note">Saved</span>
                     </div>
                     <h2>{current.title}</h2>
                     <p>{current.story}</p>
                   </div>
                   <div className="case-amount">
                     <strong>
-                      {current.currency&&current.amount!==null?`${current.currency} ${current.amount}`:'Not available from PayPal'}
+                      {current.currency && current.amount !== null
+                        ? `${current.currency} ${current.amount}`
+                        : "Not available from PayPal"}
                     </strong>
                     <span>
                       {current.deadline
                         ? "Due " + date(current.deadline)
-                        : "No provider deadline supplied"}
+                        : "Saved in your workspace"}
                     </span>
                   </div>
                 </div>
-                {current.paypal_account&&<Suspense fallback={<p>Loading payment records…</p>}><PayPalReceipt caseData={current} api={api} onUpdated={refresh}/></Suspense>}
+                {current.paypal_account && (
+                  <Suspense fallback={<p>Loading payment records…</p>}>
+                    <PayPalReceipt
+                      caseData={current}
+                      api={api}
+                      onUpdated={refresh}
+                    />
+                  </Suspense>
+                )}
                 <div className="case-tabs">
-                  <CaseNavigation tab={tab} evidenceCount={current.evidence.length} witnessCount={current.requests.length} onSelect={setTab}/>
+                  <CaseNavigation
+                    tab={tab}
+                    evidenceCount={current.evidence.length}
+                    witnessCount={current.requests.length}
+                    onSelect={setTab}
+                  />
                   <button
                     className="export"
                     title="Export case record"
@@ -1019,11 +1269,36 @@ function App() {
                     <Download size={16} />
                   </button>
                 </div>
-                {me.role === 'member' && ['investigation','timeline'].includes(tab) && <>
-                  <AutomaticInvestigation key={current.id+'-automation'} current={current} api={api} changed={refresh}/>
-                  <Suspense fallback={<p className="fine">Loading source retrieval history…</p>}><ResearchActivity key={current.id+'-activity'} caseId={current.id} revision={current.revision} activityVersion={current.automation?.updated_at} api={api} changed={refresh}/></Suspense>
-                </>}
-                {me.role==='member'&&['investigation','evidence'].includes(tab)&&<Suspense fallback={<p>Loading delivery location verification…</p>}><DeliveryLocation current={current} api={api} changed={refresh} onSource={(id:string)=>{setTab('evidence');setClaim(null);setSource(current.evidence.find(e=>e.id===id)||null)}}/></Suspense>}
+                {me.role === "member" &&
+                  ["investigation", "timeline"].includes(tab) && (
+                    <>
+                      <AutomaticInvestigation
+                        key={current.id + "-automation"}
+                        current={current}
+                        api={api}
+                        changed={refresh}
+                      />
+                      <details className="technical-record research-history">
+                        <summary>Source retrieval details</summary>
+                        <Suspense
+                          fallback={
+                            <p className="fine">
+                              Loading source retrieval history…
+                            </p>
+                          }
+                        >
+                          <ResearchActivity
+                            key={current.id + "-activity"}
+                            caseId={current.id}
+                            revision={current.revision}
+                            activityVersion={current.automation?.updated_at}
+                            api={api}
+                            changed={refresh}
+                          />
+                        </Suspense>
+                      </details>
+                    </>
+                  )}
                 {busy && (
                   <div className="progress" role="status">
                     <LoaderCircle size={16} className="spin" />
@@ -1041,224 +1316,275 @@ function App() {
                     <AlertTriangle size={16} />
                     New evidence has arrived. The previous investigation is
                     shown while VERDICT updates the investigation.
-                    {!['queued','running'].includes(current.automation?.state)&&<button onClick={() => setModal("analyze")}>
-                      Reassess <ArrowRight size={14} />
-                    </button>}
                   </div>
                 )}
                 {tab === "investigation" && (
                   <>
-                    <div className="investigation-tools">
-                      <div>
-                        <span className="eyebrow">THE EVIDENCE NETWORK</span>
-                        <h3>
-                          {a
-                            ? findings[a.finding]
-                            : "What does the evidence actually establish?"}
-                        </h3>
+                    <CaseOverview
+                      current={current}
+                      onEvidence={() => setModal("evidence")}
+                      onRequest={createRequest}
+                      onSource={(id, c) => {
+                        setSource(
+                          current.evidence.find((e) => e.id === id) || null,
+                        );
+                        setClaim(c || null);
+                      }}
+                    />
+                    {me.role === "member" && (
+                      <Suspense fallback={<p>Checking delivery locations…</p>}>
+                        <DeliveryLocation
+                          current={current}
+                          api={api}
+                          changed={refresh}
+                          onSource={(id: string) => {
+                            setSource(
+                              current.evidence.find((e) => e.id === id) || null,
+                            );
+                            setClaim(null);
+                          }}
+                        />
+                      </Suspense>
+                    )}
+                    <details className="investigation-deep">
+                      <summary>
+                        Explore the evidence graph & competing explanations
+                      </summary>
+                      <div className="investigation-tools">
+                        <p>Follow a claim back to its original source.</p>
+                        <button
+                          className="secondary small"
+                          onClick={() => setGraphExpanded(!graphExpanded)}
+                        >
+                          {graphExpanded ? "Compact view" : "Expand graph"}
+                        </button>
                       </div>
-                      <button
-                        className="primary"
-                        disabled={!!busy || ['queued','running'].includes(current.automation?.state)}
-                        onClick={() => setModal("analyze")}
-                      >
-                        <ScanLine size={16} />
-                        {['queued','running'].includes(current.automation?.state) ? 'Investigation in progress' : a ? "Reassess case" : "Investigate case"}
-                      </button>
-                    </div>
-                    <div className="investigation-grid">
-                      <div className="graph-panel">
-                        <div className="graph-header">
-                          <span>
-                            <GitBranch size={16} />
-                            Living investigation
-                          </span>
-                          <span>
-                            {a
-                              ? `${a.claims.length} claims · ${a.hypotheses.length} explanations`
-                              : `${current.evidence.length} sources · analysis pending`}
-                          </span>
-                        </div>
-                        <div className="graph">
-                          <ReactFlow
-                            key={current.id + "-" + (a?.created_at || "empty")}
-                            nodes={graph.nodes}
-                            edges={graph.edges}
-                            fitView
-                            fitViewOptions={{ padding: 0.22 }}
-                            minZoom={0.15}
-                            maxZoom={1.5}
-                            onNodeClick={graphClick}
-                            nodesConnectable={false}
-                            nodesDraggable={false}
-                            proOptions={{ hideAttribution: false }}
+                      <div className="investigation-grid">
+                        <div className="graph-panel">
+                          <div className="graph-header">
+                            <span>
+                              <GitBranch size={16} />
+                              Living investigation
+                            </span>
+                            <span>
+                              {a
+                                ? `${a.claims.length} claims · ${a.hypotheses.length} explanations`
+                                : `${current.evidence.length} sources · analysis pending`}
+                            </span>
+                          </div>
+                          <div
+                            className={
+                              "graph " + (graphExpanded ? "expanded" : "")
+                            }
                           >
-                            <Background color="#ccd6ce" gap={20} />
-                            <Controls showInteractive={false} />
-                          </ReactFlow>
-                          {!a && (
-                            <div className="graph-prompt">
-                              <ScanLine size={22} />
-                              <strong>
-                                The sources are here.
-                                <br />
-                                The investigation starts with a question.
-                              </strong>
+                            <ReactFlow
+                              key={
+                                current.id +
+                                "-" +
+                                (a?.created_at || "empty") +
+                                graphExpanded
+                              }
+                              nodes={graph.nodes}
+                              edges={graph.edges}
+                              fitView
+                              fitViewOptions={{ padding: 0.22 }}
+                              minZoom={0.15}
+                              maxZoom={1.5}
+                              onNodeClick={graphClick}
+                              nodesConnectable={false}
+                              nodesDraggable={false}
+                              proOptions={{ hideAttribution: false }}
+                            >
+                              <Background color="#ccd6ce" gap={20} />
+                              <Controls showInteractive={false} />
+                            </ReactFlow>
+                            {!a && (
+                              <div className="graph-prompt">
+                                <ScanLine size={22} />
+                                <strong>
+                                  The sources are here.
+                                  <br />
+                                  The investigation starts with a question.
+                                </strong>
+                                <p>
+                                  Your evidence will be reviewed automatically.
+                                  Add a record to get started.
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="graph-legend">
+                            <span>
+                              <i className="legend-source" />
+                              Evidence
+                            </span>
+                            <span>
+                              <i className="legend-claim" />
+                              Reported claim
+                            </span>
+                            <span>
+                              <i className="legend-hypothesis" />
+                              Explanation
+                            </span>
+                            <small>Select a node to inspect its source</small>
+                          </div>
+                        </div>
+                        <aside className="witness-panel">
+                          <div className="witness-label">
+                            <ScanLine size={18} />
+                            THE MISSING WITNESS
+                          </div>
+                          {a?.requests.length ? (
+                            (() => {
+                              const w =
+                                a.requests.find(
+                                  (w) => w.priority === "first",
+                                ) || a.requests[0];
+                              return (
+                                <>
+                                  <span className="ordinal">
+                                    NEXT BEST QUESTION
+                                  </span>
+                                  <h3>{w.title}</h3>
+                                  <p>{w.question}</p>
+                                  <div className="witness-meta">
+                                    <span>
+                                      Ask the <strong>{w.recipient}</strong>
+                                    </span>
+                                    <span>{w.burden} burden</span>
+                                  </div>
+                                  <div className="why">
+                                    <span>WHY THIS MATTERS</span>
+                                    <p>{w.rationale}</p>
+                                    <small>
+                                      Distinguishes {w.distinguishes.length}{" "}
+                                      competing explanations
+                                    </small>
+                                  </div>
+                                  <button
+                                    disabled={
+                                      !!busy || !!current.analysis_stale
+                                    }
+                                    onClick={() => createRequest(w)}
+                                  >
+                                    Request evidence <ArrowUpRight size={17} />
+                                  </button>
+                                  <small className="witness-fine">
+                                    Creates a restricted response link. Nothing
+                                    is sent automatically.
+                                  </small>
+                                </>
+                              );
+                            })()
+                          ) : (
+                            <>
+                              <span className="ordinal">FOLLOW THE GAP</span>
+                              <h3>
+                                {a
+                                  ? "No further targeted request proposed."
+                                  : "The right question changes the case."}
+                              </h3>
                               <p>
-                                Run an investigation to extract claims, compare
-                                explanations and find the next useful witness.
+                                {a
+                                  ? "Review the evidence and remaining unknowns. An unresolved outcome is legitimate."
+                                  : "An investigation identifies what would distinguish the buyer’s account from the seller’s. It does not assume either is right."}
+                              </p>
+                              <div className="witness-empty">
+                                <ScanLine size={52} />
+                                <span>
+                                  {a
+                                    ? "Human review remains required"
+                                    : "Awaiting investigation"}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </aside>
+                      </div>
+                      {a && (
+                        <div className="findings-grid">
+                          <div className="finding-summary">
+                            <span className="eyebrow">CURRENT ASSESSMENT</span>
+                            <h3>{findings[a.finding]}</h3>
+                            <p>{a.summary}</p>
+                            {a.change && (
+                              <div className="change-note">
+                                <RefreshCw size={15} />
+                                Reassessment:{" "}
+                                {findings[a.change.previous_finding]} →{" "}
+                                {findings[a.change.current_finding]}.{" "}
+                                {a.change.new_source_ids.length} newly cited
+                                sources.
+                              </div>
+                            )}
+                            <small>
+                              AI assessment · {a.model} · {a.latency_seconds}s ·{" "}
+                              {date(a.created_at)}
+                            </small>
+                          </div>
+                          <div className="unknowns">
+                            <span className="eyebrow">STILL UNKNOWN</span>
+                            {a.unknowns.map((u, i) => (
+                              <p key={i}>
+                                <span>{String(i + 1).padStart(2, "0")}</span>
+                                {u}
+                              </p>
+                            ))}
+                            {!a.unknowns.length && (
+                              <p>
+                                No additional unknowns identified by the model.
+                                Human verification is still required.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {!!a?.comparisons.length && (
+                        <div className="comparisons">
+                          <span className="eyebrow">
+                            REPORTED FIELD DISCREPANCIES
+                          </span>
+                          {a.comparisons.map((x: any) => (
+                            <div key={x.id}>
+                              <AlertTriangle size={17} />
+                              <p>
+                                {x.description}
+                                <small>{x.verification}</small>
                               </p>
                             </div>
-                          )}
-                        </div>
-                        <div className="graph-legend">
-                          <span>
-                            <i className="legend-source" />
-                            Evidence
-                          </span>
-                          <span>
-                            <i className="legend-claim" />
-                            Reported claim
-                          </span>
-                          <span>
-                            <i className="legend-hypothesis" />
-                            Explanation
-                          </span>
-                          <small>Select a node to inspect its source</small>
-                        </div>
-                      </div>
-                      <aside className="witness-panel">
-                        <div className="witness-label">
-                          <ScanLine size={18} />
-                          THE MISSING WITNESS
-                        </div>
-                        {a?.requests.length ? (
-                          (() => {
-                            const w =
-                              a.requests.find((w) => w.priority === "first") ||
-                              a.requests[0];
-                            return (
-                              <>
-                                <span className="ordinal">
-                                  NEXT BEST QUESTION
-                                </span>
-                                <h3>{w.title}</h3>
-                                <p>{w.question}</p>
-                                <div className="witness-meta">
-                                  <span>
-                                    Ask the <strong>{w.recipient}</strong>
-                                  </span>
-                                  <span>{w.burden} burden</span>
-                                </div>
-                                <div className="why">
-                                  <span>WHY THIS MATTERS</span>
-                                  <p>{w.rationale}</p>
-                                  <small>
-                                    Distinguishes {w.distinguishes.length}{" "}
-                                    competing explanations
-                                  </small>
-                                </div>
-                                <button
-                                  disabled={!!busy || !!current.analysis_stale}
-                                  onClick={() => createRequest(w)}
-                                >
-                                  Create evidence request{" "}
-                                  <ArrowUpRight size={17} />
-                                </button>
-                                <small className="witness-fine">
-                                  Creates a restricted response link. Nothing is
-                                  sent automatically.
-                                </small>
-                              </>
-                            );
-                          })()
-                        ) : (
-                          <>
-                            <span className="ordinal">FOLLOW THE GAP</span>
-                            <h3>
-                              {a
-                                ? "No further targeted request proposed."
-                                : "The right question changes the case."}
-                            </h3>
-                            <p>
-                              {a
-                                ? "Review the evidence and remaining unknowns. An unresolved outcome is legitimate."
-                                : "An investigation identifies what would distinguish the buyer’s account from the seller’s. It does not assume either is right."}
-                            </p>
-                            <div className="witness-empty">
-                              <ScanLine size={52} />
-                              <span>
-                                {a
-                                  ? "Human review remains required"
-                                  : "Awaiting investigation"}
-                              </span>
-                            </div>
-                          </>
-                        )}
-                      </aside>
-                    </div>
-                    {a && (
-                      <div className="findings-grid">
-                        <div className="finding-summary">
-                          <span className="eyebrow">CURRENT ASSESSMENT</span>
-                          <h3>{findings[a.finding]}</h3>
-                          <p>{a.summary}</p>
-                          {a.change && (
-                            <div className="change-note">
-                              <RefreshCw size={15} />
-                              Reassessment:{" "}
-                              {findings[a.change.previous_finding]} →{" "}
-                              {findings[a.change.current_finding]}.{" "}
-                              {a.change.new_source_ids.length} newly cited
-                              sources.
-                            </div>
-                          )}
-                          <small>
-                            AI assessment · {a.model} · {a.latency_seconds}s ·{" "}
-                            {date(a.created_at)}
-                          </small>
-                        </div>
-                        <div className="unknowns">
-                          <span className="eyebrow">STILL UNKNOWN</span>
-                          {a.unknowns.map((u, i) => (
-                            <p key={i}>
-                              <span>{String(i + 1).padStart(2, "0")}</span>
-                              {u}
-                            </p>
                           ))}
-                          {!a.unknowns.length && (
-                            <p>
-                              No additional unknowns identified by the model.
-                              Human verification is still required.
-                            </p>
-                          )}
                         </div>
+                      )}
+                      {!!a?.warnings.length && (
+                        <div className="stale">
+                          <ShieldCheck size={18} />
+                          {a.warnings.length} source(s) contain instruction-like
+                          language. Content was treated as data; the model has
+                          no action tools.
+                        </div>
+                      )}
+                    </details>
+                    <details className="investigation-deep">
+                      <summary>Advanced investigation controls</summary>
+                      <div className="advanced-controls">
+                        <button
+                          className="secondary small"
+                          disabled={
+                            !!busy ||
+                            ["queued", "running"].includes(
+                              current.automation?.state,
+                            )
+                          }
+                          onClick={() => setModal("analyze")}
+                        >
+                          Run another review
+                        </button>
+                        <p>
+                          Useful only when the automatic review needs a fresh
+                          attempt. Previous evidence is retained.
+                        </p>
                       </div>
-                    )}
-                    {!!a?.comparisons.length && (
-                      <div className="comparisons">
-                        <span className="eyebrow">
-                          REPORTED FIELD DISCREPANCIES
-                        </span>
-                        {a.comparisons.map((x: any) => (
-                          <div key={x.id}>
-                            <AlertTriangle size={17} />
-                            <p>
-                              {x.description}
-                              <small>{x.verification}</small>
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {!!a?.warnings.length && (
-                      <div className="stale">
-                        <ShieldCheck size={18} />
-                        {a.warnings.length} source(s) contain instruction-like
-                        language. Content was treated as data; the model has no
-                        action tools.
-                      </div>
-                    )}
+                    </details>
                   </>
                 )}
                 {tab === "evidence" && (
@@ -1269,47 +1595,96 @@ function App() {
                         <h3>Every claim starts somewhere.</h3>
                       </div>
                       <div className="evidence-heading-actions">
-                      {me.role==='member'&&<button className="secondary" onClick={()=>setModal('find-evidence')}><Search size={16}/> Find more evidence</button>}
-                      <button
-                        className="primary"
-                        onClick={() => setModal("evidence")}
-                      >
-                        <Upload size={16} />
-                        Add evidence
-                      </button>
+                        {me.role === "member" && (
+                          <button
+                            className="secondary"
+                            onClick={() => setModal("find-evidence")}
+                          >
+                            <Search size={16} /> Find more evidence
+                          </button>
+                        )}
+                        <button
+                          className="primary"
+                          onClick={() => setModal("evidence")}
+                        >
+                          <Upload size={16} />
+                          Add evidence
+                        </button>
                       </div>
                     </div>
                     <div className="source-list">
                       {current.evidence.map((e, i) => (
-                        <article className="evidence-source" key={e.id}><button
-                          onClick={() => {
-                            setSource(e);
-                            setClaim(null);
-                          }}
-                        >
-                          <span className="file-icon">
-                            <FileText size={21} />
-                          </span>
-                          <div>
-                            <strong>{e.title}{e.superseded_by ? " · historical snapshot" : ""}</strong>
-                            <small>
-                              {e.party} · {readable(e.origin)} ·{" "}
-                              {date(e.received_at)}
-                            </small>
-                            <span className="source-origin">
-                              {e.origin_verified
-                                ? "API origin verified · contents still require assessment"
-                                : "Origin not independently verified"}
+                        <article className="evidence-source" key={e.id}>
+                          <button
+                            onClick={() => {
+                              setSource(e);
+                              setClaim(null);
+                            }}
+                          >
+                            <span className="file-icon">
+                              <FileText size={21} />
                             </span>
-                          </div>
-                          <span className="mono">
-                            {String(i + 1).padStart(2, "0")}
-                          </span>
-                          <ArrowUpRight size={17} />
-                        </button>{e.provenance&&<Suspense fallback={<p className="fine">Loading source provenance…</p>}><PublicSourceFacts source={e}/></Suspense>}</article>
+                            <div>
+                              <strong>
+                                {e.title}
+                                {e.superseded_by
+                                  ? " · historical snapshot"
+                                  : ""}
+                              </strong>
+                              <small>
+                                {e.party} · {readable(e.origin)} ·{" "}
+                                {date(e.received_at)}
+                              </small>
+                              <span className="source-origin">
+                                {e.origin_verified
+                                  ? "API origin verified · contents still require assessment"
+                                  : "Origin not independently verified"}
+                              </span>
+                            </div>
+                            <span className="mono">
+                              {String(i + 1).padStart(2, "0")}
+                            </span>
+                            <ArrowUpRight size={17} />
+                          </button>
+                          <details className="source-technical">
+                            <summary>Source details & integrity</summary>
+                            {e.provenance && (
+                              <Suspense
+                                fallback={
+                                  <p className="fine">
+                                    Loading source provenance…
+                                  </p>
+                                }
+                              >
+                                <PublicSourceFacts source={e} />
+                              </Suspense>
+                            )}
+                            {e.provider_provenance && (
+                              <Suspense fallback={null}>
+                                <ProviderRecordFacts source={e} />
+                              </Suspense>
+                            )}
+                          </details>
+                        </article>
                       ))}
                     </div>
-                    {me.role==='member'&&<Suspense fallback={<p className="fine">Loading retained discoveries…</p>}><EvidenceDiscoveries key={current.id+'-discoveries'} caseId={current.id} revision={current.revision} activityVersion={current.automation?.updated_at} api={api} changed={refresh} evidenceIds={current.evidence.map(e=>e.id)}/></Suspense>}
+                    {me.role === "member" && (
+                      <Suspense
+                        fallback={
+                          <p className="fine">Loading retained discoveries…</p>
+                        }
+                      >
+                        <EvidenceDiscoveries
+                          key={current.id + "-discoveries"}
+                          caseId={current.id}
+                          revision={current.revision}
+                          activityVersion={current.automation?.updated_at}
+                          api={api}
+                          changed={refresh}
+                          evidenceIds={current.evidence.map((e) => e.id)}
+                        />
+                      </Suspense>
+                    )}
                     {!current.evidence.length && (
                       <Empty
                         title="No evidence yet"
@@ -1332,7 +1707,25 @@ function App() {
                         <span className="eyebrow">EVIDENCE ACQUISITION</span>
                         <h3>A question with a purpose.</h3>
                       </div>
-                      {me.role === 'member' && <button className="secondary" onClick={() => createRequest({id:'manual',title:'',question:'',recipient:'other',distinguishes:[],rationale:'Investigator-created request',burden:'medium',priority:'first'})}><Plus size={16}/> New request</button>}
+                      {me.role === "member" && (
+                        <button
+                          className="secondary"
+                          onClick={() =>
+                            createRequest({
+                              id: "manual",
+                              title: "",
+                              question: "",
+                              recipient: "other",
+                              distinguishes: [],
+                              rationale: "Investigator-created request",
+                              burden: "medium",
+                              priority: "first",
+                            })
+                          }
+                        >
+                          <Plus size={16} /> New request
+                        </button>
+                      )}
                       <button
                         className="secondary"
                         onClick={() => setModal("evidence")}
@@ -1354,7 +1747,9 @@ function App() {
                             {r.status === "open" &&
                             r.expires_at * 1000 < Date.now()
                               ? "expired"
-                              : r.status === "unavailable" ? "reported unavailable" : r.status}
+                              : r.status === "unavailable"
+                                ? "reported unavailable"
+                                : r.status}
                           </span>
                           <small>
                             {r.recipient} · {date(r.created_at)}
@@ -1365,7 +1760,11 @@ function App() {
                         {r.closure_reason && (
                           <>
                             <p>Investigator report: {r.closure_reason}</p>
-                            <p className="fine">{r.status === "unavailable" ? "Record availability has not been independently verified." : "The request was withdrawn and its response link revoked."}</p>
+                            <p className="fine">
+                              {r.status === "unavailable"
+                                ? "Record availability has not been independently verified."
+                                : "The request was withdrawn and its response link revoked."}
+                            </p>
                           </>
                         )}
                         <span className="fine">
@@ -1373,10 +1772,16 @@ function App() {
                           email was sent.
                         </span>
                         {r.status === "open" && (
-                          <button className="secondary small" disabled={!!busy} onClick={() => {
-                            setClosingRequest({ ...r, caseId: current.id });
-                            setModal("close-request");
-                          }}>Close and revoke link</button>
+                          <button
+                            className="secondary small"
+                            disabled={!!busy}
+                            onClick={() => {
+                              setClosingRequest({ ...r, caseId: current.id });
+                              setModal("close-request");
+                            }}
+                          >
+                            Close and revoke link
+                          </button>
                         )}
                       </div>
                     ))}
@@ -1407,53 +1812,15 @@ function App() {
                   </div>
                 )}
                 {tab === "timeline" && (
-                  <div className="tab-content">
-                    <div className="section-heading">
-                      <div>
-                        <span className="eyebrow">AN ACCOUNTABLE PROCESS</span>
-                        <h3>The investigation, on record.</h3>
-                      </div>
-                      <span className="pill">
-                        <ShieldCheck size={14} />
-                        {current.audit_valid
-                          ? "Integrity check passed"
-                          : "Check required"}
-                      </span>
-                    </div>
-                    <p className="fine">
-                      Hash-linked local audit events detect changes within this
-                      record. They are not an externally anchored or
-                      tamper-proof ledger.
-                    </p>
-                    <div className="timeline">
-                      {current.timeline?.map((e, i) => (
-                        <div className="timeline-event" key={e.seq}>
-                          <span className="timeline-dot">
-                            {e.kind === "investigation_updated" ? (
-                              <ScanLine size={15} />
-                            ) : (
-                              <FileText size={15} />
-                            )}
-                          </span>
-                          <div>
-                            <small>{date(e.at)}</small>
-                            <h3>{readable(e.kind)}</h3>
-                            <p>
-                              {e.data.title ||
-                                e.data.question ||
-                                (e.data.finding && findings[e.data.finding]) ||
-                                e.data.status ||
-                                "Case state recorded"}
-                            </p>
-                            {e.kind==='delivery_location_verified'&&<p className="fine">{e.data.previous_status?`${e.data.previous_status} → ${e.data.status}`:'Initial destination comparison'} · {e.data.source_ids?.length||0} source references. Review the location panel for supporting facts and limitations.</p>}
-                            <span className="mono">
-                              SHA256 {e.hash.slice(0, 18)}…
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <CaseTimeline
+                    events={current.timeline || []}
+                    onSource={(id) => {
+                      setSource(
+                        current.evidence.find((e) => e.id === id) || null,
+                      );
+                      setClaim(null);
+                    }}
+                  />
                 )}
                 {tab === "review" && (
                   <div className="tab-content">
@@ -1470,7 +1837,7 @@ function App() {
                           <span className="eyebrow">RECOMMENDED NEXT STEP</span>
                           <p>{a.recommendation}</p>
                         </div>
-                        <h4>Source and claim checks</h4>
+                        <h4>Why this recommendation</h4>
                         {a.claims.map((c) => (
                           <button
                             className="claim-review"
@@ -1496,7 +1863,11 @@ function App() {
                                   : "")
                               }
                             >
-                              {readable(c.semantic_support)}
+                              {c.semantic_support === "entailed"
+                                ? "Supported by the document"
+                                : c.semantic_support === "partial"
+                                  ? "Partly supported"
+                                  : "Needs review"}
                             </span>
                             <ArrowUpRight size={16} />
                           </button>
@@ -1508,11 +1879,10 @@ function App() {
                           </p>
                         )}
                         <p className="fine">
-                          Exact quotation, structured comparison and semantic
-                          support are separate checks. Semantic support is model
-                          assessed; it does not independently verify the
-                          real-world event. Read sources before relying on the
-                          summary or recommendation.
+                          The documents support these statements to different
+                          degrees. That is not independent proof of what
+                          happened. Review the sources and remaining uncertainty
+                          before deciding.
                         </p>
                       </>
                     ) : (
@@ -1521,7 +1891,13 @@ function App() {
                         text="Add evidence and run an investigation first."
                       />
                     )}
-                    {current.mode === 'paypal_sandbox_saas'?<p className="paypal-read-only">This account connection is read-only. Human review does not send a PayPal message, submit evidence, accept a claim or issue a refund. No provider action is available here.</p>:current.mode === "paypal_sandbox" ? (
+                    {current.mode === "paypal_sandbox_saas" ? (
+                      <p className="paypal-read-only">
+                        No PayPal action has been performed. This test
+                        connection can import records; it cannot send a message,
+                        issue a refund or accept the claim.
+                      </p>
+                    ) : current.mode === "paypal_sandbox" ? (
                       <div className="paypal-review">
                         <h3>PayPal sandbox response</h3>
                         <p>
@@ -1529,10 +1905,19 @@ function App() {
                           revision and current PayPal state. Every execution
                           requires a separate explicit review.
                         </p>
-                        {current.payment_record_acquisition && <p className="fine">
-                          Payment-record acquisition: {readable(current.payment_record_acquisition.status)} · {current.payment_record_acquisition.records_read} records read.
-                          {current.payment_record_acquisition.issues.length > 0 && " Some records could not be refreshed. Review the available sources before relying on them."}
-                        </p>}
+                        {current.payment_record_acquisition && (
+                          <p className="fine">
+                            Payment-record acquisition:{" "}
+                            {readable(
+                              current.payment_record_acquisition.status,
+                            )}{" "}
+                            · {current.payment_record_acquisition.records_read}{" "}
+                            records read.
+                            {current.payment_record_acquisition.issues.length >
+                              0 &&
+                              " Some records could not be refreshed. Review the available sources before relying on them."}
+                          </p>
+                        )}
                         <button
                           className="secondary"
                           onClick={() =>
@@ -1542,7 +1927,9 @@ function App() {
                                 "POST",
                               );
                               await refresh();
-                              setNotice(`Payment-record acquisition: ${readable(linked.payment_record_acquisition?.status || "no eligible capture")}. Unchanged snapshots are not duplicated.`);
+                              setNotice(
+                                `Payment-record acquisition: ${readable(linked.payment_record_acquisition?.status || "no eligible capture")}. Unchanged snapshots are not duplicated.`,
+                              );
                             })
                           }
                         >
@@ -1579,8 +1966,38 @@ function App() {
                   </div>
                 )}
               </section>
+            ) : me.role === "member" ? (
+              <section className="onboarding">
+                <span className="eyebrow">
+                  WELCOME, {me.user.display_name.toUpperCase()}
+                </span>
+                <h2>Your next investigation starts here.</h2>
+                <p>
+                  This is your private workspace. Create a case and bring your
+                  own records; nothing is pre-filled.
+                </p>
+                <ol>
+                  <li>Create a case with the question you need to resolve.</li>
+                  <li>Add original evidence or notes from each party.</li>
+                  <li>
+                    VERDICT investigates automatically. Review the findings and
+                    request what’s missing.
+                  </li>
+                </ol>
+                <button
+                  className="primary"
+                  onClick={() => setModal("new-case")}
+                >
+                  <Plus size={17} /> Create your first case
+                </button>
+                <p className="fine">
+                  Cloud storage · 20 MB original files · 50 cases · 10
+                  investigation attempts/day. Shared service capacity limits
+                  apply.
+                </p>
+              </section>
             ) : (
-              me.role === 'member' ? <section className="onboarding"><span className="eyebrow">WELCOME, {me.user.display_name.toUpperCase()}</span><h2>Your next investigation starts here.</h2><p>This is your private workspace. Create a case and bring your own records; nothing is pre-filled.</p><ol><li>Create a case with the question you need to resolve.</li><li>Add original evidence or notes from each party.</li><li>Investigate, inspect the sources and ask for missing evidence.</li></ol><button className="primary" onClick={() => setModal('new-case')}><Plus size={17}/> Create your first case</button><p className="fine">Cloud storage · 20 MB original files · 50 cases · 10 investigation attempts/day. Shared service capacity limits apply.</p></section> : <Empty
+              <Empty
                 title="Your inbox is empty"
                 text="Create a case or synchronize the PayPal sandbox."
               />
@@ -1620,27 +2037,122 @@ function App() {
                   : "Origin unverified"}
               </span>
             </div>
-            {source.superseded_by && <div className="claim-inspection">
-              <strong>Historical API snapshot</strong>
-              <p>A newer snapshot supersedes this record. Its original content is retained for review and excluded from new investigations.</p>
-              <button className="secondary small" disabled={!current?.evidence.some(e => e.id === source.superseded_by)} onClick={() => {
-                const newer = current?.evidence.find(e => e.id === source.superseded_by);
-                if (newer) { setSource(newer); setClaim(null); }
-              }}>Open newer snapshot</button>
-            </div>}
+            {source.superseded_by && (
+              <div className="claim-inspection">
+                <strong>Historical API snapshot</strong>
+                <p>
+                  A newer snapshot supersedes this record. Its original content
+                  is retained for review and excluded from new investigations.
+                </p>
+                <button
+                  className="secondary small"
+                  disabled={
+                    !current?.evidence.some(
+                      (e) => e.id === source.superseded_by,
+                    )
+                  }
+                  onClick={() => {
+                    const newer = current?.evidence.find(
+                      (e) => e.id === source.superseded_by,
+                    );
+                    if (newer) {
+                      setSource(newer);
+                      setClaim(null);
+                    }
+                  }}
+                >
+                  Open newer snapshot
+                </button>
+              </div>
+            )}
             {claim && (
               <div className="claim-inspection">
-                <span className="eyebrow">{readable(claim.epistemic_status || 'reported claim').toUpperCase()} · {claim.id}</span>
+                <span className="eyebrow">
+                  {readable(
+                    claim.epistemic_status || "reported claim",
+                  ).toUpperCase()}{" "}
+                  · {claim.id}
+                </span>
                 <h3>{claim.text}</h3>
-                <ClaimChecks claim={claim}/>
+                <details className="technical-record">
+                  <summary>Document support & technical checks</summary>
+                  <ClaimChecks claim={claim} />
+                </details>
                 <p>{claim.support_reason}</p>
-                {claim.epistemic_reason && <p><strong>Classification review:</strong> {claim.epistemic_reason}</p>}
+                {claim.epistemic_reason && (
+                  <p>
+                    <strong>Classification review:</strong>{" "}
+                    {claim.epistemic_reason}
+                  </p>
+                )}
                 <blockquote>{claim.quote}</blockquote>
               </div>
             )}
-            {source.provider_provenance&&<Suspense fallback={<p>Loading provider provenance…</p>}><ProviderRecordFacts source={source}/></Suspense>}
-            {source.provenance && <div className="source-provenance"><strong>PRESERVED PUBLIC SOURCE</strong><a className="research-url" href={source.provenance.final_url} target="_blank" rel="noreferrer">{source.provenance.final_url} ↗</a><p>Retrieved: {date(source.provenance.retrieved_at)}<br/>Source-stated publication: {source.provenance.publication_date || 'Unknown — not inferred'}<br/>Document classification: {readable(source.provenance.source_kind)}<br/>Collection review: {readable(source.provenance.review_status || 'not recorded')}<br/>{source.provenance.classification_basis}</p>{source.provenance.parent_reference&&<p>Collected from a reference in {source.provenance.parent_reference.parent_source_id}{source.provenance.parent_reference.page&&` · PDF page ${source.provenance.parent_reference.page}`}.</p>}<p>Historical applicability is not established by retrieval. {source.provenance.event_date && `Relevant event: ${source.provenance.event_date}. `}{source.provenance.historical_note}</p>{source.provenance.excerpt_truncated&&<p>Only the first 30,000 extracted characters were investigated. Download the original for full review.</p>}<p>Extracted-text SHA-256<br/><code>{source.provenance.text_sha256}</code></p></div>}
-            <span className="eyebrow">ORIGINAL EXTRACTED CONTENT</span>
+            <details className="technical-record">
+              <summary>Source provenance & integrity</summary>
+              {source.provider_provenance && (
+                <Suspense fallback={<p>Loading provider provenance…</p>}>
+                  <ProviderRecordFacts source={source} />
+                </Suspense>
+              )}
+              {source.provenance && (
+                <div className="source-provenance">
+                  <strong>PRESERVED PUBLIC SOURCE</strong>
+                  <a
+                    className="research-url"
+                    href={source.provenance.final_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {source.provenance.final_url} ↗
+                  </a>
+                  <p>
+                    Retrieved: {date(source.provenance.retrieved_at)}
+                    <br />
+                    Source-stated publication:{" "}
+                    {source.provenance.publication_date ||
+                      "Unknown — not inferred"}
+                    <br />
+                    Document classification:{" "}
+                    {readable(source.provenance.source_kind)}
+                    <br />
+                    Collection review:{" "}
+                    {readable(
+                      source.provenance.review_status || "not recorded",
+                    )}
+                    <br />
+                    {source.provenance.classification_basis}
+                  </p>
+                  {source.provenance.parent_reference && (
+                    <p>
+                      Collected from a reference in{" "}
+                      {source.provenance.parent_reference.parent_source_id}
+                      {source.provenance.parent_reference.page &&
+                        ` · PDF page ${source.provenance.parent_reference.page}`}
+                      .
+                    </p>
+                  )}
+                  <p>
+                    Historical applicability is not established by retrieval.{" "}
+                    {source.provenance.event_date &&
+                      `Relevant event: ${source.provenance.event_date}. `}
+                    {source.provenance.historical_note}
+                  </p>
+                  {source.provenance.excerpt_truncated && (
+                    <p>
+                      Only the first 30,000 extracted characters were
+                      investigated. Download the original for full review.
+                    </p>
+                  )}
+                  <p>
+                    Extracted-text SHA-256
+                    <br />
+                    <code>{source.provenance.text_sha256}</code>
+                  </p>
+                </div>
+              )}
+            </details>
+            <span className="eyebrow">ORIGINAL RECORD</span>
             <pre>{source.text}</pre>
             {source.file_available && current && (
               <a
@@ -1717,12 +2229,41 @@ function App() {
                 </button>
               </>
             )}
-            {modal==='find-evidence'&&current&&me.role==='member'&&<Suspense fallback={<p>Opening evidence discovery…</p>}><FindEvidence caseId={current.id} api={api} suggestions={(a?.requests||[]).filter((w:any)=>w.publicly_obtainable)} completed={async()=>{await refresh();setModal('');setTab('evidence');setNotice('Sources and retrieval attempts saved. VERDICT will update the investigation automatically.');}}/></Suspense>}
+            {modal === "find-evidence" && current && me.role === "member" && (
+              <Suspense fallback={<p>Opening evidence discovery…</p>}>
+                <FindEvidence
+                  caseId={current.id}
+                  api={api}
+                  suggestions={(a?.requests || []).filter(
+                    (w: any) => w.publicly_obtainable,
+                  )}
+                  completed={async () => {
+                    await refresh();
+                    setModal("");
+                    setTab("evidence");
+                    setNotice(
+                      "Sources and retrieval attempts saved. VERDICT will update the investigation automatically.",
+                    );
+                  }}
+                />
+              </Suspense>
+            )}
             {modal === "new-case" && (
               <>
                 <span className="eyebrow">START WITH THE RECORD</span>
                 <h2>Open an investigation.</h2>
-                {me.role==='member'&&<><Suspense fallback={<p>Loading import options…</p>}><PayPalCaseEntry onImport={()=>setModal('paypal-import')}/></Suspense><span className="eyebrow">OR CREATE A MANUAL CASE</span></>}
+                {me.role === "member" && (
+                  <>
+                    <Suspense fallback={<p>Loading import options…</p>}>
+                      <PayPalCaseEntry
+                        onImport={() => setModal("paypal-import")}
+                      />
+                    </Suspense>
+                    <span className="eyebrow">
+                      OR START WITH YOUR OWN RECORDS
+                    </span>
+                  </>
+                )}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -1770,21 +2311,23 @@ function App() {
                       Amount
                       <input
                         name="amount"
-                        defaultValue="0.00"
+                        placeholder="e.g. 12000"
+                        inputMode="decimal"
                         required
-                        pattern="[0-9]{1,9}\.[0-9]{2}"
+                        onBlur={(e) => {
+                          const n = Number(e.target.value.replaceAll(",", ""));
+                          if (
+                            /^\d+(?:\.\d{1,2})?$/.test(
+                              e.target.value.replaceAll(",", ""),
+                            ) &&
+                            Number.isFinite(n) &&
+                            n >= 0
+                          )
+                            e.target.value = n.toFixed(2);
+                        }}
                       />
                     </label>
-                    <label>
-                      Currency
-                      <input
-                        name="currency"
-                        defaultValue="USD"
-                        required
-                        pattern="[A-Z]{3}"
-                        maxLength={3}
-                      />
-                    </label>
+                    <CurrencyField />
                   </div>
                   <button className="primary" disabled={!!busy}>
                     Create case <Plus size={16} />
@@ -1792,36 +2335,75 @@ function App() {
                 </form>
               </>
             )}
-            {modal==='paypal-import'&&me.role==='member'&&<Suspense fallback={<p>Loading import options…</p>}><PayPalImport api={api} onImported={async id=>{await load(id);setModal('');setTab('investigation');setNotice('PayPal sandbox records imported. The investigation starts automatically. No PayPal action was submitted.');}}/></Suspense>}
+            {modal === "paypal-import" && me.role === "member" && (
+              <Suspense fallback={<p>Loading import options…</p>}>
+                <PayPalImport
+                  api={api}
+                  onImported={async (id) => {
+                    await load(id);
+                    setModal("");
+                    setTab("investigation");
+                    setNotice(
+                      "PayPal sandbox records imported. The investigation starts automatically. No PayPal action was submitted.",
+                    );
+                  }}
+                />
+              </Suspense>
+            )}
             {modal === "close-request" && closingRequest && (
               <>
                 <span className="eyebrow">UPDATE WITNESS AVAILABILITY</span>
                 <h2>Close this request.</h2>
                 <p>{closingRequest.question}</p>
-                <p>The response link will stop accepting submissions. Your reason is recorded as an investigator report. It does not establish what happened in the dispute.</p>
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  const f = e.currentTarget;
-                  run("Closing witness request", async () => {
-                    await api(`/cases/${closingRequest.caseId}/requests/${closingRequest.id}/close`, "POST", {
-                      status: field(f, "status"), reason: field(f, "reason"),
+                <p>
+                  The response link will stop accepting submissions. Your reason
+                  is recorded as an investigator report. It does not establish
+                  what happened in the dispute.
+                </p>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const f = e.currentTarget;
+                    run("Closing witness request", async () => {
+                      await api(
+                        `/cases/${closingRequest.caseId}/requests/${closingRequest.id}/close`,
+                        "POST",
+                        {
+                          status: field(f, "status"),
+                          reason: field(f, "reason"),
+                        },
+                      );
+                      await load(closingRequest.caseId);
+                      setClosingRequest(null);
+                      setModal("");
+                      setNotice(
+                        "Request closed. The investigation will include this availability update.",
+                      );
                     });
-                    await load(closingRequest.caseId);
-                    setClosingRequest(null);
-                    setModal("");
-                    setNotice("Request closed and link revoked. Reassess the case with this availability update.");
-                  });
-                }}>
-                  <label>Request status
+                  }}
+                >
+                  <label>
+                    Request status
                     <select name="status">
-                      <option value="unavailable">Record reported unavailable</option>
+                      <option value="unavailable">
+                        Record reported unavailable
+                      </option>
                       <option value="withdrawn">Request withdrawn</option>
                     </select>
                   </label>
-                  <label>Reason
-                    <textarea name="reason" required minLength={3} maxLength={500} rows={4} />
+                  <label>
+                    Reason
+                    <textarea
+                      name="reason"
+                      required
+                      minLength={3}
+                      maxLength={500}
+                      rows={4}
+                    />
                   </label>
-                  <button className="primary" disabled={!!busy}>Close request and revoke link</button>
+                  <button className="primary" disabled={!!busy}>
+                    Close request and revoke link
+                  </button>
                 </form>
               </>
             )}
@@ -1829,8 +2411,22 @@ function App() {
               <>
                 <span className="eyebrow">ADD TO THE SOURCE RECORD</span>
                 <h2>A new piece of the picture.</h2>
-                {me.role === 'member' && <p className="fine">Submitting evidence authorizes Gemini investigation and safe public-reference retrieval automatically, unless you pause it for this case. Original records stay private; fetched sources remain unverified and reviewable. Only submit material you may share and preserve.</p>}
-                {me.role === 'member' && <button className="secondary" onClick={()=>setModal('find-evidence')}><Search size={16}/> Find more evidence</button>}
+                {me.role === "member" && (
+                  <p className="fine">
+                    VERDICT will read this evidence and check its public
+                    references automatically. Only share records you’re
+                    authorized to send for AI processing. You can pause
+                    investigation in the case controls.
+                  </p>
+                )}
+                {me.role === "member" && (
+                  <button
+                    className="secondary"
+                    onClick={() => setModal("find-evidence")}
+                  >
+                    <Search size={16} /> Find more evidence
+                  </button>
+                )}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -1847,12 +2443,16 @@ function App() {
                   }}
                 >
                   <label>
-                    Source title
+                    Document or note title
                     <input name="title" required maxLength={160} />
                   </label>
                   <label>
                     Supplied by
-                    <select name="party" value={evidenceParty} onChange={e => setEvidenceParty(e.target.value)}>
+                    <select
+                      name="party"
+                      value={evidenceParty}
+                      onChange={(e) => setEvidenceParty(e.target.value)}
+                    >
                       {[
                         "buyer",
                         "seller",
@@ -1867,12 +2467,12 @@ function App() {
                     </select>
                   </label>
                   <label>
-                    Original content
+                    What does the record say?
                     <textarea name="text" rows={6} required maxLength={30000} />
                   </label>
                   <button className="primary" disabled={!!busy}>
                     <Plus size={16} />
-                    {me.role==='member' ? 'Add & investigate' : 'Add source'}
+                    {me.role === "member" ? "Add & investigate" : "Add source"}
                   </button>
                 </form>
                 <div className="divider">OR UPLOAD A DOCUMENT</div>
@@ -1898,8 +2498,9 @@ function App() {
                   />
                 </label>
                 <p className="fine">
-                  Evidence is saved before investigation starts. Uploads are reported evidence. No automatic claim of verified
-                  origin. Scanned PDFs and images are not yet supported.
+                  Evidence is saved before investigation starts. Uploads are
+                  reported evidence. No automatic claim of verified origin.
+                  Scanned PDFs and images are not yet supported.
                 </p>
               </>
             )}
@@ -2011,10 +2612,13 @@ function App() {
                 </p>
               </>
             )}
-            {modal === "integrations" && (
+            {modal === "integrations" && me.role === "member" && (
+              <AccountSettings api={api} me={me} changed={refresh} />
+            )}
+            {modal === "integrations" && me.role !== "member" && (
               <>
                 <span className="eyebrow">TRUTHFUL OPERATIONAL BOUNDARIES</span>
-                <h2>Connections & safeguards.</h2>
+                <h2>Settings.</h2>
                 <div className="integration-row">
                   <strong>PayPal</strong>
                   <span>
@@ -2024,7 +2628,9 @@ function App() {
                         : integration.paypal.status === "not_configured"
                           ? "Not configured on this host"
                           : `Sandbox connection unavailable · ${integration.paypal.list_status}`
-                      : me.role === 'member' ? "Not connected for this workspace" : "Operator connection not accessible in demo"}
+                      : me.role === "member"
+                        ? "Not connected for this workspace"
+                        : "Operator connection not accessible in demo"}
                   </span>
                 </div>
                 <div className="integration-row">
@@ -2034,9 +2640,11 @@ function App() {
                 <div className="integration-row">
                   <strong>Persistence</strong>
                   <span>
-                    {me.role === 'member' ? 'Cloud PostgreSQL · original files, investigations, responses and audit records' : integration?.storage.configured
-                      ? `SQLite + private Supabase mirror · ${integration.storage.synced_cases} cases synced · ${integration.storage.pending} pending`
-                      : "Private server SQLite · cloud mirror not active in this workspace"}
+                    {me.role === "member"
+                      ? "Cloud PostgreSQL · original files, investigations, responses and audit records"
+                      : integration?.storage.configured
+                        ? `SQLite + private Supabase mirror · ${integration.storage.synced_cases} cases synced · ${integration.storage.pending} pending`
+                        : "Private server SQLite · cloud mirror not active in this workspace"}
                   </span>
                 </div>
                 <div className="integration-row">
@@ -2047,11 +2655,29 @@ function App() {
                       : "Not registered; signature endpoint fails closed"}
                   </span>
                 </div>
-                {me.role === 'member' && <><div className="integration-row"><strong>Original storage</strong><span>{((me.user.storage_bytes || 0) / 1048576).toFixed(2)} MB / 20 MB</span></div><div className="integration-row"><strong>Today's analysis attempts</strong><span>{me.user.analyses_today || 0} / 10 · resets at 00:00 UTC</span></div></>}
+                {me.role === "member" && (
+                  <>
+                    <div className="integration-row">
+                      <strong>Original storage</strong>
+                      <span>
+                        {((me.user.storage_bytes || 0) / 1048576).toFixed(2)} MB
+                        / 20 MB
+                      </span>
+                    </div>
+                    <div className="integration-row">
+                      <strong>Today's analysis attempts</strong>
+                      <span>
+                        {me.user.analyses_today || 0} / 10 · resets at 00:00 UTC
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div className="integration-row">
                   <strong>Actions</strong>
                   <span>
-                    {me.role === 'member' ? 'Merchant actions are not enabled for public accounts' : 'Sandbox only · human review · snapshot binding · durable dispatch reservation'}
+                    {me.role === "member"
+                      ? "Merchant actions are not enabled for public accounts"
+                      : "Sandbox only · human review · snapshot binding · durable dispatch reservation"}
                   </span>
                 </div>
                 <p className="fine">
@@ -2060,20 +2686,33 @@ function App() {
                   enabled.
                 </p>
                 {me.role === "operator" && integration?.paypal.configured && (
-                  <form onSubmit={(e) => {
-                    e.preventDefault();
-                    const id = field(e.currentTarget, "dispute_id");
-                    run("Importing PayPal case", async () => {
-                      const imported = await api("/paypal/import", "POST", { dispute_id: id });
-                      await load();
-                      setCurrent(imported);
-                      setModal("");
-                    });
-                  }}>
-                    <label>Import an accessible sandbox case by ID
-                      <input name="dispute_id" required maxLength={80} pattern="[A-Za-z0-9-]+" placeholder="PayPal case ID" />
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const id = field(e.currentTarget, "dispute_id");
+                      run("Importing PayPal case", async () => {
+                        const imported = await api("/paypal/import", "POST", {
+                          dispute_id: id,
+                        });
+                        await load();
+                        setCurrent(imported);
+                        setModal("");
+                      });
+                    }}
+                  >
+                    <label>
+                      Import an accessible sandbox case by ID
+                      <input
+                        name="dispute_id"
+                        required
+                        maxLength={80}
+                        pattern="[A-Za-z0-9-]+"
+                        placeholder="PayPal case ID"
+                      />
                     </label>
-                    <button className="secondary" disabled={!!busy}>Retrieve from PayPal</button>
+                    <button className="secondary" disabled={!!busy}>
+                      Retrieve from PayPal
+                    </button>
                   </form>
                 )}
               </>
@@ -2094,7 +2733,9 @@ function App() {
                           {
                             action: field(f, "action"),
                             note: field(f, "note"),
-                            evidence_type: field(f, "evidence_type") || "PROOF_OF_FULFILLMENT",
+                            evidence_type:
+                              field(f, "evidence_type") ||
+                              "PROOF_OF_FULFILLMENT",
                             carrier: field(f, "carrier"),
                             tracking_number: field(f, "tracking_number"),
                           },
@@ -2108,9 +2749,7 @@ function App() {
                     Action
                     <select name="action">
                       <option value="send-message">Send message</option>
-                      <option value="provide-evidence">
-                        Provide evidence
-                      </option>
+                      <option value="provide-evidence">Provide evidence</option>
                       <option value="accept-claim">
                         Accept claim (sandbox refund)
                       </option>
@@ -2119,9 +2758,19 @@ function App() {
                   <label>
                     Evidence type (for evidence submission)
                     <select name="evidence_type">
-                      {sellerEvidenceTypes(current).length ? sellerEvidenceTypes(current).map(type => (
-                        <option key={type} value={type}>{type === "OTHER" ? "Other evidence notes" : "Actual fulfillment tracking"}</option>
-                      )) : <option value="">No supported evidence type requested</option>}
+                      {sellerEvidenceTypes(current).length ? (
+                        sellerEvidenceTypes(current).map((type) => (
+                          <option key={type} value={type}>
+                            {type === "OTHER"
+                              ? "Other evidence notes"
+                              : "Actual fulfillment tracking"}
+                          </option>
+                        ))
+                      ) : (
+                        <option value="">
+                          No supported evidence type requested
+                        </option>
+                      )}
                     </select>
                   </label>
                   <label>

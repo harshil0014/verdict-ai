@@ -30,6 +30,7 @@ from research_routes import router as research_router
 from saas_paypal import router as paypal_router
 from saas_paypal import connection_status as paypal_connection_status
 from delivery_location import router as location_router
+from preferences import router as preferences_router
 from case_investigation import run_investigation
 from source_recovery import RECOVERY_VERSION
 import automatic_investigation as automatic
@@ -62,6 +63,7 @@ app = FastAPI(title="VERDICT", lifespan=lifespan, docs_url=None, redoc_url=None,
 app.include_router(research_router)
 app.include_router(paypal_router)
 app.include_router(location_router)
+app.include_router(preferences_router)
 
 
 @app.middleware("http")
@@ -134,13 +136,15 @@ async def cases(user=Depends(auth.current_session)):
 @app.post("/api/cases")
 async def create_case(data: CaseInput, user=Depends(auth.current_session)):
     return await repo.create({**data.model_dump(), "mode": "manual", "status": "OPEN", "deadline": None,
-        "story": "User-created case. Statements and uploads require assessment.", "evidence": [], "automatic_investigation":True,"automatic_workflow_version":max(4,RECOVERY_VERSION)})
+        "story": "User-created case. Statements and uploads require assessment.", "evidence": [], "automatic_investigation":True,"automatic_workflow_version":max(5,RECOVERY_VERSION)})
 
 
 @app.get("/api/cases/{id}")
 async def get_case(id: str, user=Depends(auth.current_session)):
     body=await repo.get(id)
     body['automation']=await repo.rpc('workflow:status',{'case_id':id})
+    preferences=await repo.rpc('experience:preferences')
+    body['effective_map_preference']=preferences
     return body
 
 
@@ -168,7 +172,7 @@ async def retry_automation(id:str,user=Depends(auth.current_session)):
 
 def add_source(body, data, raw=None, mime="text/plain", request_row=None, links=None):
     body.setdefault('automatic_investigation',True)
-    body['automatic_workflow_version']=max(4,RECOVERY_VERSION)
+    body['automatic_workflow_version']=max(5,RECOVERY_VERSION)
     if len(body["evidence"]) >= 40: raise HTTPException(422, "Maximum 40 evidence sources per case")
     if "\x00" in data.text: raise HTTPException(422, "Null bytes are not supported")
     source = evidence(data.title, data.text, data.party, "portal_upload" if request_row else "user_upload")
@@ -266,7 +270,10 @@ async def close_request(id: str, request_id: str, data: CloseInput, user=Depends
     if len(data.reason.strip())<3: raise HTTPException(422,"Record a reason")
     request.update(status=data.status, closure_reason=data.reason.strip(), closed_at=now(), closure_origin="investigator_report", availability_verified=False)
     body["analysis_stale"] = body.get("analysis") is not None
-    return await repo.save(body, "witness_request_closed", {"request_id":request_id,"reason":data.reason.strip(),"status":data.status}, request_action="close", request_id=request_id)
+    result=await repo.save(body, "witness_request_closed", {"request_id":request_id,"reason":data.reason.strip(),"status":data.status}, request_action="close", request_id=request_id)
+    if body.get('automatic_investigation',True) and body['evidence']:
+        await repo.rpc('workflow:retry',{'case_id':id});automatic.WAKE.set()
+    return result
 
 
 def portal_hash(request):

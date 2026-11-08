@@ -1,5 +1,7 @@
 from typing import Literal
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict,field_validator
+from decimal import Decimal,InvalidOperation
+import re
 
 
 class StrictModel(BaseModel):
@@ -79,6 +81,14 @@ class CaseInput(StrictModel):
     ] = "OTHER"
     amount: str = Field(pattern=r"^\d{1,9}\.\d{2}$")
     currency: str = Field(pattern=r"^[A-Z]{3}$")
+
+    @field_validator('amount',mode='before')
+    @classmethod
+    def normal_amount(cls,value):
+        text=str(value).strip()
+        if not re.fullmatch(r'(?:\d{1,9}|\d{1,3}(?:,\d{3}){1,2})(?:\.\d{1,2})?',text):raise ValueError('Enter an amount such as 12000 or 12000.00')
+        try:return format(Decimal(text.replace(',','')).quantize(Decimal('.01')),'f')
+        except InvalidOperation:raise ValueError('Enter a valid amount') from None
 
 
 class AnalyzeInput(StrictModel):

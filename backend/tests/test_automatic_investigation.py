@@ -167,7 +167,7 @@ def test_storage_connection_interruption_requeues_for_state_reconciliation(monke
     async def no_wait(seconds):pass
     monkeypatch.setattr(auto,'run_investigation',interrupted);monkeypatch.setattr(auto,'backoff',no_wait)
     asyncio.run(auto.process(claim))
-    assert any(x[0]=='workflow:release' for x in calls)
+    assert any(x[0]=='workflow:reschedule' for x in calls)
     assert not any(x[0]=='workflow:finish' for x in calls)
 
 
@@ -206,3 +206,31 @@ def test_pdf_hyperlink_annotation_is_extracted_without_executing_actions():
     assert result.returncode==0
     doc=json.loads(result.stdout);assert doc['links']==[{'url':'https://agency.gov/policy.pdf','page':1}]
     assert 'An original document' in doc['text']
+
+@pytest.mark.parametrize('status',[429,503])
+def test_temporary_model_failure_schedules_durable_retry_without_dropping_work(monkeypatch,status):
+    from investigator import ModelError
+    case,calls,claim=fake_process(monkeypatch)
+    async def interrupted(*a,**k):raise ModelError(f'Gemini returned HTTP {status}; analysis was not updated.')
+    monkeypatch.setattr(auto,'run_investigation',interrupted)
+    asyncio.run(auto.process(claim))
+    retry=next(x[1] for x in calls if x[0]=='workflow:reschedule')
+    assert retry['progress']['references'] and retry['delay_seconds']>=45
+    assert not any(x[0]=='workflow:finish' for x in calls)
+    assert case['evidence'][0]['id']=='E1'
+
+def test_permanent_model_authentication_failure_is_not_retried_endlessly(monkeypatch):
+    from investigator import ModelError
+    case,calls,claim=fake_process(monkeypatch)
+    async def interrupted(*a,**k):raise ModelError('Gemini returned HTTP 403; analysis was not updated.')
+    monkeypatch.setattr(auto,'run_investigation',interrupted);asyncio.run(auto.process(claim))
+    assert not any(x[0]=='workflow:reschedule' for x in calls)
+    assert next(x[1] for x in calls if x[0]=='workflow:finish')['state']=='failed'
+
+
+def test_provider_retry_after_is_honored_by_durable_schedule(monkeypatch):
+    from investigator import ModelError
+    case,calls,claim=fake_process(monkeypatch)
+    async def interrupted(*a,**k):raise ModelError('Gemini returned HTTP 429; retry later.',retry_after=7200)
+    monkeypatch.setattr(auto,'run_investigation',interrupted);asyncio.run(auto.process(claim))
+    assert next(x[1] for x in calls if x[0]=='workflow:reschedule')['delay_seconds']>=7200
