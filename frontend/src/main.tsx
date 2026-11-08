@@ -67,6 +67,9 @@ const PayPalReceipt = lazy(() =>
 const DeliveryLocation = lazy(() =>
   import("./delivery-location").then((m) => ({ default: m.DeliveryLocation })),
 );
+const DeliveryLocationDiagnostics = lazy(() =>
+  import("./delivery-location").then((m) => ({ default: m.LocationTechnicalRecord })),
+);
 const ProviderRecordFacts = lazy(() =>
   import("./paypal-account").then((m) => ({ default: m.ProviderRecordFacts })),
 );
@@ -152,6 +155,7 @@ type Analysis = {
   rejected_claims: any[];
 };
 type Case = {
+  delivery_location?: any;
   id: string;
   title: string;
   story: string;
@@ -1885,6 +1889,9 @@ function App() {
                         text="Add evidence and run an investigation first."
                       />
                     )}
+                    {current.delivery_location && <Suspense fallback={null}><DeliveryLocationDiagnostics current={current} api={api} changed={refresh} onSource={(id) => {
+                        setSource(current.evidence.find((e) => e.id === id) || null); setClaim(null);
+                      }} /></Suspense>}
                     {current.mode === "paypal_sandbox_saas" ? (
                       <p className="paypal-read-only">
                         The connected merchant can deliberately enable limited

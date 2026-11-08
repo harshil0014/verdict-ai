@@ -157,15 +157,45 @@ test('campus fallback shows its actual map identity and never claims the exact g
 });
 
 const quietCase={id:'case',location_authorization:{mode:'address'},delivery_location:{version:3,status:'LOCATION MISMATCH',comparisons:[{status:'LOCATION MISMATCH',supporting_facts:[],conflicting_facts:[],limitations:[],explanation:'The order names IIT Bombay Main Gate; the delivery record names Bhandup Railway Station, a different destination. This compares the records; it does not establish physical delivery.',source_ids:['E1','E2'],distance_m:2740}],mentions:[{id:'L1',role:'intended',source_id:'E1',geocode:{status:'resolved',lat:19.1326186,lon:72.9149702,precision:'site',provider:'Photon'}},{id:'L2',role:'reported_delivery',source_id:'E2',geocode:{status:'resolved',lat:19.1442357,lon:72.9379711,precision:'site'}}]}};
-test('ordinary investigation shows only the address result and supporting evidence links',()=>{
- const html=render(ui.DeliveryLocation,{...locationProps,current:quietCase});
- assert.match(html,/Delivery address doesn&#x27;t match/);assert.match(html,/IIT Bombay Main Gate/);assert.match(html,/Bhandup Railway Station/);assert.match(html,/View intended address/);assert.match(html,/View delivery record/);assert.match(html,/Advanced review/);
- assert.doesNotMatch(html,/delivery-map|leaflet|Photon|OpenStreetMap|19\.132|72\.914|2740|2\.7|GPS|geocod|tolerance|Approximate separation|Map settings|Allow automatic/);
+test('normal location view contains only the map and distance after a resolved pair',()=>{
+ const current=JSON.parse(JSON.stringify(quietCase));
+ Object.assign(current.delivery_location.comparisons[0],{intended_id:'L1',reported_delivery_id:'L2',sufficiently_precise:false});
+ const html=render(ui.DeliveryLocation,{...locationProps,current});
+ assert.match(html,/class="delivery-map"/);assert.match(html,/≈ 2.7 km/);
+ assert.doesNotMatch(html,/<h[1-6]|<p|<button|<details|Advanced review|View intended|View delivery|different destination|doesn&#x27;t match|Photon|GPS|Green:|geocod|Allow automatic/);
 });
-test('legacy possible-area conclusions are not presented as an address match',()=>{
- const current=JSON.parse(JSON.stringify(quietCase));current.delivery_location.version=2;current.delivery_location.status='POSSIBLE MATCH';current.delivery_location.comparisons[0]={status:'POSSIBLE MATCH',source_ids:['E1','E2']};
- const html=render(ui.DeliveryLocation,{...locationProps,current});assert.match(html,/Couldn&#x27;t verify delivery address/);assert.doesNotMatch(html,/same area|appears to match/);
+
+test('unresolved, stale, invalid or unpaired locations never invent a map distance',()=>{
+ for(const change of [c=>c.delivery_location.version=2,c=>c.delivery_location.comparisons[0].distance_m=null,
+   c=>c.delivery_location.comparisons[0].distance_m=-1,c=>c.delivery_location.mentions[1].geocode.status='ambiguous',
+   c=>c.delivery_location.mentions[1].geocode.lat=91,c=>c.delivery_location.mentions[1].geocode.lon='72.9',
+   c=>c.delivery_location.comparisons[0].reported_delivery_id='missing',c=>c.analysis_stale=true,
+   c=>c.automation={state:'running'},c=>c.automation={state:'queued'}]){
+  const current=JSON.parse(JSON.stringify(quietCase));Object.assign(current.delivery_location.comparisons[0],{intended_id:'L1',reported_delivery_id:'L2'});
+  change(current);assert.equal(render(ui.DeliveryLocation,{...locationProps,current}),'');
+ }
 });
+
+for(const [distance,expected] of [[0,'<200 m'],[199,'<200 m'],[199.9,'<200 m'],[200,'200 m'],[201,'201 m'],[450,'450 m'],[2740,'2.7 km']]){
+ test(`distance badge formats ${distance} metres as ${expected}`,()=>{
+  assert.equal(ui.distanceLabel(distance),expected);
+ });
+}
+test('distance display respects configured tolerance and keeps coarse estimates qualified without paragraphs',()=>{
+ assert.equal(ui.distanceLabel(230,250),'<250 m');assert.equal(ui.distanceLabel(250,250),'250 m');
+ assert.equal(ui.distanceLabel(2740,200,true),'≈ 2.7 km');assert.equal(ui.distanceLabel(199,NaN),'<200 m');
+ for(const value of [NaN,Infinity,-1,null,'200'])assert.equal(ui.distanceLabel(value),null);
+});
+test('account revocation prevents even preserved map results from requesting tiles',()=>{
+ const current=JSON.parse(JSON.stringify(quietCase));Object.assign(current.delivery_location.comparisons[0],{intended_id:'L1',reported_delivery_id:'L2'});
+ current.effective_map_preference={mode:'off',has_account_choice:true};
+ assert.equal(render(ui.DeliveryLocation,{...locationProps,current}),'');
+});
+test('advanced diagnostics do not mount a hidden map until opened',()=>{
+ const html=render(ui.LocationTechnicalRecord,{...locationProps,current:quietCase});
+ assert.match(html,/Technical location record/);assert.doesNotMatch(html,/delivery-map|Photon|Approximate separation/);
+});
+
 test('ordinary investigations never prompt for per-case geocoding consent',()=>{
  const current={...quietCase,location_authorization:{mode:'off'}};
  const ordinary=render(ui.DeliveryLocation,{...locationProps,current});

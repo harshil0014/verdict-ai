@@ -80,8 +80,10 @@ Actual browser captures of the account application. The investigation uses expli
 
 Original code is MIT. Dependencies retain their licenses and notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `third_party/`. Gemini, PayPal and Supabase services have separate terms. Read the [security limits](docs/SECURITY.md) before using sensitive records.
 
-Automatic address recovery: [implementation and real API verification](docs/GEOCODING_RECOVERY.md). The ordinary view now shows a short address result and evidence links; full mapping diagnostics and accuracy labels remain in Advanced review. [Current comparison rules and verification](docs/INVISIBLE_LOCATION.md). No PIN is required in address mode.
+Automatic address recovery: [implementation and real API verification](docs/GEOCODING_RECOVERY.md). The ordinary location view now shows only the completed map and distance; full mapping diagnostics and accuracy labels remain in Advanced review. [Current comparison rules and verification](docs/INVISIBLE_LOCATION.md). No PIN is required in address mode.
 
 Evidence uploads accept images and scanned PDFs as well as text. Reading runs automatically, preserves the original and labels uncertain transcription. Optional Gemini image reading requires a remembered, revocable account permission. [Architecture, setup limits and actual evaluation](docs/AUTONOMOUS_RESOLUTION.md).
 
 Autonomous investigation experience: [current behavior, privacy and release verification](docs/AUTONOMOUS_EXPERIENCE.md). Evidence requests are prepared with the analysis; sharing a private response link is separate from investigation and does not send a message.
+
+Completed location comparisons now display [only a map and distance](docs/MAP_DISTANCE_VIEW.md) in the normal investigation: `<200 m` below the configured default threshold, and the measured separation above it. Technical diagnostics remain in Findings.

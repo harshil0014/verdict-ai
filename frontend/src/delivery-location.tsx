@@ -10,9 +10,12 @@ const labels: any = {
   address: "Address lookup (unit details omitted)",
 };
 
-export function DeliveryMap({ mentions }: { mentions: any[] }) {
+export function DeliveryMap({ mentions, compact = false }: { mentions: any[]; compact?: boolean }) {
   const ref = React.useRef<HTMLDivElement>(null),
     [failed, setFailed] = React.useState(false);
+  const mapSignature = JSON.stringify(mentions.map(m => [m.id, m.role, m.address, m.source_id,
+    m.geocode?.status, m.geocode?.lat, m.geocode?.lon, m.geocode?.precision,
+    m.geocode?.accuracy_label, m.geocode?.uncertainty_m]));
   React.useEffect(() => {
     let disposed = false,
       map: LeafletMapType | undefined;
@@ -48,18 +51,25 @@ export function DeliveryMap({ mentions }: { mentions: any[] }) {
               : "Reported delivery: ") +
             m.address +
             " · " +
-            (g.accuracy_label || g.precision.replaceAll("_", " ")) +
+            (g.accuracy_label || (g.precision || "unknown").replaceAll("_", " ")) +
             " · " +
             m.source_id;
-          L.circleMarker([g.lat, g.lon], {
+          const marker = L.circleMarker([g.lat, g.lon], {
             radius: m.role === "intended" ? 11 : 6,
             color: m.role === "intended" ? "#214f40" : "#be6c37",
             weight: 3,
             fillOpacity: 0.55,
-          })
-            .bindPopup(content)
-            .addTo(map!);
+          }).addTo(map!);
+          if (!compact) marker.bindPopup(content);
+          if (compact && Number.isFinite(g.uncertainty_m) && g.uncertainty_m > 0) {
+            L.circle([g.lat, g.lon], {radius: g.uncertainty_m,
+              color: m.role === "intended" ? "#214f40" : "#be6c37",
+              weight: 1, fillOpacity: 0.06, interactive: false}).addTo(map!);
+          }
         });
+        if (compact && coords.length === 2) L.polyline(coords, {
+          color: "#53685e", weight: 2, dashArray: "5 7", interactive: false,
+        }).addTo(map);
         map.fitBounds(L.latLngBounds(coords).pad(0.3), {
           maxZoom: points.some(
             (m) =>
@@ -78,25 +88,25 @@ export function DeliveryMap({ mentions }: { mentions: any[] }) {
       disposed = true;
       map?.remove();
     };
-  }, [mentions]);
+  }, [mapSignature, compact]);
   return (
     <>
       <div
         ref={ref}
         className="delivery-map"
-        aria-label="Interactive source-linked delivery location map"
+        aria-label={failed ? "Map tiles unavailable" : "Interactive source-linked delivery location map"}
       />
-      {failed && (
+      {failed && !compact && (
         <p role="status">
           Map tiles are unavailable. Preserved coordinates, source passages and
           comparisons remain below.
         </p>
       )}
-      <p className="fine">
+      {!compact && <p className="fine">
         Green: intended destination. Orange: reported delivery. Overlapping
         markers do not establish the same building or actual receipt. Map data ©
         OpenStreetMap contributors; geocoding by Photon.
-      </p>
+      </p>}
     </>
   );
 }
@@ -110,30 +120,51 @@ const locationMessages: Record<string, string> = {
 export function DeliveryLocation({
   current, api, changed, onSource,
 }: { current: any; api: API; changed: () => Promise<void>; onSource: (id: string) => void }) {
-  const [advanced, setAdvanced] = React.useState(false);
-  React.useEffect(() => { setAdvanced(false); }, [current.id]);
   const record = current.delivery_location;
-  const mentions = (record?.mentions || []).filter((m: any) => m.role !== "other");
-  if (!mentions.length) return null;
+  if (!record || record.version < 3 || current.analysis_stale ||
+    ["queued", "running"].includes(current.automation?.state) || mapAuthorization(current) === "off") return null;
   const pair = record?.comparisons?.find((c: any) => c.status === record.status) || record?.comparisons?.[0];
-  const status = record?.version >= 3 || record?.status === "LOCATION MISMATCH" ? record?.status : "UNVERIFIED";
-  const explanation = pair?.explanation || (status === "LOCATION MISMATCH"
-    ? "The submitted records identify different delivery destinations. This does not establish physical delivery."
-    : "The submitted address information isn't sufficient to confirm one matching delivery destination.");
-  const sources = [...new Set<string>(pair?.source_ids || mentions.map((m: any) => m.source_id))];
-  return <section className="delivery-location address-result" aria-label="Delivery address">
-    <h3>{locationMessages[status] || locationMessages.UNVERIFIED}</h3>
-    <p>{explanation}</p>
-    <div className="address-result-actions">
-      {sources.slice(0, 2).map((id, i) => <button key={id} className="text-btn" onClick={() => onSource(id)}>
-        {sources.length === 1 ? "View supporting evidence" : i === 0 ? "View intended address" : "View delivery record"}
-      </button>)}
-    </div>
-    <details className="technical-record address-advanced" open={advanced} onToggle={(e) => setAdvanced(e.currentTarget.open)}>
-      <summary>Advanced review</summary>
-      {advanced && <DeliveryLocationDiagnostics current={current} api={api} changed={changed} onSource={onSource} />}
-    </details>
+  if (!pair || !Number.isFinite(pair.distance_m) || pair.distance_m < 0) return null;
+  const points = [pair.intended_id, pair.reported_delivery_id].map(id =>
+    record.mentions?.find((m: any) => m.id === id));
+  if (!points[0] || !points[1] || points[0].role !== "intended" || points[1].role !== "reported_delivery" ||
+    points.some(m => m.geocode?.status !== "resolved" ||
+      !Number.isFinite(m.geocode.lat) || !Number.isFinite(m.geocode.lon) ||
+      Math.abs(m.geocode.lat) > 90 || Math.abs(m.geocode.lon) > 180)) return null;
+  return <section className="delivery-location location-map-result" aria-label="Delivery location comparison">
+    <DeliveryMap mentions={points} compact />
+    <output className="map-distance" aria-label="Estimated straight-line separation" title="Estimated straight-line separation">
+      {distanceLabel(pair.distance_m, record.proximity_tolerance_m, !pair.sufficiently_precise)}
+    </output>
   </section>;
+}
+
+export function distanceLabel(distance: number, threshold = 200, approximate = false) {
+  if (!Number.isFinite(distance) || distance < 0) return null;
+  const limit = Number.isFinite(threshold) && threshold >= 10 && threshold <= 1000 ? threshold : 200;
+  if (distance < limit) return `<${limit} m`;
+  const number = new Intl.NumberFormat("en", {maximumFractionDigits: distance >= 1000 ? 1 : 0});
+  return `${approximate ? "≈ " : ""}${number.format(distance >= 1000 ? distance / 1000 : distance)} ${distance >= 1000 ? "km" : "m"}`;
+}
+
+function mapAuthorization(current: any) {
+  const account = current.effective_map_preference;
+  const choice = current.location_authorization?.mode || "account";
+  const configured = account?.has_account_choice ?? !!account?.acknowledged_at;
+  return (configured && account.mode === "off") || choice === "off" ? "off"
+    : configured && account.mode === "area_only" ? "area_only"
+    : choice === "account" ? account?.mode || "off" : choice;
+}
+
+export function LocationTechnicalRecord(props: {
+  current: any; api: API; changed: () => Promise<void>; onSource: (id: string) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  React.useEffect(() => setOpen(false), [props.current.id]);
+  return <details className="technical-record" open={open} onToggle={e => setOpen(e.currentTarget.open)}>
+    <summary>Technical location record</summary>
+    {open && <DeliveryLocationDiagnostics {...props} />}
+  </details>;
 }
 
 export function DeliveryLocationDiagnostics({
@@ -148,12 +179,7 @@ export function DeliveryLocationDiagnostics({
   onSource: (id: string) => void;
 }) {
   const record = current.delivery_location;
-  const account = current.effective_map_preference;
-  const choice = current.location_authorization?.mode || "account";
-  const configured = account?.has_account_choice ?? !!account?.acknowledged_at;
-  const authorization = (configured && account.mode === "off") || choice === "off" ? "off"
-    : configured && account.mode === "area_only" ? "area_only"
-    : choice === "account" ? account?.mode || "off" : choice;
+  const authorization = mapAuthorization(current);
   if (!record?.mentions?.length) return null;
   const pair = record?.comparisons?.[0];
   const paired = pair ? [pair.intended_id, pair.reported_delivery_id] : [];
