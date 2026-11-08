@@ -26,6 +26,16 @@ PayPal Sandbox resolution retains the separate bounded merchant policy and durab
 - No end-to-end acceptance runner, new user, fictional case, payment, dispute, witness contact or financial-policy enablement was used for this release.
 - Interactive browser usability testing is left to the owner; browser control remains disabled.
 
-Deployment and existing-record verification will be recorded after the rollout completes.
+### Deployed release and preserved records
+
+Application release: `e629bef91a89d3dac10f085339c230258f59cefc`. Both jobs in the [main-branch CI run](https://github.com/harshil0014/verdict-ai/actions/runs/42520300105) passed. The preview was validated before the main rollout. The main deployment became live on **2026-11-08 at 20:29:34 UTC**. Both public page/assets and PostgreSQL-backed health checks returned HTTP 200.
+
+The existing case was automatically reprocessed by worker version 10: location comparison version 4 reports **LOCATION MISMATCH**, with **zero external geocoding queries**, and the refreshed real Gemini investigation persisted one prepared evidence request. No new account, case, source, invitation or response was created for this verification.
+
+Read-only before/after verification confirmed the original five evidence records, original uploaded file, all three existing witness records, original audit prefix and prior assessment are preserved. The existing account and authorized PayPal connection remain. There are zero financial policies, zero financial actions and zero newly granted external-address consents. No credentials or private case contents are included in this report.
+
+The publication scan found no secrets across the Git object history and publication tree; Gitleaks also found no leaks. The changed RPCs remain invoker/service-only. Security advisors reported no warnings or errors; four existing informational no-policy findings concern deliberately inaccessible tables ([Supabase explanation](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)).
+
+This is engineering and deployed-record verification, not a claim that the owner’s manual usability test or the genuine PayPal refund acceptance test has passed. Free Render service sleep, upstream outages and shared quotas remain limitations.
 
 Security follows Supabase’s current [function privilege guidance](https://supabase.com/docs/guides/database/functions) and [row-level security documentation](https://supabase.com/docs/guides/database/postgres/row-level-security). The changed functions remain invoker functions, callable only through the server service role; application ownership checks and forced RLS remain in place.
