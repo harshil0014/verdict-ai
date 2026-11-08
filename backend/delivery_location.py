@@ -290,7 +290,16 @@ def property_name(address):
 
 
 def building_tokens(address):
-    return name_tokens(property_name(address))-{'building','bldg','india'}-set(PIN.findall(address))
+    name=property_name(address)
+    identity=name_tokens(name)-{'building','bldg','india'}-set(PIN.findall(address))
+    # "Main Gate, IIT Bombay" and "IIT Bombay Main Gate" retain the
+    # same source-supplied parent. Never supply a parent from map proximity.
+    qualifier=re.sub(r'^the\s+','',name,flags=re.I)
+    if SUBLOCATION.fullmatch(qualifier) or re.fullmatch(r'(?:tower|building|block|wing)\s+[a-z0-9]+',qualifier,re.I):
+        parts=[p.strip() for p in address.split(',') if p.strip()]
+        if len(parts)>1 and re.search(r'\b(iit|iim|nit|institute|university|college|campus|heights|tower|residency|residences|building)\b',parts[1],re.I):
+            identity|=name_tokens(parts[1])-{'building','bldg','india'}
+    return identity
 
 
 def identifiable(m):

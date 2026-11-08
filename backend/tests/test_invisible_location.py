@@ -79,6 +79,11 @@ def test_conflicting_building_identifiers_survive_nearly_identical_spelling_and_
     b=mention('Green Heights Tower B, Mumbai','reported_delivery',geocode=point(precision='building'))
     assert dl.compare_pair(a,b)['status']=='LOCATION MISMATCH'
 
+def test_reordered_landmark_parent_and_building_components_are_not_false_mismatches():
+    for left,right in [('IIT Bombay Main Gate, Powai, Mumbai','Main Gate, Indian Institute of Technology Bombay, Powai, Mumbai'),('Green Heights Tower A, Powai, Mumbai','Tower A, Green Heights, Powai, Mumbai')]:
+        a=mention(left);b=mention(right,'reported_delivery')
+        assert dl.compare_pair(a,b)['status']=='POSSIBLE MATCH'
+
 def test_comparison_upgrade_reuses_original_preserved_locations_without_external_calls(monkeypatch):
     case,calls=fake_repo(monkeypatch,'address')
     case['evidence']=[evidence('Order','Intended destination: '+IIT,'buyer'),evidence('Delivery','Delivery destination: '+BHANDUP,'carrier')]
