@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-11-08T15:31:55.960925+00:00",
+  "checked_at": "2026-11-08T16:00:04.170953+00:00",
   "checks": {
     "version_3_automatic_comparison": true,
     "destination_mismatch": true,
@@ -10,7 +10,9 @@
     "zero_new_external_queries": true,
     "preserved_points_and_provenance_unchanged": true,
     "assessment_updated": true,
-    "actual_provider_model": true
+    "actual_provider_model": true,
+    "paypal_records_and_linkage_unchanged": true,
+    "authorized_merchant_connection_unchanged": true
   },
   "all_passed": true,
   "source_count": 4,

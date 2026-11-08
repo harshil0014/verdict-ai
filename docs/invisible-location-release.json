@@ -1,0 +1,161 @@
+{
+  "checked_at": "2026-11-08T16:32:52.206337+00:00",
+  "application_commit_sha": "9106c8476de328a78928a104d3b12ff69ca7cc98",
+  "live_url": "https://verdict-ai-harshil0014.onrender.com",
+  "primary_deploy": {
+    "id": "dep-dboa13rm8hqs73fvicfg",
+    "status": "live",
+    "finished_at": "2026-11-08T16:18:06.016507Z"
+  },
+  "preview_deploy": {
+    "id": "dep-dboa00ou01pc73ele740",
+    "status": "live",
+    "finished_at": "2026-11-08T16:15:47.464761Z"
+  },
+  "application_ci": {
+    "url": "https://github.com/harshil0014/verdict-ai/actions/runs/42499115566",
+    "application": "success",
+    "container": "success",
+    "python_tests_passed": 308,
+    "frontend_tests_passed": 24
+  },
+  "acceptance": {
+    "ordinary_accounts": 2,
+    "initial_preview_checks_passed": 43,
+    "earlier_replacement_persistence_checks_passed": 46,
+    "final_primary_checks_passed": 43,
+    "narrative_follow_up_checks_passed": 12,
+    "ui_runtime_checks_passed": 11,
+    "controlled_workflow_retries": 0,
+    "manual_location_or_investigation_calls": 0
+  },
+  "browser_visual_qa": false,
+  "visual_qa_limit": "Browser control remains disabled. Actual React/Leaflet DOM behavior and consent interactions were verified in JSDOM; no browser screenshot or tile fetch is claimed.",
+  "paid_services_enabled": false,
+  "payment_or_dispute_writes": 0,
+  "evidence_or_research_deleted": false,
+  "recoverable_branch": "release/geocoding-working-20261108",
+  "publication_note": "This publication contains verification reports and documentation only. Backend, frontend and container sources match the deployed application commit. Report SHA-256 values refer to normalized committed Git blob bytes.",
+  "reports": [
+    {
+      "path": "docs/invisible-location-database.json",
+      "sha256": "247f9e305e7c624ccde087edbd521456f0f4b442095ab546711ab548a77f5f5d",
+      "all_passed": true,
+      "checks": 4
+    },
+    {
+      "path": "docs/invisible-location-narrative-acceptance.json",
+      "sha256": "6b13d49b73f95f2a8e02546c0698902e0692dd557fc9fbf69d5bc9b89d28218c",
+      "all_passed": true,
+      "checks": 12
+    },
+    {
+      "path": "docs/invisible-location-owner-upgrade.json",
+      "sha256": "2043922cf9f931c89f04d488faa0dad6c5d008b768b9db78cd65ddf3e32b14eb",
+      "all_passed": true,
+      "checks": 12
+    },
+    {
+      "path": "docs/invisible-location-preview-acceptance.json",
+      "sha256": "ce8b84d63c76daa9dcfecfaae57c1f64fc02b9ea61249450d09131573f4f372a",
+      "all_passed": true,
+      "checks": 43
+    },
+    {
+      "path": "docs/invisible-location-preview-assets.json",
+      "sha256": "27ca449b4ddf84d8906bb07fd5c58d2aa3867b0dfdb839a0feac77261817b5d8",
+      "all_passed": true,
+      "checks": 10
+    },
+    {
+      "path": "docs/invisible-location-preview-experience.json",
+      "sha256": "e986777a48c3b3a521194201c2db7ad50c85b062843738e85dd2addceb33864c",
+      "all_passed": true,
+      "checks": 14
+    },
+    {
+      "path": "docs/invisible-location-preview-final-assets.json",
+      "sha256": "af272c97e614bde326b7f2726364de2df4f1405774b1b81f76a55312711d2a1e",
+      "all_passed": true,
+      "checks": 12
+    },
+    {
+      "path": "docs/invisible-location-preview-narrative-assets.json",
+      "sha256": "6e403bd5f0bc380cb6f35325ed12bcf915754862552beb77b309427bedf90dae",
+      "all_passed": true,
+      "checks": 12
+    },
+    {
+      "path": "docs/invisible-location-preview-persistence.json",
+      "sha256": "a5abfe36ad41e1c7f609604e578e9433e78ffa5aff958cba127287ae15d1acd9",
+      "all_passed": true,
+      "checks": 46
+    },
+    {
+      "path": "docs/invisible-location-preview-preservation.json",
+      "sha256": "105177951e8bf867a3782ce55b5440ca40131d31f63828d75a17be8d18b9f933",
+      "all_passed": true,
+      "checks": 16
+    },
+    {
+      "path": "docs/invisible-location-primary-acceptance.json",
+      "sha256": "fe6862672ecbfaad2caea8a33aaac4bcaf2359fa220026fb94ade7543ddddb8e",
+      "all_passed": true,
+      "checks": 46
+    },
+    {
+      "path": "docs/invisible-location-primary-accounts.json",
+      "sha256": "762e129a22c6985c2fc0229af88a5ca65d4ceae08b47949612c1d8c88492dfe0",
+      "all_passed": true,
+      "checks": 40
+    },
+    {
+      "path": "docs/invisible-location-primary-assets.json",
+      "sha256": "1efad31f8f4a1b28b607c13ba7db31e098428b8147914fd84800f4b74c9b93bd",
+      "all_passed": true,
+      "checks": 12
+    },
+    {
+      "path": "docs/invisible-location-primary-experience.json",
+      "sha256": "012aeabe73dc5c1bfa0be6e905d19e991a5ff7365285867a6e777e41b0d80b3f",
+      "all_passed": true,
+      "checks": 14
+    },
+    {
+      "path": "docs/invisible-location-primary-final-acceptance.json",
+      "sha256": "c2e4ea677ec7cabac99589805eeab3bcf611d3dd6d92c791592e78f8298f045f",
+      "all_passed": true,
+      "checks": 43
+    },
+    {
+      "path": "docs/invisible-location-primary-final-assets.json",
+      "sha256": "9c0b10521e95dcebb456a8321b7bc7256b68aa232077fefae8507b3d6c4b0aad",
+      "all_passed": true,
+      "checks": 12
+    },
+    {
+      "path": "docs/invisible-location-primary-paypal.json",
+      "sha256": "0a0b858f55ca9ce8c936e978afb343b11c9a23ff6f9e0ed3cff72e213bfc9dc0",
+      "all_passed": true,
+      "checks": 20
+    },
+    {
+      "path": "docs/invisible-location-primary-preservation.json",
+      "sha256": "18d3a7a905145d480b0f4cc9fd790bce1e8acd9e3d07514035a3dbd378e692d6",
+      "all_passed": true,
+      "checks": 16
+    },
+    {
+      "path": "docs/invisible-location-publication-audit.json",
+      "sha256": "d9e922de1fcc9310472845274aff8db633a5f4065bb5825317ce997ae54f787b",
+      "all_passed": null,
+      "checks": 0
+    },
+    {
+      "path": "docs/invisible-location-ui-runtime.json",
+      "sha256": "fb5ae37be062f7eae6ac4dba4fbf3407445828248bff0f9c26b337248d7438db",
+      "all_passed": true,
+      "checks": 11
+    }
+  ]
+}
