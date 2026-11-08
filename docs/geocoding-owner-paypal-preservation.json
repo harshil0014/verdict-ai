@@ -1,0 +1,18 @@
+{
+  "checked_at": "2026-11-08T14:34:49.257560+00:00",
+  "checks": {
+    "provider_sources_retained": true,
+    "analysis_and_audit_retained": true,
+    "payment_linkage_retained": true,
+    "sole_authorized_connection_retained": true,
+    "all_source_text_hashes_valid": true,
+    "original_provider_record_kinds_retained": true,
+    "original_sources_preserved_through_geocoding_upgrade": true,
+    "prior_audit_prefix_retained": true
+  },
+  "all_passed": true,
+  "source_count": 4,
+  "updated_at": "2026-11-08T14:09:52.008048+00:00",
+  "historical_baseline_matches": false,
+  "scope": "Read-only preservation of the current owner PayPal case after the geocoding release. This is also the case containing the authorized IIT/Bhandup address evidence. The geocoding upgrade appended an assessment and audit records; all four originals and prior audit records are unchanged. The old three-source fingerprint is stale. Actual original provider kinds, text hashes, audit and linkage are checked; no case mutation, provider read or business write."
+}

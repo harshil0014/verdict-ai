@@ -82,6 +82,9 @@ def run(a):
      check('reanalysis_reuses_provider_results',case['delivery_location']['new_provider_queries']==0)
      check('reanalysis_keeps_campus_accuracy',next(m['geocode'] for m in case['delivery_location']['mentions'] if m['role']=='intended')['match_scope']=='parent_campus')
      row['reanalysis_done']=True;save()
+    if row.get('reanalysis_done'):
+     check('reanalysis_reuses_provider_results',case['delivery_location']['new_provider_queries']==0)
+     check('reanalysis_history_is_preserved',sum(e['kind']=='investigation_updated' for e in case['timeline'])>=2)
     results[name]={'label':intended['label'],'precision':intended['precision'],'accuracy_label':intended['accuracy_label'],'reported_label':reported['label'],'reported_accuracy':reported['accuracy_label'],'distance_m':location['comparisons'][0]['distance_m']}
    elif name=='ambiguous':check('ambiguous_address_has_no_selected_coordinates',intended['status']=='ambiguous' and 'lat' not in intended and len(intended['candidates'])>1)
    else:check('missing_landmark_not_replaced_by_city',intended['status']=='no_compatible_result' and 'lat' not in intended)
@@ -90,7 +93,7 @@ def run(a):
   ok(c.post('/api/auth/logout'));check('logout_revokes_access',c.get(route).status_code==401)
   ok(c.post('/api/auth/login',json={k:state['actors'][0][k] for k in ('username','password')}))
   check('login_preserves_records',fingerprint(ok(c.get(route)))==row['fingerprint'])
-  report={'checked_at':datetime.now(timezone.utc).isoformat(),'base_url':a.base,'phase':a.phase,'checks':checks,'results':results,'all_passed':all(checks.values()),'scope':'Two ordinary automated accounts and three authored fictional cases with public landmarks. Actual Photon, durable cloud and Gemini APIs; source upload alone queues investigations. Not a human usability or browser visual test.','paid_services_enabled':False,'provider_business_writes':0}
+  report={'checked_at':datetime.now(timezone.utc).isoformat(),'base_url':a.base,'phase':a.phase,'checks':checks,'results':results,'all_passed':all(checks.values()),'controlled_workflow_retries':state.get('controlled_workflow_retries',0),'diagnostic_conditions':state.get('diagnostic_conditions',[]),'scope':'Two ordinary automated accounts and three authored fictional cases with public landmarks. Actual Photon, durable cloud and Gemini APIs; source upload alone queues investigations. Any controlled recovery after a test interruption is listed explicitly. Not a human usability or browser visual test.','paid_services_enabled':False,'provider_business_writes':0}
   a.report.write_text(json.dumps(report,indent=2),encoding='utf-8');print(json.dumps(report,indent=2))
  finally:
   for c in clients:c.close()

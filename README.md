@@ -79,3 +79,5 @@ Actual browser captures of the account application. The investigation uses expli
 ## License
 
 Original code is MIT. Dependencies retain their licenses and notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `third_party/`. Gemini, PayPal and Supabase services have separate terms. Read the [security limits](docs/SECURITY.md) before using sensitive records.
+
+Automatic address recovery: [implementation and real API verification](docs/GEOCODING_RECOVERY.md). Approximate campus or transit-stop matches retain their accuracy labels and original addresses; no PIN is required in address mode.

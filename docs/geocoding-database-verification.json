@@ -1,0 +1,19 @@
+{
+  "checked_at": "2026-11-08T14:21:34.703Z",
+  "checks": {
+    "forced_rls_retained": true,
+    "invoker_only_client_role_denial": true,
+    "reschedule_keeps_new_worker_requirement": true,
+    "once_only_upgrades_scheduled": 6,
+    "upgraded_location_records": 6
+  },
+  "security_advisors": {
+    "warning_count": 0,
+    "error_count": 0,
+    "preexisting_info_findings": 4,
+    "explanation": "Existing server-only deny-by-default tables have RLS and no client policies; no grants or RLS rules were relaxed.",
+    "reference": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+  },
+  "paid_resources_enabled": false,
+  "evidence_or_research_deleted": false
+}

@@ -1,0 +1,156 @@
+{
+  "checked_at": "2026-11-08T14:39:18.112559+00:00",
+  "application_commit_sha": "a25386dff96d5e1f1f88485461d900ae590be8c6",
+  "live_url": "https://verdict-ai-harshil0014.onrender.com",
+  "primary_deploy": {
+    "id": "dep-dbo8ddrbc2fs73fktf50",
+    "status": "live",
+    "finished_at": "2026-11-08T14:27:45.588575Z"
+  },
+  "preview_deploy": {
+    "id": "dep-dbo89h2jnfac73e5n3tg",
+    "status": "live",
+    "finished_at": "2026-11-08T14:19:29.526644Z"
+  },
+  "application_ci": {
+    "url": "https://github.com/harshil0014/verdict-ai/actions/runs/42489863710",
+    "application": "success",
+    "container": "success",
+    "python_tests_passed": 294,
+    "frontend_tests_passed": 20
+  },
+  "hosted_acceptance": {
+    "completed_at": "2026-11-08T14:37:08.037946+00:00",
+    "checks_passed": 43,
+    "scenarios": [
+      "IIT Bombay Main Gate versus Bhandup Railway Station",
+      "Ambiguous Springfield",
+      "Invented Zzqxv landmark"
+    ],
+    "controlled_workflow_retries": 1,
+    "disclosure": "Two local QA leases expired during worker handover; a Gemini network failure was independently observed. One controlled workflow retry completed the missing-address investigation. No substitute analysis or invented coordinates."
+  },
+  "browser_visual_qa": false,
+  "visual_qa_limit": "Browser control remains disabled. Actual React/Leaflet runtime is tested in JSDOM; tiles are not fetched there.",
+  "paid_services_enabled": false,
+  "payment_or_dispute_writes": 0,
+  "evidence_or_research_deleted": false,
+  "recoverable_branch": "release/product-experience-working-20261108",
+  "publication_note": "Following commit contains verification reports, README and acceptance-harness observability only; no backend/frontend/container change from the application commit.",
+  "reports": [
+    {
+      "path": "docs/geocoding-database-verification.json",
+      "sha256": "a3314ee79a55951f62ee53fee135d7d2f743466b624fe1c4adb3408891dc4665",
+      "all_passed": null,
+      "checks": 5
+    },
+    {
+      "path": "docs/geocoding-local-acceptance.json",
+      "sha256": "960f44f6307ab7499693916fdc915d829c0a070acff14062007bcfb9235d2471",
+      "all_passed": true,
+      "checks": 40
+    },
+    {
+      "path": "docs/geocoding-local-restart.json",
+      "sha256": "b00f8c2ebce739622cdbc70ddc3ff5ee2388dd68fba41e257d7eda6d8d5afa44",
+      "all_passed": true,
+      "checks": 41
+    },
+    {
+      "path": "docs/geocoding-map-runtime.json",
+      "sha256": "8b1990cf872a2f271ed7ff68df99e94675a4e7f163da010b3a4431a88adfd516",
+      "all_passed": true,
+      "checks": 9
+    },
+    {
+      "path": "docs/geocoding-owner-paypal-preservation.json",
+      "sha256": "2a2e83d0f5eafc9d928d42d89605fe8c7bcbcc623ecc9e85626bb7a892de79ce",
+      "all_passed": true,
+      "checks": 8
+    },
+    {
+      "path": "docs/geocoding-owner-upgrade.json",
+      "sha256": "98d2ea16ee1183a7873ca9eaf4d0ac43f172c4c4500867db3bd9878c117b6b3a",
+      "all_passed": true,
+      "checks": 7
+    },
+    {
+      "path": "docs/geocoding-preview-account-regression.json",
+      "sha256": "63a61a28f9759309a818009f3c1f0e88a0dc5c54103c919b6faeeb8d981a9bdf",
+      "all_passed": true,
+      "checks": 40
+    },
+    {
+      "path": "docs/geocoding-preview-assets-final.json",
+      "sha256": "2fe5dbcaee22c81207c51b82474c8de36c2db43da4dc22632f352329a7c0ca4d",
+      "all_passed": true,
+      "checks": 10
+    },
+    {
+      "path": "docs/geocoding-preview-assets.json",
+      "sha256": "2cc5d43063bda3e88f99aab3712cc334c191711ac6b31a617a281847d3b7593b",
+      "all_passed": true,
+      "checks": 10
+    },
+    {
+      "path": "docs/geocoding-preview-experience-regression.json",
+      "sha256": "8049e2db97fe2d9e0aedb3725ad8667d60d4a35f962ccaf01840cfeec8d8ac39",
+      "all_passed": true,
+      "checks": 14
+    },
+    {
+      "path": "docs/geocoding-preview-paypal-regression.json",
+      "sha256": "4b94314e2ebd41c32c890b7bcc0e0240060855e54a03998afa4b6e08b8f97b73",
+      "all_passed": true,
+      "checks": 20
+    },
+    {
+      "path": "docs/geocoding-preview-preservation.json",
+      "sha256": "8c58d6b1ed077c5dd66d9d1518c79da6b401fa20687af901b41d80b1da4b31ae",
+      "all_passed": true,
+      "checks": 16
+    },
+    {
+      "path": "docs/geocoding-primary-acceptance.json",
+      "sha256": "ace73100c68fde3bdaeb265c27547eafeadb52e42931d4dfd9d3df9d790c8d74",
+      "all_passed": true,
+      "checks": 43
+    },
+    {
+      "path": "docs/geocoding-primary-account-regression.json",
+      "sha256": "116dd4480e65fc7093b45198419d21462207c14f5613a1955185034e06349f8f",
+      "all_passed": true,
+      "checks": 40
+    },
+    {
+      "path": "docs/geocoding-primary-assets.json",
+      "sha256": "7bbabd6bf4bf5fcac9b033c67ca19d14dfc9813168e5f1504191ee751d532ce6",
+      "all_passed": true,
+      "checks": 10
+    },
+    {
+      "path": "docs/geocoding-primary-experience-regression.json",
+      "sha256": "549dbc01b867cb62e5adad0eaf1e78fc697c2ccf0293cc3cca273b9ba3ed88c1",
+      "all_passed": true,
+      "checks": 14
+    },
+    {
+      "path": "docs/geocoding-primary-paypal-regression.json",
+      "sha256": "9c2242b3e267a3ec61b575b3ab45daf1d4251d7ba461cb4f8df89c65e43f3961",
+      "all_passed": true,
+      "checks": 20
+    },
+    {
+      "path": "docs/geocoding-primary-preservation.json",
+      "sha256": "75b14d4dffbfc9a23476f04f652ee508f16aa5ea465ebbb9f1f8fe63eb8dda6d",
+      "all_passed": true,
+      "checks": 16
+    },
+    {
+      "path": "docs/geocoding-publication-audit.json",
+      "sha256": "10bebe62da039e1c7e0ef1e25df16b23acee92103a23fcd54cf1ee98556e3011",
+      "all_passed": null,
+      "checks": 0
+    }
+  ]
+}

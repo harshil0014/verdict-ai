@@ -1,0 +1,22 @@
+{
+  "checked_at": "2026-11-08T14:37:41.400186+00:00",
+  "git_objects_scanned_including_unreachable": 689,
+  "working_files_scanned": 441,
+  "commits_and_reflogs_checked": 45,
+  "ignore_checks": {
+    "backend/.env": true,
+    "backend/.venv/example": true,
+    "runtime/local-access.url": true,
+    "work/audit-tools/gitleaks.exe": true,
+    "frontend/node_modules/example": true,
+    "frontend/dist/index.html": true,
+    ".ruff_cache/example": true,
+    "private.pem": true,
+    "debug.log": true
+  },
+  "finding_count": 0,
+  "findings": [],
+  "scope": "All local Git blob/commit/tag objects, every reachable/reflog commit path, and all nonignored publication files. Local credentials/runtime remain excluded. Findings omit values.",
+  "gitleaks_history_findings": 0,
+  "gitleaks_publication_tree_findings": 0
+}
