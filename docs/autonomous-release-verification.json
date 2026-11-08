@@ -1,0 +1,211 @@
+{
+  "verified_at": "2026-11-08T18:24:40.610158+00:00",
+  "application_commit": "c624f1785a6107a4878a79b9caf68283e7293513",
+  "engineering_release_verified": true,
+  "genuine_refund_acceptance_passed": false,
+  "services": {
+    "primary": {
+      "url": "https://verdict-ai-harshil0014.onrender.com",
+      "deploy": "dep-dbobpajl550s739942c0",
+      "status": "live",
+      "finished_at": "2026-11-08T18:17:53.922437Z"
+    },
+    "preview": {
+      "url": "https://verdict-saas-harshil0014.onrender.com",
+      "deploy": "dep-dbobo5mc6qcc73d74g4g",
+      "status": "live",
+      "finished_at": "2026-11-08T18:15:27.011874Z"
+    }
+  },
+  "checks": {
+    "backend_tests": 343,
+    "frontend_tests": 27,
+    "total_tests": 370,
+    "github_code_ci_run": 42508877626,
+    "github_application_job": "success",
+    "github_container_job": "success",
+    "actual_linux_ocr_in_ci": true,
+    "actual_hosted_image_and_scan_ingestion": true,
+    "actual_gemini_image_and_handwriting_requests": true,
+    "unreadable_blank_not_used_for_transaction_facts": true,
+    "actual_automatic_reassessment_after_new_evidence": true,
+    "originals_analysis_and_accounts_survive_deployment": true,
+    "same_party_duplicate_upload_is_idempotent": true,
+    "case_isolation_and_witnesses_preserved": true,
+    "old_cases_checked": 4,
+    "old_original_files_checked": 7,
+    "old_research_records_checked": 4,
+    "actual_postgres_dispatch_barrier_tests": true,
+    "all_local_git_objects_secret_scan_findings": 0,
+    "gitleaks_history_findings": 0,
+    "gitleaks_publication_tree_findings": 0,
+    "security_advisors_warning_or_error_findings": 0,
+    "preexisting_security_advisors_info_findings": 4
+  },
+  "sandbox": {
+    "merchant_explicitly_authorized": true,
+    "authorization_channel": "merchant chat approval, delegated owner session",
+    "policy_per_claim_usd": "1.00",
+    "policy_total_usd": "1.00",
+    "maximum_actions": 1,
+    "expires_at": "2026-11-09T17:57:32.072779+00:00",
+    "active_policies_observed": 1,
+    "financial_intents_observed": 0,
+    "reserved_usd": "0.00",
+    "existing_refund_amount_usd": "0.60",
+    "existing_refund_status": "PENDING",
+    "background_agent_result": "abstained_existing_refund_requires_reconciliation",
+    "new_payment_created": false,
+    "new_dispute_created": false,
+    "new_refund_or_dispute_write_sent": false,
+    "buyer_dispute_create_scope": true,
+    "buyer_oauth_consent_configured": false,
+    "blocker": "A clean API-only buyer-dispute test requires the separate buyer OAuth consent documented by PayPal. No buyer consent, refund or success was fabricated. Existing pending refund excluded from new financial actions."
+  },
+  "recoverability": {
+    "previous_release_branch": "release/invisible-location-working-20261108",
+    "previous_application_commit": "9106c8476de328a78928a104d3b12ff69ca7cc98",
+    "additive_migrations": 6,
+    "no_customer_records_deleted": true,
+    "no_paid_resources_or_billing_activated": true
+  },
+  "limits": [
+    "API QA accounts, not two independent human usability sessions.",
+    "One historical handwritten manuscript and authored printed/scan/blank fixtures, not a broad OCR benchmark.",
+    "Browser control disabled; React rendering and actual API tests, no claimed interactive browser QA.",
+    "Free services can sleep; durable jobs resume when a worker runs.",
+    "Genuine provider-confirmed refund acceptance is NOT passed.",
+    "Seller-favor fulfillment writes abstain without authenticated supporting evidence."
+  ],
+  "artifact_hash_basis": "SHA-256 of normalized Git index blobs, excluding this self-referential ledger.",
+  "artifacts": [
+    {
+      "path": "docs/autonomous-api-only-eligibility.json",
+      "sha256": "094e0e301ace0d4fd4b34443ba7431af4d059dbfb6c3ca20c4bf616848cb908b"
+    },
+    {
+      "path": "docs/autonomous-atomic-reassessment.json",
+      "sha256": "5afcfdae273f0af664861ea7c8c327fcf701ba3c75387a7058934ddd0ca580fb"
+    },
+    {
+      "path": "docs/autonomous-final-accounts-witness.json",
+      "sha256": "48f49bb8c27cbae3c7d811186cd3b69d484f51b52c6b1f2568c37180e4d69fe9"
+    },
+    {
+      "path": "docs/autonomous-final-paypal.json",
+      "sha256": "4f1167259a634158ce3d8c0f07a79c667f74b04c21d6e61e6d6cd7988fc58aa6"
+    },
+    {
+      "path": "docs/autonomous-final-preservation.json",
+      "sha256": "246a03725f34b34363eed886bb1da5df2adb8710aa34f2aef832c1f70717fc7c"
+    },
+    {
+      "path": "docs/autonomous-final-preview-persistence.json",
+      "sha256": "35394a08dbe23c9e6ba6f99a9ee2a7dd598a95cf89e628ed334125b42494b09a"
+    },
+    {
+      "path": "docs/autonomous-final-primary-assets.json",
+      "sha256": "60c733ad56ff9c4f50d9fe927eb4d678563bbc1738a91072d5cda94750802a3e"
+    },
+    {
+      "path": "docs/autonomous-final-primary-persistence.json",
+      "sha256": "a259b6059db136342bc93531ad38a9d951e83972e28fbcc1645cb6bcf8ce3840"
+    },
+    {
+      "path": "docs/autonomous-handwriting-evaluation.json",
+      "sha256": "e498e3f77d99010fd548ae5b273a6b1d6914bd666b14915da7720affc8d986ee"
+    },
+    {
+      "path": "docs/autonomous-ledger-security.json",
+      "sha256": "c85263797af8cd08cc404b7c1c13fbd54ced1bb6de0f024eb710b533e1fa4621"
+    },
+    {
+      "path": "docs/autonomous-live-abstention.json",
+      "sha256": "2566cace16ec1e39961f3b9c791176cec159570492b2e91b467fdff9801aa409"
+    },
+    {
+      "path": "docs/autonomous-local-checks.json",
+      "sha256": "fcb93d61b9fa6b28ea026a4738b2560b501b3581cc2c543d810fde18dfbb9cc0"
+    },
+    {
+      "path": "docs/autonomous-merchant-enablement.json",
+      "sha256": "99f7af5172185660e1687a08df8db8e16d71826ed864b41b7c9aa51025272c09"
+    },
+    {
+      "path": "docs/autonomous-ocr-local-investigation.json",
+      "sha256": "0440faa0645d35d1dd6a470b4c3a7bddac1d82a221a46c77023ef0b84b54a020"
+    },
+    {
+      "path": "docs/autonomous-ocr-local-restart.json",
+      "sha256": "f69533f2ca7146d4ff5da3876738172e12af6a2ab73c73d1c86614dfe9c08fd6"
+    },
+    {
+      "path": "docs/autonomous-ocr-local-upload.json",
+      "sha256": "0cdb153e06f285f7b5cf70552345c92c18a426678dc8157de99224148252c64b"
+    },
+    {
+      "path": "docs/autonomous-ocr-preview-investigation.json",
+      "sha256": "a016d771d3735d2bf416d4e738f72071e2047e9b51ebd70758e917a2059fe606"
+    },
+    {
+      "path": "docs/autonomous-ocr-preview-upload.json",
+      "sha256": "173988c6d6ca37ce40f85d47a91a5b8ad45cea01ab7a86135cdf302e82f062fe"
+    },
+    {
+      "path": "docs/autonomous-ocr-primary-persistence.json",
+      "sha256": "26f5e4bf3d627c20f39bc589ac9aa55d1f9ca7a9d7970c6327322278e4fff5f2"
+    },
+    {
+      "path": "docs/autonomous-preview-accounts-witness.json",
+      "sha256": "d0d06f2510337e6e685ef055789d8315c22f0673bc185fb3e91437c523f1cb6c"
+    },
+    {
+      "path": "docs/autonomous-preview-assets.json",
+      "sha256": "7ea76b36f12728acbff20fbdfd6da1da91d668a81d9ff4ebcc9f840083691e5e"
+    },
+    {
+      "path": "docs/autonomous-preview-paypal.json",
+      "sha256": "ed5888f40d5e310b14852d2d1681fb938129f97ddc1f7f7ad101ee275302da84"
+    },
+    {
+      "path": "docs/autonomous-preview-preservation.json",
+      "sha256": "07cc200213d13d59e4489130c2069f8d9e4c7adf4ad9decd16fe3561e255af6d"
+    },
+    {
+      "path": "docs/autonomous-primary-accounts-witness.json",
+      "sha256": "f880398b4f6f5dc3098bf0ec96be53adcaf77f278b8694dc0d7f907ae9a20553"
+    },
+    {
+      "path": "docs/autonomous-primary-assets.json",
+      "sha256": "a8a03b0c7e0ab7abd83db38c58899ea6182e2b27c5414cdd40c894c023f9fb2c"
+    },
+    {
+      "path": "docs/autonomous-primary-duplicate-upload.json",
+      "sha256": "0235cdaf5ea7459c380d6a36c098f4850aa8bc8bcc8d020fbc1a12f5db3e9f79"
+    },
+    {
+      "path": "docs/autonomous-primary-paypal.json",
+      "sha256": "551db59532f0e8e101be6143601cf0d47f71d5221b2dc6ef8c292f73a54a147b"
+    },
+    {
+      "path": "docs/autonomous-primary-preservation.json",
+      "sha256": "a08738254f40b2f6801ebef7c5824ce08999cd78d32a055583149c1ff58a7c34"
+    },
+    {
+      "path": "docs/autonomous-primary-reanalysis.json",
+      "sha256": "51b49ea3c1c2eb3dc2c308b8d7f38ce8821c3453df9c256f51ac8af8177aa4ae"
+    },
+    {
+      "path": "docs/autonomous-sandbox-preflight.json",
+      "sha256": "d7b2a6f4142e84c5af977436133c9c003477f4bb04a7397c73692e353f7ab81f"
+    },
+    {
+      "path": "docs/autonomous-vision-printed.json",
+      "sha256": "f9bdcc350736031265eac1bc2374ef793de7406f63db2dbd2d7353dbc1b68e92"
+    },
+    {
+      "path": "docs/autonomous-vision-upload.json",
+      "sha256": "e3fcd4af3464a9a83e7a7d0bb00934985bed4d59b28f9f8a3d0edb9d157dfe96"
+    }
+  ]
+}

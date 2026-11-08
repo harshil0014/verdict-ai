@@ -1,6 +1,7 @@
 {
-  "checked_at": "2026-11-08T18:10:56.807346+00:00",
+  "checked_at": "2026-11-08T18:15:38.427259+00:00",
   "checks": {
+    "actual_background_reassessment_completed": true,
     "original_evidence_retained": true,
     "existing_audit_prefix_retained": true,
     "audit_valid": true,

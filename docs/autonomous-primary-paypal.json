@@ -39,7 +39,7 @@
   "order_linkage": "verified_capture_and_order",
   "provider_business_writes": 0,
   "actors": "Controlled automated QA accounts with normal registration/login; merchant binding is operator-provisioned, not public OAuth consent.",
-  "current_verification_scope": "Saved provider snapshots, linkage, isolation and persistence. This verifier makes no fresh PayPal request. See autonomous-sandbox-preflight.json for actual fresh dispute/capture/order/refund reads.",
+  "current_verification_scope": "Saved provider snapshots, linkage, isolation and persistence. This verifier makes no fresh PayPal request. The separate provider preflight and live abstention checks cover actual API reads.",
   "historical_controlled_workflow_retries": 1,
   "current_controlled_retries": 0
 }
