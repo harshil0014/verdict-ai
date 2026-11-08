@@ -7,7 +7,7 @@ import httpx
 ROOT=Path(__file__).resolve().parents[1]
 def fingerprint(c):return hashlib.sha256(json.dumps({k:c.get(k) for k in ('revision','evidence','analysis','timeline','delivery_location')},sort_keys=True).encode()).hexdigest()
 def run(a):
- path=ROOT/'runtime/saas-experience-acceptance-private.json';state=json.loads(path.read_text()) if path.exists() else {'actors':[]};checks={}
+ path=a.state;state=json.loads(path.read_text()) if path.exists() else {'actors':[]};checks={}
  def save():path.write_text(json.dumps(state,indent=2),encoding='utf-8')
  def check(n,v):checks[n]=bool(v);assert v,n
  def ok(r):
@@ -85,4 +85,4 @@ def run(a):
    c.close()
   save()
 if __name__=='__main__':
- p=argparse.ArgumentParser();p.add_argument('--base',required=True);p.add_argument('--phase',choices=['prepare','wait','verify'],required=True);p.add_argument('--report',type=Path,default=ROOT/'work/experience-acceptance.json');run(p.parse_args())
+ p=argparse.ArgumentParser();p.add_argument('--base',required=True);p.add_argument('--state',type=Path,default=ROOT/'runtime/saas-experience-acceptance-private.json');p.add_argument('--phase',choices=['prepare','wait','verify'],required=True);p.add_argument('--report',type=Path,default=ROOT/'work/experience-acceptance.json');run(p.parse_args())
