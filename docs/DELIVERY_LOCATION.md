@@ -1,10 +1,10 @@
 # Smart Delivery Location Verification
 
-Submitting evidence automatically compares intended and reported delivery destinations before the existing Gemini investigation. The same source-backed panel appears in Investigation and Evidence, with exact passages, source links, original wording, explicit versus inferred PIN codes, provenance hashes, map precision and retained provider limitations. It is a comparison aid, not proof of fulfillment, physical delivery or personal receipt.
+Submitting evidence automatically compares intended and reported delivery destinations before the existing Gemini investigation. The ordinary Investigation and Evidence view shows a concise result, a source-based explanation and links to the supporting originals. Maps, coordinates, distance, provider names, precision and hashes are available only in explicit Advanced review. It is a comparison aid, not proof of fulfillment, physical delivery or personal receipt.
 
 ## Privacy and authorization
 
-External lookup defaults **off** for every case, including existing accounts. Local source/PIN comparison still runs. In the panel's **Location privacy** settings, an authorized user can grant ongoing per-case permission for PIN-area lookup or extracted-address lookup. Evidence arriving afterward is processed automatically; there is no separate Verify GPS operation. Disabling permission stops future queries; it does not delete preserved evidence or earlier authorized results. In-flight requests cannot be recalled.
+External lookup defaults **off** for every case, including existing accounts. Local source/PIN comparison still runs. Through the one-time **Allow automatic address checks** flow or workspace Settings, an authorized user can grant ongoing per-case permission for PIN-area lookup or extracted-address lookup. Evidence arriving afterward is processed automatically; there is no separate Verify GPS operation. Disabling permission stops future queries; it does not delete preserved evidence or earlier authorized results. In-flight requests cannot be recalled.
 
 Area mode sends only a source-supplied six-digit Indian PIN plus country context, never the document or residential address. Address mode sends the extracted address after omitting unit/floor details; arbitrary names embedded in an address cannot be reliably redacted, so users must have authority to share it. The disclosure names Photon/OpenStreetMap and explains that displaying tiles shares the browser IP and visible geographic area. Maps do not load when permission is off. Existing evidence already follows the separate Gemini investigation consent. Raw geocoder responses, coordinates, comparisons and cache are private case data, protected by the existing session ownership, forced RLS, original/audit transaction and quotas; there is no shared public address cache.
 
@@ -69,3 +69,8 @@ The public IIT Bombay case exposed a deterministic matching defect: the provider
 An additive service-only queue upgrade retries previously failed version-1 address comparisons once, only while automatic investigation and address-sharing permission remain enabled. A worker compatibility gate prevents old deployments from claiming upgraded jobs. No originals, prior comparisons, research records or audit entries are removed. Rollback retains these additive migrations and cloud data.
 
 Frozen public OSM regression responses in `backend/tests/data/photon-mumbai-public.json` carry OpenStreetMap attribution. They are distinguished from the real API acceptance runs. Live verification results are linked in [the recovery release report](GEOCODING_RECOVERY.md).
+
+
+## Invisible location intelligence
+
+[Current focused release and verification](INVISIBLE_LOCATION.md) replaces the prominent map panel with a short address result. A default 200-metre proximity tolerance is configured internally with `VERDICT_LOCATION_PROXIMITY_METRES` (valid 10–1000; invalid values use 200). It applies only to adequately precise building/entrance/source-GPS estimates and compatible property, street/locality and available postal details. Campus/postcode centres cannot establish an exact address. Distinct identifiable source landmarks remain a description mismatch even within the same region, or when maps are unavailable. No result establishes physical parcel delivery.

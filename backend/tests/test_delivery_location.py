@@ -32,7 +32,7 @@ def test_missing_pin_and_reordered_minor_wording_are_not_mismatch():
 def test_different_nearby_buildings_are_never_likely_match():
     a=mention('Alpha Tower, MG Road, Mumbai 400076',geocode=point(precision='building'))
     b=mention('Beta Tower, MG Road, Mumbai 400076','reported_delivery',geocode=point(precision='building'))
-    assert dl.compare_pair(a,b)['status']=='POSSIBLE MATCH'
+    assert dl.compare_pair(a,b)['status']=='LOCATION MISMATCH'
 
 def test_fuzzy_address_matching_never_erases_different_house_numbers():
     a=mention('42 Example Avenue, Powai, Mumbai',geocode=point(precision='building'))

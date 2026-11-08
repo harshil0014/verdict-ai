@@ -102,21 +102,58 @@ export function DeliveryMap({ mentions }: { mentions: any[] }) {
 }
 
 const locationMessages: Record<string, string> = {
-  "LIKELY MATCH": "These addresses appear to identify the same destination.",
-  "POSSIBLE MATCH": "These addresses may be in the same area.",
-  "LOCATION MISMATCH": "These addresses appear to be different destinations.",
-  UNVERIFIED: "Couldn’t confirm the delivery location.",
+  "LIKELY MATCH": "Delivery address matches",
+  "POSSIBLE MATCH": "Delivery address appears to match",
+  "LOCATION MISMATCH": "Delivery address doesn't match",
+  UNVERIFIED: "Couldn't verify delivery address",
 };
 export function DeliveryLocation({
+  current, api, changed, onSource,
+}: { current: any; api: API; changed: () => Promise<void>; onSource: (id: string) => void }) {
+  const [advanced, setAdvanced] = React.useState(false), [consent, setConsent] = React.useState(false);
+  React.useEffect(() => { setAdvanced(false); setConsent(false); }, [current.id]);
+  const record = current.delivery_location;
+  const mentions = (record?.mentions || []).filter((m: any) => m.role !== "other");
+  if (!mentions.length) return null;
+  const pair = record?.comparisons?.find((c: any) => c.status === record.status) || record?.comparisons?.[0];
+  const status = record?.version >= 3 || record?.status === "LOCATION MISMATCH" ? record?.status : "UNVERIFIED";
+  const explanation = pair?.explanation || (status === "LOCATION MISMATCH"
+    ? "The submitted records identify different delivery destinations. This does not establish physical delivery."
+    : "The submitted address information isn't sufficient to confirm one matching delivery destination.");
+  const sources = [...new Set<string>(pair?.source_ids || mentions.map((m: any) => m.source_id))];
+  const override = current.location_authorization?.mode;
+  const authorization = override && override !== "account" ? override : current.effective_map_preference?.mode || "off";
+  return <section className="delivery-location address-result" aria-label="Delivery address">
+    <h3>{locationMessages[status] || locationMessages.UNVERIFIED}</h3>
+    <p>{explanation}</p>
+    <div className="address-result-actions">
+      {sources.slice(0, 2).map((id, i) => <button key={id} className="text-btn" onClick={() => onSource(id)}>
+        {sources.length === 1 ? "View supporting evidence" : i === 0 ? "View intended address" : "View delivery record"}
+      </button>)}
+      {authorization === "off" && <button className="text-btn" onClick={() => setConsent(true)}>Allow automatic address checks</button>}
+    </div>
+    {consent && <DeliveryLocationDiagnostics current={current} api={api} changed={changed} onSource={onSource} consentOnly onClose={() => setConsent(false)} />}
+    <details className="technical-record address-advanced" open={advanced} onToggle={(e) => setAdvanced(e.currentTarget.open)}>
+      <summary>Advanced review</summary>
+      {advanced && <DeliveryLocationDiagnostics current={current} api={api} changed={changed} onSource={onSource} />}
+    </details>
+  </section>;
+}
+
+export function DeliveryLocationDiagnostics({
   current,
   api,
   changed,
   onSource,
+  consentOnly = false,
+  onClose,
 }: {
   current: any;
   api: API;
   changed: () => Promise<void>;
   onSource: (id: string) => void;
+  consentOnly?: boolean;
+  onClose?: () => void;
 }) {
   const record = current.delivery_location,
     override = current.location_authorization?.mode;
@@ -126,11 +163,11 @@ export function DeliveryLocation({
     [remember, setRemember] = React.useState(true),
     [busy, setBusy] = React.useState(false),
     [error, setError] = React.useState(""),
-    [settings, setSettings] = React.useState(false);
+    [settings, setSettings] = React.useState(consentOnly);
   React.useEffect(() => {
     setError("");
-    setSettings(false);
-  }, [current.id]);
+    setSettings(consentOnly);
+  }, [current.id, consentOnly]);
   async function save(mode: string) {
     setBusy(true);
     setError("");
@@ -151,6 +188,7 @@ export function DeliveryLocation({
         });
       setSettings(false);
       await changed();
+      onClose?.();
     } catch {
       setError(
         "We couldn’t finish updating your preference. Check Settings before trying again.",
@@ -170,8 +208,8 @@ export function DeliveryLocation({
     <div className="map-permission">
       <h4>
         {authorization === "off"
-          ? "Allow VERDICT to check delivery addresses using a map service?"
-          : "Map permissions"}
+          ? "Allow automatic address checks?"
+          : "Address-check permission"}
       </h4>
       <p>
         We’ll share a delivery address with Photon/OpenStreetMap, omitting unit
@@ -201,7 +239,7 @@ export function DeliveryLocation({
           disabled={busy}
           onClick={() => save(choice)}
         >
-          {busy ? "Saving…" : "Allow map checks"}
+          {busy ? "Saving…" : "Allow automatic address checks"}
         </button>
         {authorization !== "off" && (
           <button
@@ -209,10 +247,10 @@ export function DeliveryLocation({
             disabled={busy}
             onClick={() => save("off")}
           >
-            Turn off map checks
+            Turn off external address checks
           </button>
         )}
-        <button className="text-btn" onClick={() => setSettings(false)}>
+        <button className="text-btn" onClick={() => { setSettings(false); onClose?.(); }}>
           Not now
         </button>
       </div>
@@ -229,6 +267,7 @@ export function DeliveryLocation({
       </details>
     </div>
   );
+  if (consentOnly) return <div className="address-consent">{permission}{error && <p role="alert">{error}</p>}</div>;
   return (
     <section
       className="delivery-location simple-location"

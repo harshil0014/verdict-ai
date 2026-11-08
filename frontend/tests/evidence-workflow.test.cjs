@@ -124,12 +124,12 @@ test('delivery verification defaults to local privacy and no third-party map',()
 });
 test('delivery comparison distinguishes explicit PIN, inferred PIN and approximate area points',()=>{
  const current={id:'case',location_authorization:{mode:'area_only'},delivery_location:{status:'LOCATION MISMATCH',checked_at:'2026-11-08T00:00:00Z',extraction:'Source parser',comparisons:[{intended_id:'L0',reported_delivery_id:'L1',status:'LOCATION MISMATCH',distance_m:3000,distance_label:'Map estimates, not a parcel route.',supporting_facts:[],conflicting_facts:['Explicit PIN codes differ: 400076 versus 400078.'],limitations:['No proof of non-delivery.']}],mentions:[{id:'L1',source_id:'E1',role:'reported_delivery',address:'Carrier destination 400078',quote:'Reported destination PIN 400078',explicit_postcode:'400078',source_authenticity:'Reported; unverified authenticity.',source_sha256:hash,quote_sha256:textHash,geocode:{status:'resolved',provider:'Photon / OpenStreetMap',precision:'postcode_area',lat:19.149,lon:72.936,inferred_postcode:'400078',uncertainty_basis:'Policy tolerance, not provider accuracy.',response_sha256:hash}}],limitations:['A mismatch is not proof of non-delivery.'],record_sha256:hash}};
- const html=render(ui.DeliveryLocation,{...locationProps,current});
+ const html=render(ui.DeliveryLocationDiagnostics,{...locationProps,current});
  for(const text of ['LOCATION MISMATCH','3.0 km','Approximate area location','Map-provider PIN (inferred)','not a PIN supplied by the carrier','Inspect source E1','Policy tolerance'])assert.ok(html.includes(text),text);
 });
 test('malicious address and provider text are escaped and unavailable coordinates are never plotted',()=>{
  const current={id:'case',delivery_location:{status:'UNVERIFIED',checked_at:'2026-11-08T00:00:00Z',comparisons:[],mentions:[{id:'L1',source_id:'E1',role:'intended',address:'<script>bad()</script>',quote:'<img src=x onerror=bad()>',geocode:{status:'provider_unavailable',detail:'Provider unavailable; no location invented.'}}],limitations:[],record_sha256:hash}};
- const html=render(ui.DeliveryLocation,{...locationProps,current});assert.ok(html.includes('&lt;script&gt;'));assert.doesNotMatch(html,/<script>|<img|delivery-map/);assert.match(html,/Provider unavailable/);
+ const html=render(ui.DeliveryLocationDiagnostics,{...locationProps,current});assert.ok(html.includes('&lt;script&gt;'));assert.doesNotMatch(html,/<script>|<img|delivery-map/);assert.match(html,/Provider unavailable/);
 });
 test('overview leads with findings and a reviewed evidence request, without model or hash jargon',()=>{
  const current={evidence:[{id:'E1'}],analysis:{finding:'conflicting',summary:'The buyer reports no delivery; the carrier lists another postcode.',claims:[{id:'C1',text:'The carrier names a different PIN.',source_id:'E1',quote:'400078',semantic_support:'entailed',source_check:'exact_quote_found'}],requests:[{id:'W1',title:'Delivery receipt',recipient:'carrier',priority:'first',rationale:'It can establish the reported destination.'}],unknowns:['Who received the parcel?']}};
@@ -152,6 +152,22 @@ test('currency field is a keyboard-selectable searchable combobox with a form va
 });
 test('campus fallback shows its actual map identity and never claims the exact gate',()=>{
  const current={id:'case',location_authorization:{mode:'address'},delivery_location:{status:'POSSIBLE MATCH',comparisons:[],mentions:[{id:'L1',source_id:'E1',role:'intended',address:'IIT Bombay Main Gate, Powai, Mumbai, Maharashtra',quote:'Intended destination: IIT Bombay Main Gate, Powai, Mumbai, Maharashtra',geocode:{status:'resolved',precision:'site',accuracy_label:'Approximate campus location; exact gate or entrance not confirmed.',label:'Indian Institute of Technology Bombay, Mumbai, Maharashtra, India',attempts:[{query:'Indian Institute of Technology Bombay, Mumbai, Maharashtra',status:'resolved',response_sha256:hash}]}}]}};
- const html=render(ui.DeliveryLocation,{...locationProps,current});assert.match(html,/Approximate campus location; exact gate or entrance not confirmed/);assert.match(html,/Map result: Indian Institute of Technology Bombay/);assert.match(html,/IIT Bombay Main Gate, Powai, Mumbai, Maharashtra/);
+ const html=render(ui.DeliveryLocationDiagnostics,{...locationProps,current});assert.match(html,/Approximate campus location; exact gate or entrance not confirmed/);assert.match(html,/Map result: Indian Institute of Technology Bombay/);assert.match(html,/IIT Bombay Main Gate, Powai, Mumbai, Maharashtra/);
  assert.match(html,/Lookup 1:/);assert.doesNotMatch(html,/Map-estimated entrance location/);
+});
+
+const quietCase={id:'case',location_authorization:{mode:'address'},delivery_location:{version:3,status:'LOCATION MISMATCH',comparisons:[{status:'LOCATION MISMATCH',explanation:'The order names IIT Bombay Main Gate; the delivery record names Bhandup Railway Station, a different destination. This compares the records; it does not establish physical delivery.',source_ids:['E1','E2'],distance_m:2740}],mentions:[{id:'L1',role:'intended',source_id:'E1',geocode:{status:'resolved',lat:19.1326186,lon:72.9149702,precision:'site',provider:'Photon'}},{id:'L2',role:'reported_delivery',source_id:'E2',geocode:{status:'resolved',lat:19.1442357,lon:72.9379711,precision:'site'}}]}};
+test('ordinary investigation shows only the address result and supporting evidence links',()=>{
+ const html=render(ui.DeliveryLocation,{...locationProps,current:quietCase});
+ assert.match(html,/Delivery address doesn&#x27;t match/);assert.match(html,/IIT Bombay Main Gate/);assert.match(html,/Bhandup Railway Station/);assert.match(html,/View intended address/);assert.match(html,/View delivery record/);assert.match(html,/Advanced review/);
+ assert.doesNotMatch(html,/delivery-map|leaflet|Photon|OpenStreetMap|19\.132|72\.914|2740|2\.7|GPS|geocod|tolerance|Approximate separation|Map settings|Allow automatic/);
+});
+test('legacy possible-area conclusions are not presented as an address match',()=>{
+ const current=JSON.parse(JSON.stringify(quietCase));current.delivery_location.version=2;current.delivery_location.status='POSSIBLE MATCH';current.delivery_location.comparisons[0]={status:'POSSIBLE MATCH',source_ids:['E1','E2']};
+ const html=render(ui.DeliveryLocation,{...locationProps,current});assert.match(html,/Couldn&#x27;t verify delivery address/);assert.doesNotMatch(html,/same area|appears to match/);
+});
+test('affirmative disclosure is present only after entering the permission flow',()=>{
+ const current={...quietCase,location_authorization:{mode:'off'}};
+ const ordinary=render(ui.DeliveryLocation,{...locationProps,current});assert.match(ordinary,/Allow automatic address checks/);assert.doesNotMatch(ordinary,/Photon|OpenStreetMap|select|checkbox/);
+ const consent=render(ui.DeliveryLocationDiagnostics,{...locationProps,current,consentOnly:true});assert.match(consent,/Photon\/OpenStreetMap/);assert.match(consent,/Only allow this for information/);assert.match(consent,/Remember for my other investigations/);assert.doesNotMatch(consent,/delivery-map|Approximate separation/);
 });

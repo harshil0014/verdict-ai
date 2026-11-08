@@ -56,7 +56,7 @@ export function AccountSettings({
       <h2>Settings</h2>
       <p>Private records. Automatic investigation. You stay in control.</p>
       <section>
-        <h3>Delivery map checks</h3>
+        <h3>Automatic address checks</h3>
         <p>
           Choose once for future eligible investigations. You can override this
           in any case.
@@ -105,7 +105,7 @@ export function AccountSettings({
               disabled={busy || (choice !== "off" && !ack)}
               onClick={save}
             >
-              {busy ? "Saving…" : "Save map preference"}
+              {busy ? "Saving…" : "Save address-check preference"}
             </button>
             <p className="fine">
               Turning this off stops future inherited lookups. Explicit per-case

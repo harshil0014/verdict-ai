@@ -1,0 +1,18 @@
+{
+  "checked_at": "2026-11-08T15:31:55.960925+00:00",
+  "checks": {
+    "version_3_automatic_comparison": true,
+    "destination_mismatch": true,
+    "plain_result": true,
+    "original_evidence_unchanged": true,
+    "previous_audit_entries_retained": true,
+    "audit_valid": true,
+    "zero_new_external_queries": true,
+    "preserved_points_and_provenance_unchanged": true,
+    "assessment_updated": true,
+    "actual_provider_model": true
+  },
+  "all_passed": true,
+  "source_count": 4,
+  "scope": "Original owner PayPal case, automatically reclassified from retained IIT/Bhandup descriptions and already retrieved provider points. No manual retry or geocoding call. Prior investigations, sources and audit prefix are preserved. A real Gemini reassessment completed; this is not independent proof of physical delivery."
+}
