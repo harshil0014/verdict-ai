@@ -71,6 +71,9 @@ export function CaseOverview({
   onSource: (id: string, claim?: any) => void;
 }) {
   const a = current.analysis;
+  const plain = (text: string, fallback: string) => current.delivery_location &&
+    /Photon|OpenStreetMap|geocod|\bGPS\b|\b(?:latitude|longitude|coordinates|proximity threshold)\b|\b\d+(?:\.\d+)?\s*(?:km|kilometres?|kilometers?|metres?|meters?)\b|(?<!\d)-?\d{1,3}\.\d{4,}/i.test(text || "")
+    ? fallback : text;
   const w =
     a?.requests.find((x: any) => x.priority === "first") || a?.requests[0];
   const claims = (a?.claims || [])
@@ -95,7 +98,7 @@ export function CaseOverview({
       </h3>
       <p className="overview-summary">
         {a
-          ? a.summary
+          ? plain(a.summary, "Review the submitted address descriptions and source-backed findings below. The records alone do not establish physical delivery.")
           : current.evidence.length
             ? "Your evidence is saved. VERDICT will read it, follow relevant public references and compare the accounts. You can leave this page and return later."
             : "Add a receipt, message, delivery record or your account of what happened. VERDICT will investigate and show what the evidence supports."}
@@ -118,7 +121,7 @@ export function CaseOverview({
               >
                 <span className="finding-number">{i + 1}</span>
                 <span>
-                  <strong>{c.text}</strong>
+                  <strong>{plain(c.text, "Inspect the supporting address evidence for this finding.")}</strong>
                   <small>
                     {c.semantic_support === "entailed"
                       ? "Supported by the document · reported information, not independent proof"
@@ -138,16 +141,16 @@ export function CaseOverview({
           <div className="overview-next">
             <div>
               <span className="eyebrow">WHAT HAPPENS NEXT</span>
-              <h4>{w ? w.title : "Review the evidence before deciding."}</h4>
+              <h4>{w ? plain(w.title, "Delivery destination evidence") : "Review the evidence before deciding."}</h4>
               <p>
                 {w
                   ? `Best person to ask: ${people[w.recipient] || w.recipient}.`
-                  : a.recommendation}
+                  : plain(a.recommendation, "Review the original delivery records before deciding.")}
               </p>
               {w && (
                 <details>
                   <summary>Why ask?</summary>
-                  <p>{w.rationale}</p>
+                  <p>{plain(w.rationale, "Clarify which destination the delivery record identifies.")}</p>
                 </details>
               )}
             </div>
@@ -172,7 +175,7 @@ export function CaseOverview({
               </summary>
               <ul>
                 {a.unknowns.map((u: string, i: number) => (
-                  <li key={i}>{u}</li>
+                  <li key={i}>{plain(u, "Independent evidence of the reported delivery destination is still needed.")}</li>
                 ))}
               </ul>
             </details>

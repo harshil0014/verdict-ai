@@ -410,6 +410,11 @@ export function DeliveryLocationDiagnostics({
           </p>
         </details>
       </details>
+      {current.analysis && <details className="technical-record">
+        <summary>Full investigation assessment</summary>
+        <p>{current.analysis.summary}</p>
+        <p>{current.analysis.recommendation}</p>
+      </details>}
     </section>
   );
 }

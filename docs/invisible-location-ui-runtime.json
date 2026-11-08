@@ -1,7 +1,8 @@
 {
-  "checked_at": "2026-11-08T15:31:59.813Z",
+  "checked_at": "2026-11-08T16:10:29.684Z",
   "checks": {
     "real_case_simple_mismatch": true,
+    "legacy_overview_location_details_hidden": true,
     "no_technical_location_information_in_normal_view": true,
     "map_not_instantiated_by_default": true,
     "evidence_link_uses_original_source": true,

@@ -495,9 +495,13 @@ async def verify_case(case_id):
 
 def investigation_record(record):
     if not record:return None
-    return {k:record[k] for k in ('status','comparisons','limitations')} | {'mentions':[
-        {k:m.get(k) for k in ('id','source_id','quote','address','role','explicit_postcode','explicit_country','source_authenticity')} |
-        {'geocode':{k:m.get('geocode',{}).get(k) for k in ('status','provider','precision','match_scope','accuracy_label','label','uncertainty_m','uncertainty_basis','inferred_postcode','lat','lon')}} for m in record['mentions']]}
+    # The investigator needs source identity and the computed conclusion, not
+    # numerical map machinery that could leak into its ordinary narrative.
+    # The complete record remains unchanged in the case and audit history.
+    return {'status':record['status'],'presentation_version':1,
+        'scope':'Compares source descriptions only. An exact gate or building identity may remain unconfirmed. This is not independent proof of physical delivery or personal receipt.',
+        'comparisons':[{k:c.get(k) for k in ('status','result_label','explanation','source_ids','intended_id','reported_delivery_id')} for c in record.get('comparisons',[])],
+        'mentions':[{k:m.get(k) for k in ('id','source_id','quote','address','role','explicit_postcode','explicit_country','source_authenticity')} for m in record['mentions']]}
 
 
 router=APIRouter()
@@ -506,7 +510,7 @@ async def authorize(id:str,data:Authorization,user=Depends(auth.current_session)
     body=await repo.get(id)
     if data.mode not in ('off','account') and not data.acknowledged:raise HTTPException(422,'Acknowledge external geocoding disclosure before authorizing location lookup.')
     body['location_authorization']={'mode':data.mode,'acknowledged_at':now() if data.mode!='off' else None,'provider':PROVIDER}
-    body['automatic_workflow_version']=max(7,body.get('automatic_workflow_version',1))
+    body['automatic_workflow_version']=max(8,body.get('automatic_workflow_version',1))
     await repo.save(body,'location_authorization_changed',{'mode':data.mode,'provider':PROVIDER})
     if body['evidence'] and body.get('automatic_investigation',True):
         await repo.rpc('workflow:retry',{'case_id':id})

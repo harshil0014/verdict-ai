@@ -97,3 +97,14 @@ def test_comparison_upgrade_reuses_original_preserved_locations_without_external
     assert r['version']==3 and r['status']=='LOCATION MISMATCH' and r['comparison_only_upgrade'] and r['new_provider_queries']==0
     assert r['mentions']==old['mentions'] and case['evidence']==original and calls==['delivery_location_verified']
     assert asyncio.run(dl.verify_case('case'))==r
+
+def test_narrative_projection_preserves_source_conclusion_without_map_machinery():
+    a=mention(IIT,geocode=dl.photon_result(PUBLIC[0]['data'],IIT,'address'))
+    b=mention(BHANDUP,'reported_delivery',geocode=dl.photon_result(PUBLIC[3]['data'],BHANDUP,'address'))
+    record={'status':'LOCATION MISMATCH','comparisons':[dl.compare_pair(a,b)],'mentions':[a,b]}
+    before=copy.deepcopy(record);p=dl.investigation_record(record)
+    assert p['comparisons'][0]['source_ids']==record['comparisons'][0]['source_ids']
+    assert p['comparisons'][0]['explanation']==record['comparisons'][0]['explanation']
+    assert all('geocode' not in m for m in p['mentions'])
+    assert all(k not in p['comparisons'][0] for k in ('distance_m','proximity_tolerance_m','sufficiently_precise'))
+    assert p['status']=='LOCATION MISMATCH' and record==before and 'exact gate' in p['scope']
