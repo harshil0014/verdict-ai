@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-11-08T17:58:28.303590+00:00",
+  "base": "https://verdict-ai-harshil0014.onrender.com",
+  "checks": {
+    "new_evidence_automatically_investigated": true,
+    "new_source_has_exact_preserved_passage": true,
+    "prior_investigation_remains_in_audit": true,
+    "original_file_and_extraction_retained": true,
+    "audit_valid": true
+  },
+  "passed": true,
+  "manual_analysis_calls": 0,
+  "financial_actions": 0,
+  "scope": "Real automatic Gemini reassessment after one newly submitted authored contradictory receipt; prior analysis/originals preserved. Not real merchant evidence."
+}

@@ -132,7 +132,8 @@ def prepare_import(existing,detail,records,issues,count,connection):
     all_records=[{**r,'body':canonical_provider_record(r['body'])} for r in [{'kind':'dispute','id':did,'body':detail}]+records]
     cap_ids={p['capture_id'] for p in payments if p['capture_id']}
     projected=[{**r,'body':project(r['kind'],r['body'],merchant,cap_ids)} for r in all_records]
-    body=copy.deepcopy(existing) if existing else {'evidence':[],'requests':[],'analysis':None,'automatic_investigation':True,'automatic_workflow_version':max(8,RECOVERY_VERSION)}
+    body=copy.deepcopy(existing) if existing else {'evidence':[],'requests':[],'analysis':None,'automatic_investigation':True,'automatic_workflow_version':max(9,RECOVERY_VERSION)}
+    body['automatic_workflow_version']=max(9,body.get('automatic_workflow_version',1))
     summary={'environment':'sandbox','merchant_id':merchant,'dispute':{**select(detail,('dispute_id','reason','status','dispute_life_cycle_stage','create_time','update_time','seller_response_due_date')),
         'disputed_amount':money(detail.get('dispute_amount'))},'payments':payments,
         'identity_assurance':'PayPal account identifiers are provider records, not verification of a person’s identity.',

@@ -73,6 +73,8 @@ or evidence disclosure was newly authorized by this feature.
 
 ## Dispatch and verification
 
+Paused investigations abstain. New account evidence and provider-source updates require the version-nine worker; older workers cannot consume those jobs during rollout. Provider polling has a ninety-second wall-time limit so an unavailable provider cannot indefinitely block other investigations.
+
 The private PostgreSQL ledger reserves policy budget and inserts a unique intent
 atomically. A `sending` barrier commits **before** HTTP dispatch and checks that the
 case revision and authorization are still current. Unique merchant/dispute and
@@ -114,9 +116,7 @@ Actual checks on 2026-11-08, not simulated customer outcomes:
 - **The actual existing USD 1 dispute remains open.** Fresh PayPal dispute, capture,
   order and refund reads found an existing **USD 0.60 PENDING refund**. A second
   financial operation is blocked. No new refund or dispute write was sent in this
-  release, and no completed end-to-end refund is claimed. Merchant autonomy remains
-  off until deliberate opt-in. A clean, eligible test payment/dispute or resolution
-  of the existing provider-side pending refund is needed for a genuine write test.
+  release, and no completed end-to-end refund is claimed. Following explicit merchant chat approval, a USD 1 per-claim / USD 1 total / one-action policy was enabled for twenty-four hours. The deployed background agent independently abstained on the pending refund; no budget was reserved. [Enablement](autonomous-merchant-enablement.json) and [actual abstention](autonomous-live-abstention.json) record that outcome. A clean eligible test dispute is still needed for a genuine write test. The app has the dispute-create scope, but no delegated buyer OAuth consent is configured. PayPal documents that separate consent requirement; a checkout approval is not a substitute. No fresh payment was created without a usable, authorized API-only dispute flow. [Actual eligibility check](autonomous-api-only-eligibility.json).
 
 Free hosting can sleep and does not guarantee continuous worker execution. The
 durable queue resumes when a service instance runs. OCR is English-first;
@@ -141,3 +141,5 @@ Official references: [Tesseract](https://tesseract-ocr.github.io/tessdoc/),
 [PayPal accept claim](https://developer.paypal.com/api/customer-disputes/v1/disputes-accept-claim),
 [PayPal Sandbox testing](https://developer.paypal.com/disputes/test-go-live),
 [public manuscript and rights](https://www.loc.gov/item/mal4356500/).
+
+A compatible, current reassessment can be queued atomically with its audit marker when a previously completed investigation uses an older payload schema. The queue and case update share a database transaction; the same unchanged payload is not repeatedly force-retried. The hosted check initially rejected a JSONB validation expression before mutation, then passed after a separate corrective migration. Existing originals and the audit prefix were verified intact. [Actual queue check](autonomous-atomic-reassessment.json).

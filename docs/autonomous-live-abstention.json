@@ -1,0 +1,12 @@
+{
+  "checked_at": "2026-11-08T18:00:33.592814+00:00",
+  "policy_enabled": true,
+  "policy_actions": 0,
+  "reserved_usd": 0.0,
+  "observation_state": "abstained",
+  "observation_reason": "existing_refund_requires_reconciliation",
+  "last_provider_check": "2026-11-08T17:57:42.309501+00:00",
+  "financial_action_exists": false,
+  "manual_evaluation_or_provider_write": false,
+  "scope": "Read-only inspection after merchant enablement; the deployed background agent, not this script, produced the observation."
+}

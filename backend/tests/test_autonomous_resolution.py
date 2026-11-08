@@ -28,7 +28,7 @@ def test_verified_unfulfilled_test_order_eligible_under_explicit_policy():
 
 
 @pytest.mark.parametrize('change,reason',[
- ('disabled','autonomy_disabled'),('stale','investigation_pending'),('conflicting','investigation_conflict'),
+ ('disabled','autonomy_disabled'),('paused','investigation_paused'),('stale','investigation_pending'),('conflicting','investigation_conflict'),
  ('seller','investigation_conflict'),('unknown_ocr','unresolved_document_uncertainty'),
  ('wrong_id','identity_mismatch'),('wrong_merchant','identity_mismatch'),('missing','incomplete_provider_records'),
  ('no_link','provider_action_unavailable'),('live_link','provider_action_unavailable'),('partial','full_refund_unavailable'),
@@ -38,6 +38,7 @@ def test_verified_unfulfilled_test_order_eligible_under_explicit_policy():
 def test_financial_gate_abstains(change,reason):
     c,p,d,r=example();issues=[]
     if change=='disabled':p['enabled']=False
+    if change=='paused':c['automatic_investigation']=False
     if change=='stale':c['analysis_stale']=True
     if change in ('conflicting','seller'):c['analysis']['finding']='supports_seller' if change=='seller' else 'conflicting'
     if change=='unknown_ocr':c['evidence']=[{'extraction':{'status':'uncertain'}}]
@@ -113,3 +114,18 @@ def test_dispatch_barrier_prevents_replay_after_response_or_crash(monkeypatch,mo
     asyncio.run(run())
     assert calls==['POST']
     assert ledger['state'] in ('sending','uncertain','waiting_provider')
+
+
+def test_current_payload_reassessment_is_atomic_compatible_and_once(monkeypatch):
+    c,_,_,_=example();c.update(id='CASE',timeline=[],revision=2);calls=[]
+    async def rpc(op,args=None,**kwargs):
+        calls.append((op,args))
+        return {'state':'completed'} if op=='workflow:status' else {}
+    monkeypatch.setattr(agent.repo,'rpc',rpc)
+    asyncio.run(agent.ensure_current_investigation(c))
+    assert calls[-1][0]=='agent:reassess'
+    body=calls[-1][1]['mutation']['body']
+    assert body['automatic_workflow_version']==9 and body['analysis_stale']
+    assert body['evidence']==[] and body['analysis']==c['analysis']
+    count=len(calls);asyncio.run(agent.ensure_current_investigation(c))
+    assert len(calls)==count

@@ -350,7 +350,11 @@ async def worker():
         try:
             WAKE.clear()
             from autonomous_resolution import tick
-            await tick()
+            try:
+                async with asyncio.timeout(90):
+                    await tick()
+            except TimeoutError:
+                log.warning('Sandbox polling timed out; durable dispatch barriers retained')
             await repo.rpc('workflow:queue_recovery',session='')
             await repo.rpc('workflow:queue_location_upgrade',session='')
             await repo.rpc('workflow:queue_location_comparison_upgrade',session='')

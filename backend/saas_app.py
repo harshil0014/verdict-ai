@@ -176,7 +176,7 @@ async def retry_automation(id:str,user=Depends(auth.current_session)):
 
 def add_source(body, data, raw=None, mime="text/plain", request_row=None, links=None, extraction=None):
     body.setdefault('automatic_investigation',True)
-    body['automatic_workflow_version']=max(8,RECOVERY_VERSION,body.get('automatic_workflow_version',1))
+    body['automatic_workflow_version']=max(9,RECOVERY_VERSION,body.get('automatic_workflow_version',1))
     if len(body["evidence"]) >= 40: raise HTTPException(422, "Maximum 40 evidence sources per case")
     if "\x00" in data.text: raise HTTPException(422, "Null bytes are not supported")
     source = evidence(data.title, data.text, data.party, "portal_upload" if request_row else "user_upload")

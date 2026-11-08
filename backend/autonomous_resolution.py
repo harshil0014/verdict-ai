@@ -64,6 +64,7 @@ def decision(case, policy, detail, records, merchant, issues=()):
     """
     def stop(code):return {'eligible':False,'reason':code}
     if not policy or not policy.get('enabled'):return stop('autonomy_disabled')
+    if case.get('automatic_investigation') is False:return stop('investigation_paused')
     if case.get('mode')!='paypal_sandbox_saas' or detail.get('dispute_id')!=case.get('paypal_id'):return stop('identity_mismatch')
     if issues:return stop('incomplete_provider_records')
     if any(u.get('payments',{}).get('refunds') for r in records if r['kind']=='order' for u in r['body'].get('purchase_units',[])):
@@ -165,6 +166,7 @@ async def evaluate_case(case_id):
         return
     verdict=decision(case,state,detail,records,c['merchant_id'],issues)
     if not verdict['eligible']:
+        if verdict['reason']=='investigation_pending':await ensure_current_investigation(case)
         await repo.rpc('agent:observe',{'case_id':case_id,'observation':{**checked,'state':'abstained','label':'Waiting for missing information','reason':verdict['reason']}})
         return
     reservation=await repo.rpc('agent:reserve',{'case_id':case_id,'connection_id':c['id'],'policy_id':state['id'],
@@ -206,6 +208,25 @@ async def sync_provider_snapshot(case,c,detail,records,issues,count):
     await repo.rpc('paypal:commit_import',{'connection_id':c['id'],'dispute_id':case['paypal_id'],
         'creating':False,'mutation':mutation,'snapshots':snapshots})
     return True
+
+
+async def ensure_current_investigation(case):
+    """Once per source payload, atomically queue a compatible reassessment.
+
+    Old compatible deployments can have completed an earlier schema's analysis.
+    Do not require the merchant to click Analyze after enabling autonomy. Failed
+    investigations retain the existing bounded recovery; the same unchanged
+    payload is not repeatedly force-retried by the policy poller.
+    """
+    from investigator import investigation_payload
+    target=digest(investigation_payload(case))
+    if case.get('automatic_investigation') is False or case.get('sandbox_reassessment_digest')==target:return
+    workflow=await repo.rpc('workflow:status',{'case_id':case['id']})
+    if workflow.get('state') in ('queued','running'):return
+    case.update(automatic_workflow_version=max(9,case.get('automatic_workflow_version',1)),
+        analysis_stale=True,sandbox_reassessment_digest=target)
+    await repo.rpc('agent:reassess',{'case_id':case['id'],
+        'mutation':repo.mutation(case,'autonomous_reassessment_requested',{'input_digest':target,'required_worker_version':9})})
 
 
 async def tick():
