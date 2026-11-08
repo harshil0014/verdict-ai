@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-11-08T13:34:00.893981+00:00",
+  "checks": {
+    "separate_account_defaults_retained": true,
+    "unacknowledged_residential_sharing_denied": true,
+    "client_owner_override_denied": true,
+    "one_account_change_does_not_change_another": true,
+    "permission_revocable": true,
+    "signout_revokes_preferences_access": true,
+    "revocation_survives_return": true
+  },
+  "all_passed": true,
+  "scope": "Actual public preferences endpoints with two ordinary authenticated QA accounts. Only public PIN-area authorization was briefly changed and revoked for the second account; no case records or residential addresses sent."
+}

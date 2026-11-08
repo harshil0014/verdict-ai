@@ -1,0 +1,29 @@
+{
+  "checked_at": "2026-11-08T13:35:56.696139+00:00",
+  "checks": {
+    "actual_existing_case_in_intended_owner_workspace": true,
+    "all_original_source_records_unchanged": true,
+    "explicit_pin_mismatch": true,
+    "unique_intended_and_reported_pair": true,
+    "source_supplied_pins_preserved": true,
+    "two_actual_geocoded_area_markers": true,
+    "source_quotes_are_exact": true,
+    "provider_response_integrity": true,
+    "no_authenticated_delivery_gps_invented": true,
+    "source_authenticity_not_upgraded": true,
+    "real_automatic_gemini_reassessment": true,
+    "audit_valid_and_location_event_present": true,
+    "replacement_deployment_persistence": true
+  },
+  "all_passed": true,
+  "source_count": 3,
+  "distance_m": 3632,
+  "precision": [
+    "postcode_area",
+    "postcode_area"
+  ],
+  "unrelated_mentions_not_plotted": 2,
+  "scope": "Actual pre-existing fictional Missing Headphones Delivery case in the intended owner workspace. User mandate authorizes public PIN-area lookup; no residential address sent. Server-only short-lived operator context, not a human browser sign-in.",
+  "provider_business_writes": 0,
+  "original_records_deleted": 0
+}

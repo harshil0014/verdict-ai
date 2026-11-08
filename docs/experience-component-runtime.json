@@ -1,0 +1,16 @@
+{
+  "checked_at": "2026-11-08T08:06:05.739Z",
+  "checks": {
+    "actual_account_overview_mounted": true,
+    "source_backed_overview_present": true,
+    "graph_is_optional_disclosure": true,
+    "icon_navigation_has_accessible_names": true,
+    "currency_search_selects_actual_form_value": true,
+    "failed_submission_preserves_entered_fields": true,
+    "no_automatic_case_mutation_replay": true,
+    "failure_uses_plain_english": true,
+    "real_remembered_map_permission_loaded": true
+  },
+  "all_passed": true,
+  "scope": "Actual React workspace components executed in JSDOM with an ordinary authenticated QA session against local cloud-backed APIs. One deliberate form-submit 503 injected to verify field preservation; no fake provider result. JSDOM has no browser layout/visual certification."
+}

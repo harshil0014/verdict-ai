@@ -4,6 +4,8 @@
 
 VERDICT is a multi-user investigation workspace. Create a private case, preserve original records, compare competing accounts with Gemini, inspect the source graph and collect targeted witness responses. Human decisions stay with the investigator.
 
+**Add the evidence. VERDICT investigates. You decide.** The [simplified product experience](docs/PRODUCT_EXPERIENCE.md) leads with a source-linked assessment and one useful next step. Maps, witness responses and reassessment run automatically where authorized; graphs and technical records stay available under details. Explicit map permission can be remembered across cases, and temporary interruptions use durable bounded recovery.
+
 [Open VERDICT](https://verdict-ai-harshil0014.onrender.com) · [Source](https://github.com/harshil0014/verdict-ai) · [Architecture](docs/ARCHITECTURE.md) · [Security](docs/SECURITY.md) · [Setup and deployment](docs/DEPLOYMENT.md) · [Acceptance evidence](docs/SAAS_ACCEPTANCE.md)
 
 ## The account application

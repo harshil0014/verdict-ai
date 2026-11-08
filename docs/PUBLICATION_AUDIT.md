@@ -1,5 +1,11 @@
 # Public-source audit — 6 November 2026
 
+## Simplified product experience — 8 November 2026
+
+The release preserves the complete account, investigation, research, witness, PayPal and map mechanisms behind a simpler outcome-first UI. Private remembered map consent and bounded persisted transient recovery are additive cloud changes, not shared-account access or automatic financial actions. No runtime dependency/license changed and no paid service was activated. Application `d5b41c3` passed 279 Python tests, 19 frontend checks, production build and both remote CI jobs. Actual hosted registration/upload/Gemini/Photon/witness-reassessment, restart recovery, account isolation, original-byte persistence and older-case regressions passed. [Executed evidence and precise limits](PRODUCT_EXPERIENCE.md).
+
+Secret scans cover all Git objects including unreachable data, reachable/reflog paths and nonignored publication files against exact current private credentials and account/case/provider identifiers plus generic signatures. Independent redacted Gitleaks history and publication-only tree scans complement them. Reports contain counts/booleans/public URLs/asset hashes, not raw evidence, geocoder responses, account credentials or private identifiers. These checks are repeated before the final report push. Browser control remains disabled; component/runtime/API checks do not claim full-browser visual certification. The frozen 28/30 engine evaluation is unchanged.
+
 ## Smart Delivery Location Verification — 8 November 2026 (IST)
 
 The release adds locked Leaflet 1.9.4 (BSD-2-Clause) and MIT Leaflet/GeoJSON type packages; full notices remain under `third_party/npm/`. OpenStreetMap data retains ODbL attribution and separate service-policy boundaries. No server geocoder is vendored and no paid resource is provisioned. The additive hosted migration adds only a service-role quota/pacing RPC and worker-compatibility trigger; private location records remain within existing forced-RLS case/audit storage. Default-off external lookup, acknowledged per-case sharing and honest geocoder precision preserve the account boundary.

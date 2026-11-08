@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-11-08T08:02:16.312020+00:00",
+  "base_url": "http://127.0.0.1:8002",
+  "checks": {
+    "actual_worker_resumed_without_manual_retry": true,
+    "real_gemini_completed_after_controlled_fault": true,
+    "original_single_source_preserved": true,
+    "audit_integrity": true,
+    "one_committed_assessment": true,
+    "persisted_attempt_count_bounded": true
+  },
+  "all_passed": true,
+  "fault": "One deliberate injected ModelError 503 on an isolated QA case, not an actual Gemini outage. Real cloud lease/cooldown and actual worker/Gemini resumed without clicking retry.",
+  "provider_business_writes": 0
+}

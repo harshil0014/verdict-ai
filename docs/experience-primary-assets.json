@@ -1,0 +1,52 @@
+{
+  "checked_at": "2026-11-08T13:35:58.815809+00:00",
+  "base_url": "https://verdict-ai-harshil0014.onrender.com",
+  "checks": {
+    "cloud_health": true,
+    "current_index_entry": true,
+    "all_js_css_match_reviewed_build": true,
+    "paypal_import_chunk_served": true,
+    "partial_retrieval_notice_served": true,
+    "summary_first_investigation_served": true,
+    "account_map_preference_controls_served": true,
+    "known_server_secrets_absent": true,
+    "unauthenticated_case_denied": true,
+    "unauthenticated_connection_denied": true
+  },
+  "all_passed": true,
+  "assets": [
+    {
+      "path": "/assets/delivery-location-CklOfYDH.js",
+      "sha256": "467f7c2c723281d67a5c9e5ceb88b9077869cfdc9553c80440a52aa8bfec0642"
+    },
+    {
+      "path": "/assets/delivery-location-D05JgB-v.css",
+      "sha256": "bea00a52b69344f357a85ed6173bdfdcafffeb596ad37561972c2398e53f2813"
+    },
+    {
+      "path": "/assets/index-BX66R1kq.js",
+      "sha256": "717bab4132c9a030f8d5cb01bf8e77d3b8a24902a6ec8db6f53cd2a943347e29"
+    },
+    {
+      "path": "/assets/index-CgsWFjD0.css",
+      "sha256": "5c7074effc9230f173421711c1ecc9a9dc52bbc885e0e984fb0ea87d97ba4413"
+    },
+    {
+      "path": "/assets/leaflet-src-D8kjefWX.js",
+      "sha256": "6b91455509af7333fdf005153c00bb418d1f933285a1eb8f03196e5f25377190"
+    },
+    {
+      "path": "/assets/paypal-account-BLygAfTC.js",
+      "sha256": "b80e2a701cd7abebd455dcbc65338f86abe0a97098914e3abf03a98c25e6f0e5"
+    },
+    {
+      "path": "/assets/paypal-account-CE_k4hr7.css",
+      "sha256": "74265f8b0981e1a87a7949c63acbe82a632d7e2b18451f3ecf4c0428c772bc0b"
+    },
+    {
+      "path": "/assets/research-BXmDc1FG.js",
+      "sha256": "8c6401a5086ca526d8e6b383091c20d227cf86f31cb70233ec5a75b5f78da011"
+    }
+  ],
+  "visual_clickthrough_claimed": false
+}
