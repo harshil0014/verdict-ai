@@ -1348,7 +1348,7 @@ function App() {
                       }}
                     />
                     {me.role === "member" && (
-                      <Suspense fallback={<p>Checking delivery locations…</p>}>
+                      <Suspense fallback={null}>
                         <DeliveryLocation
                           current={current}
                           api={api}
