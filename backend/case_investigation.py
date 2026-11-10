@@ -1,7 +1,7 @@
 """Shared manual/automatic investigation, with one durable lease and stale checks."""
 import asyncio
 from saas_store import repo
-from investigator import investigate, MODEL
+from investigator import investigate, MODEL,model_failure_info
 
 
 async def run_investigation(case_id, on_reserved=None, before_commit=None):
@@ -27,12 +27,13 @@ async def run_investigation(case_id, on_reserved=None, before_commit=None):
         body.update(analysis=result, analysis_stale=False)
         return await repo.save(body, 'investigation_updated', {'finding': result['finding'],
             'input_digest': result['input_digest'], 'model': MODEL, 'analysis': result}, job_id=job['job_id'])
-    except BaseException:
+    except BaseException as error:
         # Cancellation is also a failed lease. Never leave a job running merely
         # because the HTTP client disconnected or the process is shutting down.
         try:
-            await asyncio.shield(repo.rpc('fail_analysis', {'job_id': job['job_id'],
-                'error': 'Investigation did not commit; prior case data retained'}))
+            failure=model_failure_info(error)
+            detail=(failure['summary']+(' HTTP '+str(failure['http_status']) if failure['http_status'] else '')) if failure else 'Investigation did not commit; prior case data retained'
+            await asyncio.shield(repo.rpc('fail_analysis', {'job_id': job['job_id'],'error':detail}))
         except Exception:
             pass
         raise

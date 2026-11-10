@@ -14,6 +14,18 @@ compiled._compile(output.outputFiles[0].text,compiled.filename);
 const ui=compiled.exports;
 const render=(Component,props)=>renderToStaticMarkup(React.createElement(Component,props));
 const hash='a'.repeat(64),textHash='b'.repeat(64);
+test('exhausted provider retries name the service problem without blaming evidence',()=>{
+ const html=render(ui.AutomaticInvestigation,{current:{id:'case',automation:{state:'failed',stage:'needs_attention',progress:{last_failure:{code:'model_unavailable',http_status:503,summary:'Gemini is temporarily unavailable.'}}}},api:async()=>{},changed:async()=>{}});
+ assert.match(html,/AI service unavailable/);assert.match(html,/Reassessment has stopped/);assert.match(html,/HTTP 503/);
+ assert.doesNotMatch(html,/add the missing information|Trying again automatically|spin/);
+});
+test('stale assessments describe stopped queued paused and active states honestly',()=>{
+ for(const [state,expected] of [['failed','update could not finish'],['queued','update is queued'],['paused','Investigation is paused'],['running','VERDICT investigates the update']]){
+  const html=render(ui.AssessmentFreshness,{current:{analysis_stale:true,automation:{state}}});assert.ok(html.includes(expected));
+  if(state!=='running')assert.doesNotMatch(html,/while VERDICT investigates/);
+ }
+ assert.equal(render(ui.AssessmentFreshness,{current:{analysis_stale:false,automation:{state:'failed'}}}),'');
+});
 const records=[
  {id:'already',status:'approved',source_id:'E1',title:'Already in Evidence',url:'https://agency.gov/decision'},
  {id:'staged',status:'ready',title:'Earlier staged PDF',url:'https://agency.gov/staged.pdf',raw_sha256:hash,metadata:{text_sha256:textHash}},

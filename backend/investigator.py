@@ -15,6 +15,21 @@ class ModelError(Exception):
         self.retry_after=retry_after
 
 
+def model_failure_info(error):
+    """Allowlisted diagnostics only; never persist provider bodies or secrets."""
+    if not isinstance(error,ModelError):return None
+    match=re.search(r'Gemini returned HTTP (\d{3})\b',str(error))
+    status=int(match[1]) if match else None
+    if status==429:code,summary,retryable='model_rate_limited','Gemini is rate limited. Your saved evidence is not the cause.',True
+    elif status in (500,502,503,504):code,summary,retryable='model_unavailable','Gemini is temporarily unavailable. Your saved evidence is not the cause.',True
+    elif status in (401,403):code,summary,retryable='model_access_denied','Gemini access was refused. The service configuration needs attention.',False
+    elif 'network request failed' in str(error):code,summary,retryable='model_network_error','The connection to Gemini failed. Your saved evidence is retained.',True
+    elif 'invalid structured response' in str(error):code,summary,retryable='model_response_invalid','Gemini returned an unusable response. No new assessment was accepted.',False
+    elif 'not configured' in str(error):code,summary,retryable='model_not_configured','The AI service is not configured. Your saved evidence is retained.',False
+    else:code,summary,retryable='model_error','The AI assessment could not finish. Your saved evidence is retained.',False
+    return {'code':code,'provider':'Gemini','http_status':status,'summary':summary,'retryable':retryable}
+
+
 SLOT_RESERVER = None
 
 

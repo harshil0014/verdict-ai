@@ -15,7 +15,7 @@ from saas_store import repo, SESSION
 from research_routes import URLInput, budget, stage_url, collect_draft
 from case_investigation import run_investigation
 from delivery_location import verify_case as verify_delivery_locations
-from investigator import investigation_payload,ModelError
+from investigator import investigation_payload,ModelError,model_failure_info
 from store import digest,now
 from free_search import discover
 from source_recovery import automatic_url,decision_identity,recovery_query,publisher_candidates,check_decision,publisher_embed,RECOVERY_VERSION
@@ -327,6 +327,8 @@ async def process(claim):
         raise
     except Exception as error:
         with suppress(Exception):
+            failure=model_failure_info(error)
+            if failure:progress['last_failure']={**failure,'observed_at':now()}
             temporary=isinstance(error,ModelError) and (bool(re.search(r'HTTP (429|500|502|503|504)',str(error))) or 'network request failed' in str(error))
             temporary=temporary or (isinstance(error,HTTPException) and error.status_code in (429,503))
             if temporary:
@@ -335,9 +337,12 @@ async def process(claim):
                 delay=int(max(delay,min(86400,getattr(error,'retry_after',0) or 0)))+1
                 await repo.rpc('workflow:reschedule',{**credentials,'delay_seconds':delay,'progress':progress},session='')
             else:
+                if failure:await heartbeat()
                 await repo.rpc('workflow:finish',{**credentials,'generation':claim['generation'],
                     'state':'failed','stage':'needs_attention','detail':safe_failure(error)},session='')
-        log.warning('Automatic investigation did not complete (%s); saved records retained',type(error).__name__)
+        failure=model_failure_info(error)
+        log.warning('Automatic investigation did not complete (%s, %s, HTTP %s); saved records retained',
+            type(error).__name__,failure['code'] if failure else 'non_model_error',failure['http_status'] if failure else None)
     finally:
         renewal.cancel()
         with suppress(asyncio.CancelledError,Exception):

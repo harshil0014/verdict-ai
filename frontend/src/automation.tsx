@@ -1,5 +1,16 @@
 import React from "react";
 import { LoaderCircle, CheckCircle2, AlertTriangle } from "lucide-react";
+export function AssessmentFreshness({current}: {current: any}) {
+  if (!current.analysis_stale) return null;
+  const a=current.automation;
+  const message=a?.state === "failed"
+    ? "New evidence is saved. The update could not finish; the assessment below does not include the latest evidence."
+    : a?.state === "paused" ? "New evidence is saved. Investigation is paused; the assessment below is from before the latest evidence."
+    : a?.state === "running" ? "New evidence has arrived. The previous assessment is shown while VERDICT investigates the update."
+    : a?.state === "queued" ? "New evidence is saved. The update is queued; the previous assessment remains below."
+    : "New evidence is saved. The assessment below has not yet been updated to include it.";
+  return <div className="stale" role="status"><AlertTriangle size={16}/>{message}</div>;
+}
 export function AutomaticInvestigation({
   current,
   api,
@@ -15,6 +26,8 @@ export function AutomaticInvestigation({
   if (!a) return null;
   const active = ["queued", "running"].includes(a.state),
     retry = a.stage === "retry_wait";
+  const failure=a.progress?.last_failure;
+  const providerFailure=["model_unavailable","model_rate_limited","model_network_error"].includes(failure?.code);
   const labels: Record<string, string> = {
     queued: "Your evidence is saved. We’ll investigate it.",
     finding_references: "Reading your evidence…",
@@ -58,7 +71,7 @@ export function AutomaticInvestigation({
           <AlertTriangle size={17} />
         )}
         <div>
-          <strong>{labels[a.stage] || "Investigation status updated."}</strong>
+          <strong>{providerFailure && a.state === "failed" ? "AI service unavailable. Reassessment has stopped." : labels[a.stage] || "Investigation status updated."}</strong>
           {active && (
             <p>
               {retry
@@ -74,8 +87,9 @@ export function AutomaticInvestigation({
           )}
           {a.state === "failed" && (
             <p>
-              We couldn’t finish after the available attempts. Review the
-              details or add the missing information.
+              {providerFailure
+                ? "Your receipt and other evidence are saved. The AI service could not complete the update after retries. The previous assessment remains available."
+                : "The update could not finish after the available attempts. Your evidence and previous assessment are saved; see the failure details below."}
             </p>
           )}
         </div>
@@ -83,6 +97,7 @@ export function AutomaticInvestigation({
       <details className="automatic-advanced">
         <summary>Details & controls</summary>
         <p className="fine">{a.detail}</p>
+        {failure?.summary && <p className="fine">{failure.summary}{failure.http_status ? ` HTTP ${failure.http_status}.` : ""}</p>}
         {a.retry_at && (
           <p>
             Next eligible attempt: {new Date(a.retry_at).toLocaleString()}. Work
@@ -96,7 +111,7 @@ export function AutomaticInvestigation({
               disabled={busy}
               onClick={() => run("automation/retry", {})}
             >
-              Try another review
+              Retry investigation
             </button>
           )}
           <button

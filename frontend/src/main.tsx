@@ -43,7 +43,7 @@ import "@xyflow/react/dist/style.css";
 import "./style.css";
 import { AccountEntry } from "./saas";
 import { CaseNavigation } from "./case-navigation";
-import { AutomaticInvestigation } from "./automation";
+import { AutomaticInvestigation, AssessmentFreshness } from "./automation";
 import { ClaimChecks } from "./claim-checks";
 import {
   CaseOverview,
@@ -1327,13 +1327,7 @@ function App() {
                     )}
                   </div>
                 )}
-                {current.analysis_stale && (
-                  <div className="stale">
-                    <AlertTriangle size={16} />
-                    New evidence has arrived. The previous investigation is
-                    shown while VERDICT updates the investigation.
-                  </div>
-                )}
+                <AssessmentFreshness current={current} />
                 {tab === "investigation" && (
                   <>
                     <CaseOverview
