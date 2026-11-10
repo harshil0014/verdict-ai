@@ -259,6 +259,9 @@ async def create_request(id: str, data: RequestInput, user=Depends(auth.current_
         original = {"title": data.title, "question": data.question, "recipient": data.recipient,
             "distinguishes": [], "rationale": "Investigator-created request", "burden": "medium", "priority": "first"}
     witness = {**original, **{k:v for k,v in data.model_dump().items() if k in ('title','question','recipient') and v is not None}}
+    from evidence_acquisition import prior_request,supplied_record
+    if data.witness_id and data.witness_id!='manual' and (prior_request(witness,body) or supplied_record(witness,body)):
+        raise HTTPException(409,'This record has already been requested. Its existing response or availability report is retained.')
     if any(r["question"]==witness["question"] and r["status"]=="open" for r in body["requests"]): raise HTTPException(409, "This request is already open")
     token = secrets.token_urlsafe(32)
     request = {**witness, "id": uid("R-"), "created_at": now(), "status": "open", "expires_at": time.time()+7*86400,

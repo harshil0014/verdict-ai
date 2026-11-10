@@ -175,7 +175,7 @@ small {
 }
 .overview-heading {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 15px;
   align-items: center;
   margin-bottom: 20px;
@@ -194,15 +194,15 @@ small {
   border-radius: 50%;
 }
 .case-overview h3 {
-  font-size: 29px;
-  font-family: Georgia, serif;
-  font-weight: 400;
+  font-size: clamp(24px, 2vw, 29px);
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  font-weight: 600;
   margin-bottom: 15px;
 }
 .overview-summary {
   font-size: 16px;
-  line-height: 1.85;
-  max-width: 840px;
+  line-height: 1.65;
+  max-width: 72ch;
   color: #48594f;
   margin-bottom: 25px;
 }
@@ -234,7 +234,7 @@ small {
   font-size: 12px;
 }
 .overview-finding strong {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.65;
   display: block;
@@ -244,7 +244,7 @@ small {
   align-items: center;
   color: #6d7d70;
   margin-top: 6px;
-  font-size: 11px;
+  font-size: 12px;
 }
 .overview-next {
   background: #eff3e9;
@@ -298,6 +298,13 @@ small {
   flex-shrink: 0;
   margin-top: 3px;
 }
+.graph .claim-node { width: 260px; min-height: 142px; max-height: 188px; }
+.graph .evidence-node { width: 260px; }
+.graph .node-kind { font-size: 10px; letter-spacing: .04em; }
+.graph .react-flow__node strong { font: 500 14px/1.5 Inter, "Segoe UI", system-ui, sans-serif; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.graph .react-flow__node small { font-size: 11px; color: #5b7062; }
+.graph .hypothesis-node small { color: #d2e1d0; }
+.graph:not(.expanded) { height: 560px; }
 .investigation-deep {
   margin: 0 28px 25px;
   border: 1px solid var(--line);

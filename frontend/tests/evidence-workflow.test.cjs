@@ -7,13 +7,46 @@ const React = require('react');
 const {renderToStaticMarkup} = require('react-dom/server');
 require.extensions['.css']=()=>{};
 const root = path.resolve(__dirname,'..');
-const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation'; export * from './src/automation'; export * from './src/claim-checks'; export * from './src/paypal-account'; export * from './src/delivery-location'; export * from './src/experience'; export * from './src/account-settings'; export * from './src/evidence-reading'; export * from './src/autonomous-resolution';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
+const output = buildSync({stdin:{contents: `export * from './src/research'; export * from './src/research-records'; export * from './src/case-navigation'; export * from './src/automation'; export * from './src/claim-checks'; export * from './src/paypal-account'; export * from './src/delivery-location'; export * from './src/experience'; export * from './src/assessment-view'; export * from './src/account-settings'; export * from './src/evidence-reading'; export * from './src/autonomous-resolution';`,resolveDir:root,loader:'tsx'},bundle:true,write:false,format:'cjs',platform:'node',packages:'external',loader:{'.css':'empty'}});
 const compiled = new Module(path.join(root,'tests','compiled.cjs'),module);
 compiled.filename=path.join(root,'tests','compiled.cjs');compiled.paths=Module._nodeModulePaths(root);
 compiled._compile(output.outputFiles[0].text,compiled.filename);
 const ui=compiled.exports;
 const render=(Component,props)=>renderToStaticMarkup(React.createElement(Component,props));
 const hash='a'.repeat(64),textHash='b'.repeat(64);
+
+test('duplicate overview facts and graph nodes collapse without losing citation links',()=>{
+ const claims=[{id:'C1',source_id:'E1',text:'Buyer reports non-receipt.',semantic_support:'entailed'},
+  {id:'C2',source_id:'E2',text:'Buyer reports non-receipt.',semantic_support:'entailed'},
+  {id:'C3',source_id:'E1',text:'Buyer names a different destination.',semantic_support:'entailed'}];
+ const before=JSON.stringify(claims),g=ui.graphClaims(claims);
+ assert.equal(g.claims.length,2);assert.equal(g.aliases.get('C2'),'C1');assert.equal(g.claims[0].additional_citations[0].source_id,'E2');
+ assert.equal(JSON.stringify(claims),before);
+ const current={evidence:[],requests:[],analysis:{claims:claims.map(c=>({...c,source_check:'exact_quote_found'})),requests:[],unknowns:[],finding:'conflicting',overview_summary:'The delivery accounts conflict.',assessment_quality_version:2}};
+ const html=render(ui.CaseOverview,{current,onEvidence:()=>{},onRequest:()=>{},onSource:()=>{}});
+ assert.equal((html.match(/Buyer reports non-receipt\./g)||[]).length,1);
+ assert.doesNotMatch(html,/PICTURE SO FAR|STORY SO FAR/);assert.match(html,/Buyer names a different destination/);
+});
+
+test('old repeated paragraphs are kept out of the overview and graph without editing saved records',()=>{
+ const long='An entire uploaded statement repeated as a claim. '.repeat(8),claims=[{id:'C1',source_id:'E1',text:long},{id:'C2',source_id:'E2',text:long}];
+ const before=JSON.stringify(claims);assert.equal(ui.visibleClaims(claims).length,0);assert.equal(ui.graphClaims(claims).claims.length,0);assert.equal(JSON.stringify(claims),before);
+});
+
+test('closed reworded evidence requests are history rather than the next task',()=>{
+ const w={id:'W1',title:'Original checkout address',question:'Please supply the raw checkout shipping address.',recipient:'payment_provider',priority:'first'};
+ const current={evidence:[],requests:[{id:'R1',title:'Original order shipping address',question:'Please provide the original order shipping address.',recipient:'payment_provider',status:'received'}],analysis:{claims:[],requests:[w],unknowns:[],finding:'insufficient',overview_summary:'The original address remains unverified.',assessment_quality_version:2}};
+ assert.equal(ui.nextRequest(current),undefined);
+ const html=render(ui.CaseOverview,{current,onEvidence:()=>{},onRequest:()=>{},onSource:()=>{}});
+ assert.match(html,/No new request prepared/);assert.doesNotMatch(html,/Prepared for|Share request|Please supply/);
+ assert.match(render(ui.EvidenceRequestAction,{current,witness:w,onShare:()=>{}}),/Response received/);
+});
+
+test('a new independent carrier source is not hidden by a received seller confirmation',()=>{
+ const w={id:'W1',title:'Proof of delivery',question:'Please provide proof of delivery.',recipient:'carrier',priority:'first'};
+ const current={requests:[{...w,id:'R1',recipient:'seller',status:'received'}],analysis:{requests:[w]}};
+ assert.equal(ui.nextRequest(current).id,'W1');
+});
 test('exhausted provider retries name the service problem without blaming evidence',()=>{
  const html=render(ui.AutomaticInvestigation,{current:{id:'case',automation:{state:'failed',stage:'needs_attention',progress:{last_failure:{code:'model_unavailable',http_status:503,summary:'Gemini is temporarily unavailable.'}}}},api:async()=>{},changed:async()=>{}});
  assert.match(html,/AI service unavailable/);assert.match(html,/Reassessment has stopped/);assert.match(html,/HTTP 503/);

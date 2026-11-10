@@ -10,7 +10,7 @@ class StrictModel(BaseModel):
 
 class Claim(StrictModel):
     id: str
-    text: str = Field(max_length=700)
+    text: str = Field(max_length=240, description="One short attributed fact, not a copied paragraph or a recommendation. Distinct claims must describe distinct facts.")
     source_id: str
     quote: str = Field(min_length=1, max_length=1500)
     subject: str = Field(max_length=100)
@@ -40,6 +40,8 @@ class Witness(StrictModel):
     priority: Literal["first", "next", "optional"]
     publicly_obtainable: bool = False
     public_research_query: str = Field(default="", max_length=600)
+    follow_up_to: str = Field(default="", max_length=100)
+    unresolved_defect: str = Field(default="", max_length=300)
 
 
 class Analysis(StrictModel):
@@ -58,6 +60,7 @@ class Support(StrictModel):
     reason: str = Field(max_length=500)
     epistemic_status: Literal["party_report", "document_finding", "document_order", "current_policy", "uncertain"] = "uncertain"
     epistemic_reason: str = Field(default="", max_length=500)
+    concise_text: str = Field(default="", max_length=220, description="A concise third-person restatement of exactly the fact supported by this source. Attribute reports; never promote a submitted receipt to independent delivery verification.")
 
 
 class SupportReview(StrictModel):

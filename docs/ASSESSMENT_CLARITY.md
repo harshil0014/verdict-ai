@@ -1,0 +1,13 @@
+# Concise, source-bound assessments
+
+The previous fallback transport test passed, but its output exposed a real quality failure: one buyer paragraph was emitted as eight claims, address strings were labelled as amounts, and a semantic review accepted the bad claims. Free-form summary text also overstated an uploaded delivery confirmation as verified delivery. Neither exact quotations nor a second model call guarantees a sound conclusion.
+
+The corrected pipeline requires short, atomic claims, rejects incompatible monetary values, collapses duplicate facts, remaps hypothesis references and preserves distinct source citations. The semantic review checks each claim against its own source and supplies a concise restatement. Submitted buyer, seller and payment records retain explicit attribution; an API-verified payment record never authenticates a separate uploaded receipt. Seller uploads alone cannot support an independent delivery finding.
+
+The ordinary explanation is built from accepted source-backed claims rather than the unchecked model narrative. The original proposed narrative remains in the investigation's diagnostic record. Three distinct highlights are selected with source/field diversity. This is a conservative presentation guard, not a claim that all model errors have been eliminated.
+
+Evidence-acquisition planning recognizes narrow request purposes, recipient, explicit order/transaction identifiers, previously uploaded records and reply availability. Rewording an original checkout-address request does not make it new. Received/unavailable/withdrawn requests remain history and are not the next task. A specific follow-up to a received reply requires its request ID and a concrete unresolved defect. An independent carrier request remains distinct from a seller confirmation. No witness contact or financial policy is enabled by this change.
+
+The case overview removes “The picture so far,” uses readable sans-serif typography and a short assessment, and avoids repeating completed requests. The graph uses distinct compact claim labels, preserved source links and more space between rows. Large graphs remain pannable instead of shrinking all labels to unreadable text. Existing evidence, original files, witness replies, prior investigations and audit entries are preserved.
+
+Regression checks cover the reported copied-paragraph/invalid-amount failure, duplicate citation retention, graph aliases, distinct facts sharing a quote, false delivery certainty, reworded completed/unavailable requests, uploaded evidence, legitimate carrier follow-up and different order IDs. No fictional case is created in the hosted application.

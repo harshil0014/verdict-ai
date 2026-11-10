@@ -36,6 +36,8 @@ This adapter covers text-based investigation and semantic-support review. Provid
 
 Readiness does not certify answer quality. The small local model can miss facts or produce weak conclusions; source verification, uncertainty and the preserved original evidence remain necessary.
 
+**Subsequent quality finding:** inspection of the actual fallback assessment found duplicated paragraphs, addresses mislabelled as amounts, and an overconfident narrative despite the successful transport/schema/citation checks below. Those checks did not establish semantic quality. [Corrective validation and presentation rules](ASSESSMENT_CLARITY.md) reject those extraction defects, attribute source claims and replace unchecked prose in the ordinary explanation. The historical results below describe what the earlier checks accepted, not an endorsement of that assessment.
+
 ## Hosted verification — 2026-11-10
 
 Application code `c8c663db46c8e693435de7de47a11f1ee7e5b719` passed both GitHub CI jobs (`application`, `container`) on the main, preview and development branches. Local verification passed **376 backend tests and 44 interface tests**, including 10 fallback-specific unit tests.

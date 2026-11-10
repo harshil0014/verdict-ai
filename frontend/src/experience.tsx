@@ -1,4 +1,5 @@
 import React from "react";
+import {visibleClaims,requestState,nextRequest} from './assessment-view';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -62,13 +63,10 @@ export function Money({ amount, currency }: { amount: any; currency: any }) {
 export function EvidenceRequestAction({ current, witness, onShare, busy = false }: {
   current: any; witness: any; onShare: (w: any) => void; busy?: boolean;
 }) {
-  const existing = [...(current.requests || [])].reverse().find((r: any) =>
-    r.recipient === witness.recipient && r.question?.trim() === witness.question?.trim());
-  const prepared = current.analysis?.acquisition_plan?.find((p: any) => p.suggestion_id === witness.id);
-  const state = existing?.status || prepared?.state || "prepared";
+  const state = requestState(current,witness);
   if (state !== "prepared") return <p role="status" className="fine">{
     state === "open" || state === "link_ready" ? "Waiting for the requested response. No duplicate invitation was created."
-      : state === "received" || state === "response_received" ? "Response received. New evidence is investigated automatically."
+      : ["received","response_received","evidence_received"].includes(state) ? "Response received. New evidence is investigated automatically."
       : state === "unavailable" || state === "reported_unavailable" ? "Source reported unavailable. This limitation is preserved."
       : "Request closed; its history is preserved."
   }</p>;
@@ -92,28 +90,27 @@ export function CaseOverview({
   const plain = (text: string, fallback: string) => current.delivery_location &&
     /Photon|OpenStreetMap|geocod|\bGPS\b|\b(?:latitude|longitude|coordinates|proximity threshold)\b|\b\d+(?:\.\d+)?\s*(?:km|kilometres?|kilometers?|metres?|meters?)\b|(?<!\d)-?\d{1,3}\.\d{4,}/i.test(text || "")
     ? fallback : text;
-  const w =
-    a?.requests.find((x: any) => x.priority === "first") || a?.requests[0];
-  const prepared = a?.acquisition_plan?.find((p: any) => p.suggestion_id === w?.id);
-  const prior = current.requests?.find((r: any) => r.recipient === w?.recipient && r.question?.trim() === w?.question?.trim());
-  const state = prior?.status || prepared?.state;
+  const w = nextRequest(current);
+  const state = w ? requestState(current,w) : undefined;
   const shareable = !state || state === "prepared";
   const requestStatus = state === "open" || state === "link_ready" ? "Waiting for a response. The existing private link is ready."
     : state === "received" || state === "response_received" ? "Response received; new evidence is investigated automatically."
     : state === "unavailable" || state === "reported_unavailable" ? "This source reported the evidence unavailable. The investigation retains that limitation."
     : "Request closed. VERDICT has retained its history.";
-  const claims = (a?.claims || [])
+  const distinct = visibleClaims(a?.claims || []);
+  const order=(id:string)=>{const i=a?.highlight_claim_ids?.indexOf(id)??-1;return i<0?99:i;};
+  const ordered = [...distinct].sort((x:any,y:any)=>order(x.id)-order(y.id));
+  const claims = ordered
     .filter(
       (c: any) =>
         c.semantic_support === "entailed" &&
-        c.source_check === "exact_quote_found",
+        ['exact_quote_found','whitespace_aligned_quote_found','quote_in_machine_transcription'].includes(c.source_check),
     )
     .slice(0, 3);
-  const shown = claims.length ? claims : (a?.claims || []).slice(0, 3);
+  const shown = claims.length ? claims : distinct.slice(0, 3);
   return (
     <section className="case-overview" aria-label="Investigation overview">
       <div className="overview-heading">
-        <span className="eyebrow">THE PICTURE SO FAR</span>
         <span className="overview-status">
           <i />
           {a ? outcomes[a.finding] : "Waiting for evidence"}
@@ -124,7 +121,7 @@ export function CaseOverview({
       </h3>
       <p className="overview-summary">
         {a
-          ? plain(a.summary, "Review the submitted address descriptions and source-backed findings below. The records alone do not establish physical delivery.")
+          ? plain(a.overview_summary || (a.assessment_quality_version ? a.summary : 'A refresh is needed. Review the source-backed findings below.'), "Review the submitted address descriptions and source-backed findings below. The records alone do not establish physical delivery.")
           : current.evidence.length
             ? "Your evidence is saved. VERDICT will read it, follow relevant public references and compare the accounts. You can leave this page and return later."
             : "Add a receipt, message, delivery record or your account of what happened. VERDICT will investigate and show what the evidence supports."}
@@ -147,9 +144,9 @@ export function CaseOverview({
               >
                 <span className="finding-number">{i + 1}</span>
                 <span>
-                  <strong>{plain(c.text, "Inspect the supporting address evidence for this finding.")}</strong>
+                  <strong>{plain(c.display_text || c.text, "Inspect the supporting address evidence for this finding.")}</strong>
                   <small>
-                    {c.semantic_support === "entailed"
+                    {c.source_check === 'quote_in_machine_transcription' ? 'Image transcription · unverified' : c.semantic_support === "entailed"
                       ? "Supported by the document · reported information, not independent proof"
                       : "Needs closer review"}{" "}
                     <ArrowUpRight size={13} />
@@ -167,11 +164,11 @@ export function CaseOverview({
           <div className="overview-next">
             <div>
               <span className="eyebrow">WHAT HAPPENS NEXT</span>
-              <h4>{w ? plain(w.title, "Delivery destination evidence") : "Investigation updated"}</h4>
+              <h4>{w ? plain(w.title, "Delivery destination evidence") : "No new request prepared"}</h4>
               <p>
                 {w
-                  ? `Prepared for ${people[w.recipient] || w.recipient}: ${plain(w.question, "Please supply the original delivery destination record.") || plain(w.title, "Delivery destination evidence")}`
-                  : plain(a.recommendation, "Review the original delivery records before deciding.")}
+                  ? state === 'prepared' ? `Prepared for ${people[w.recipient] || w.recipient}: ${plain(w.question, "Please supply the original delivery destination record.") || plain(w.title, "Delivery destination evidence")}` : requestStatus
+                  : 'Existing responses and unavailable records are retained. Add new evidence if it becomes available.'}
               </p>
               {w && (
                 <details>
@@ -188,11 +185,11 @@ export function CaseOverview({
               >
                 Share request <ArrowRight size={16} />
               </button>
-            ) : w ? <p role="status">{requestStatus}</p> : (
+            ) : !w ? (
               <button className="secondary" onClick={onEvidence}>
                 Add evidence <Plus size={16} />
               </button>
-            )}
+            ) : null}
           </div>
           {w && shareable && <p className="fine">Request prepared automatically. Sharing creates a private response link; VERDICT sends no message.</p>}
           {!!a.unknowns?.length && (

@@ -45,6 +45,7 @@ import { AccountEntry } from "./saas";
 import { CaseNavigation } from "./case-navigation";
 import { AutomaticInvestigation, AssessmentFreshness } from "./automation";
 import { ClaimChecks } from "./claim-checks";
+import {graphClaims} from './assessment-view';
 import {
   CaseOverview,
   EvidenceRequestAction,
@@ -483,9 +484,12 @@ function App() {
     if (!current) return { nodes: [], edges: [] };
     const nodes: Node[] = [],
       edges: Edge[] = [];
-    const es = current.evidence,
-      cs = a?.claims || [],
-      hs = a?.hypotheses || [];
+    const grouped=graphClaims(a?.claims || []), cs=grouped.claims;
+    const linkedSources=new Set(cs.flatMap((c:any)=>[c.source_id,...(c.additional_citations||[]).map((p:any)=>p.source_id)]));
+    const es = a ? current.evidence.filter(e=>linkedSources.has(e.id)) : current.evidence;
+    const hs = (a?.hypotheses || []).map(h=>({...h,
+      supports:[...new Set(h.supports.map(id=>grouped.aliases.get(id)).filter((id):id is string=>!!id))],
+      challenges:[...new Set(h.challenges.map(id=>grouped.aliases.get(id)).filter((id):id is string=>!!id))]}));
     hs.forEach((h, i) =>
       nodes.push({
         id: "h-" + h.id,
@@ -508,13 +512,13 @@ function App() {
     cs.forEach((c, i) =>
       nodes.push({
         id: "c-" + c.id,
-        position: { x: (i % 4) * 250, y: 190 + Math.floor(i / 4) * 150 },
+        position: { x: (i % 4) * 300, y: 190 + Math.floor(i / 4) * 220 },
         data: {
           claim: c,
           label: (
             <>
-              <span className="node-kind">REPORTED CLAIM · {c.id}</span>
-              <strong>{c.text}</strong>
+              <span className="node-kind">SOURCE-BACKED CLAIM</span>
+              <strong>{c.display_text || c.text}</strong>
               <small>
                 {readable(c.epistemic_status || "reported claim")} ·{" "}
                 {c.semantic_support === "entailed"
@@ -532,11 +536,11 @@ function App() {
           (c.semantic_support === "entailed" ? "" : "uncertain-node"),
       }),
     );
-    const ey = hs.length ? 250 + Math.ceil(cs.length / 4) * 150 : 100;
+    const ey = 220 + Math.ceil(cs.length / 4) * 220;
     es.forEach((e, i) =>
       nodes.push({
         id: "e-" + e.id,
-        position: { x: (i % 4) * 250, y: ey + Math.floor(i / 4) * 140 },
+        position: { x: (i % 4) * 300, y: ey + Math.floor(i / 4) * 160 },
         data: {
           source: e,
           label: (
@@ -556,16 +560,16 @@ function App() {
         className: "evidence-node",
       }),
     );
-    cs.forEach((c) =>
+    cs.forEach((c) => [...new Set<string>([c.source_id,...(c.additional_citations||[]).map((p:any)=>p.source_id)])].forEach(sourceId=>
       edges.push({
-        id: "s-" + c.id,
-        source: "e-" + c.source_id,
+        id: "s-" + c.id+'-'+sourceId,
+        source: "e-" + sourceId,
         target: "c-" + c.id,
         label: "cites",
         type: "smoothstep",
         style: { stroke: "#82998d" },
         markerEnd: { type: MarkerType.ArrowClosed, color: "#82998d" },
-      }),
+      })),
     );
     hs.forEach((h) => {
       h.supports.forEach((id) =>
@@ -1378,7 +1382,7 @@ function App() {
                             </span>
                             <span>
                               {a
-                                ? `${a.claims.length} claims · ${a.hypotheses.length} explanations`
+                                ? `${graphClaims(a.claims).claims.length} distinct claims · ${a.hypotheses.length} explanations`
                                 : `${current.evidence.length} sources · analysis pending`}
                             </span>
                           </div>
@@ -1397,7 +1401,7 @@ function App() {
                               nodes={graph.nodes}
                               edges={graph.edges}
                               fitView
-                              fitViewOptions={{ padding: 0.22 }}
+                              fitViewOptions={{ padding: 0.12, minZoom: 0.7, maxZoom: 1 }}
                               minZoom={0.15}
                               maxZoom={1.5}
                               onNodeClick={graphClick}

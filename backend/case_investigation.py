@@ -15,8 +15,8 @@ async def run_investigation(case_id, on_reserved=None, before_commit=None):
         if on_reserved:
             await on_reserved(job['job_id'])
         result = await investigate(body)
-        from evidence_acquisition import prepare_requests
-        result['acquisition_plan']=prepare_requests(result,body)
+        from evidence_acquisition import reconcile_requests
+        reconcile_requests(result,body)
         prior = body.get('analysis')
         if prior:
             result['change'] = {'previous_finding': prior['finding'], 'current_finding': result['finding'],
