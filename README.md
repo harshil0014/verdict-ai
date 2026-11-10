@@ -25,6 +25,8 @@ VERDICT is a multi-user investigation workspace. Create a private case, preserve
 
 Free beta limits: 50 cases, 20 MB of originals and 10 investigation attempts/account/day; 5 MB/file and 40 sources/case. Shared capacity limits can refuse new work while retaining existing data. Free compute may sleep. This is a functioning beta, not an uptime, accuracy or disaster-recovery certification.
 
+An optional [private Ollama fallback](docs/OLLAMA_FALLBACK.md) can complete investigations when Gemini fails. The operator's registered workspace uses the existing local Granite 4 3B model with the complete original context and normal source checks. The laptop must be awake and online; oversized contexts are refused, not shortened. Other users' cases are not sent to that computer, and local-model findings do not enable automatic financial execution. No paid inference service is enabled.
+
 ## Local setup
 
 Python 3.13, Node 22 and Tesseract are used in CI. Docker installs Tesseract; local image/scanned-PDF reading requires Tesseract with English data on PATH (or TESSERACT_CMD). Apply the timestamped SaaS migrations in `supabase/migrations` in filename order to your own Supabase project. The earlier `001_private_snapshots.sql` is only for the optional legacy mirror.

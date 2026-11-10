@@ -1,5 +1,6 @@
 import os, json, time, re, asyncio, sqlite3
 import httpx
+from fastapi import HTTPException
 from domain import Analysis, SupportReview
 from store import digest, now, RUNTIME
 from structured import source_value_check, compare
@@ -27,7 +28,9 @@ def model_failure_info(error):
     elif 'invalid structured response' in str(error):code,summary,retryable='model_response_invalid','Gemini returned an unusable response. No new assessment was accepted.',False
     elif 'not configured' in str(error):code,summary,retryable='model_not_configured','The AI service is not configured. Your saved evidence is retained.',False
     else:code,summary,retryable='model_error','The AI assessment could not finish. Your saved evidence is retained.',False
-    return {'code':code,'provider':'Gemini','http_status':status,'summary':summary,'retryable':retryable}
+    detail={'code':code,'provider':'Gemini','http_status':status,'summary':summary,'retryable':retryable}
+    if getattr(error,'local_fallback_code',None):detail['local_fallback_code']=error.local_fallback_code
+    return detail
 
 
 SLOT_RESERVER = None
@@ -84,14 +87,14 @@ def model_schema(cls):
     return clean(full)
 
 
-async def generate(system, payload, schema):
+async def _generate_gemini(system, payload, schema,attempts=3):
     key = os.getenv("GEMINI_API_KEY")
     if not key:
         raise ModelError(
             "GEMINI_API_KEY is not configured. No simulated analysis was substituted."
         )
     async with httpx.AsyncClient(timeout=90) as c:
-        for attempt in range(3):
+        for attempt in range(attempts):
             await reserve_model_slot()
             try:
                 r = await c.post(
@@ -119,7 +122,7 @@ async def generate(system, payload, schema):
                 raise ModelError(
                     "Gemini network request failed; the previous investigation is preserved."
                 ) from None
-            if r.status_code not in (429, 503) or attempt == 2:
+            if r.status_code not in (429, 503) or attempt == attempts-1:
                 break
             delay = 2 * (attempt + 1)
             if r.status_code == 429:
@@ -161,6 +164,20 @@ async def generate(system, payload, schema):
         raise ModelError(
             "The model returned an invalid structured response; no analysis was accepted."
         ) from None
+
+
+async def generate(system,payload,schema):
+    from local_model import available,generate as local_generate,LocalModelError
+    ready=await available()
+    try:
+        parsed,usage=await _generate_gemini(system,payload,schema,attempts=1 if ready else 3)
+        return parsed,{**usage,'provider':'Gemini','model':MODEL}
+    except ModelError as primary:
+        if not ready and not await available():raise
+        try:return await local_generate(system,payload,schema)
+        except (LocalModelError,HTTPException) as secondary:
+            primary.local_fallback_code=getattr(secondary,'code','ollama_unavailable')
+            raise primary from None
 
 
 def preserved_quote(text, quote):
@@ -314,6 +331,7 @@ async def investigate(case, baseline=None, *, analysis_schema=Analysis, system_p
     if system_prompt is not None:
         instruction = system_prompt
     parsed, usage = await generate(instruction, payload, analysis_schema)
+    providers=[{'role':'investigation','provider':usage.get('provider','Gemini'),'model':usage.get('model',MODEL),'model_digest':usage.get('model_digest')}]
     result = validate_sources(parsed.model_dump(), evidence)
     if not baseline:
         review, usage2 = await generate(
@@ -333,6 +351,7 @@ async def investigate(case, baseline=None, *, analysis_schema=Analysis, system_p
                 claim['epistemic_status'] = status
                 claim['epistemic_reason'] = reason
         result["review_usage"] = usage2
+        providers.append({'role':'support_review','provider':usage2.get('provider','Gemini'),'model':usage2.get('model',MODEL),'model_digest':usage2.get('model_digest')})
         # Unsupported sources cannot support a hypothesis or a suggested conclusion.
         acceptable = {
             c["id"] for c in result["claims"] if c["semantic_support"] == "entailed"
@@ -368,7 +387,8 @@ async def investigate(case, baseline=None, *, analysis_schema=Analysis, system_p
         )
     ]
     result.update(
-        model=MODEL,
+        model=' + '.join(dict.fromkeys(p['model'] for p in providers)),
+        generation_providers=providers,
         created_at=now(),
         input_digest=digest(payload),
         usage=usage,

@@ -70,6 +70,8 @@ def decision(case, policy, detail, records, merchant, issues=()):
     if any(u.get('payments',{}).get('refunds') for r in records if r['kind']=='order' for u in r['body'].get('purchase_units',[])):
         return stop('existing_refund_requires_reconciliation')
     if not case.get('analysis') or case.get('analysis_stale'):return stop('investigation_pending')
+    if any(p.get('provider')=='Ollama' for p in case['analysis'].get('generation_providers',[])):
+        return stop('local_model_financial_execution_not_enabled')
     if case['analysis'].get('finding') in ('conflicting','supports_seller'):return stop('investigation_conflict')
     if any(e.get('extraction',{}).get('status') in ('pending','unreadable','uncertain') for e in case.get('evidence',[])):
         return stop('unresolved_document_uncertainty')

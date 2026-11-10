@@ -197,7 +197,7 @@ async def process(claim):
 
     renewal=asyncio.create_task(renew())
     try:
-        async with asyncio.timeout(420):
+        async with asyncio.timeout(900):
             body=await repo.get(case_id)
             stage='checking_evidence'
             await heartbeat()

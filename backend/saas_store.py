@@ -62,7 +62,7 @@ class CloudRepository:
             raise HTTPException(503, "Cloud database configuration is missing")
         try:
             prefix = operation.split(':', 1)[0] if ':' in operation else ''
-            function = {'research': 'verdict_research_api', 'workflow': 'verdict_workflow_api', 'paypal':'verdict_paypal_api','location':'verdict_location_api','experience':'verdict_experience_api','agent':'verdict_agent_api'}.get(prefix, 'verdict_saas_api')
+            function = {'research': 'verdict_research_api', 'workflow': 'verdict_workflow_api', 'paypal':'verdict_paypal_api','location':'verdict_location_api','experience':'verdict_experience_api','agent':'verdict_agent_api','local_model':'verdict_local_model_api'}.get(prefix, 'verdict_saas_api')
             op = operation.split(':', 1)[-1]
             response = await self.client.post(url + "/rest/v1/rpc/"+function,
                 headers={"apikey": key, "Content-Type": "application/json"},

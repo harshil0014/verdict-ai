@@ -31,6 +31,7 @@ from saas_paypal import router as paypal_router
 from saas_paypal import connection_status as paypal_connection_status
 from delivery_location import router as location_router
 from preferences import router as preferences_router
+from local_model import router as local_model_router
 from document_reading import router as reading_router
 from autonomous_resolution import router as agent_router
 from case_investigation import run_investigation
@@ -66,6 +67,7 @@ app.include_router(research_router)
 app.include_router(paypal_router)
 app.include_router(location_router)
 app.include_router(preferences_router)
+app.include_router(local_model_router)
 app.include_router(reading_router)
 app.include_router(agent_router)
 

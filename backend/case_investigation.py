@@ -26,7 +26,7 @@ async def run_investigation(case_id, on_reserved=None, before_commit=None):
             await before_commit()
         body.update(analysis=result, analysis_stale=False)
         return await repo.save(body, 'investigation_updated', {'finding': result['finding'],
-            'input_digest': result['input_digest'], 'model': MODEL, 'analysis': result}, job_id=job['job_id'])
+            'input_digest': result['input_digest'], 'model': result.get('model',MODEL), 'analysis': result}, job_id=job['job_id'])
     except BaseException as error:
         # Cancellation is also a failed lease. Never leave a job running merely
         # because the HTTP client disconnected or the process is shutting down.
