@@ -24,12 +24,24 @@ Local-model assessments cannot expand autonomous financial authority: the resolu
 
 The **laptop must be awake and online**. This is a no-paid-service fallback, not independent cloud availability. Login startup does not prevent sleep or guarantee recovery after a process crash. If Gemini and the worker are unavailable, the application retains previous work and reports the actual interruption. Google outage failures do not consume the individual account's daily investigation allowance; shared capacity and pacing limits still apply.
 
+This adapter covers text-based investigation and semantic-support review. Provider-specific Google URL Context and optional Gemini image transcription are not emulated by this text-only model. Existing direct source retrieval and local OCR remain separate.
+
 ## Verification and limits
 
 - Existing installed models were compared locally. Qwen 3.5 4B's fast mode missed a basic named-building contradiction; its reasoning mode exhausted the tested output budget. It was not selected as the default.
 - Granite passed four small fictional controls covering conflicting buildings with a shared PIN, rewritten matching addresses without a PIN, nearby different buildings and embedded prompt injection. This is a smoke test, not a reliability benchmark.
 - A local test used **all seven sources from an existing case**, without creating a case or writing its evidence. Both the investigation and separate support-review stages used real Ollama inference after a **fault-injected Gemini 503 in the local test process**. It took about 54 seconds warm, accepted three mechanically valid citations, and retained an insufficient-evidence conclusion where support was incomplete. This does not claim the model equals Gemini or that Google was failing during that probe. Cold startup can take over a minute.
 - Unit tests cover primary-first routing, offline behavior, unchanged complete payloads, capacity refusal, changed input hashes, invalid/truncated/tool-using output, pinned-model validation and financial abstention. Normal application tests cover the preserved investigation and security paths.
-- Hosted-worker and deployment verification are recorded after execution below. No new demo account, payment, dispute, refund or evidence record is needed to verify the adapter.
+- Hosted-worker and deployment verification are recorded below. No new demo account, payment, dispute, refund or evidence record was created to verify the adapter.
 
 Readiness does not certify answer quality. The small local model can miss facts or produce weak conclusions; source verification, uncertainty and the preserved original evidence remain necessary.
+
+## Hosted verification — 2026-11-10
+
+Application code `c8c663db46c8e693435de7de47a11f1ee7e5b719` passed both GitHub CI jobs (`application`, `container`) on the main, preview and development branches. Local verification passed **376 backend tests and 44 interface tests**, including 10 fallback-specific unit tests.
+
+The preview's authenticated outbound worker completed an actual two-stage hosted queue run on the existing seven-source case, with a simulated primary 503 confined to the verification process. Ollama received **6,138 investigation input tokens and 4,988 support-review input tokens**, without dropping sources. Both stages used the pinned Granite model, completed in **111.2 seconds** including startup/polling, and produced eight quotations accepted by the mechanical checker with eight model-assessed entailed supports. The result was conflicting accounts. This second run differs from the earlier local smoke run; neither is an independent judgment of real-world truth. Its result was kept in private verification state, not substituted into the case as a Gemini result.
+
+Unauthenticated and invalid-token worker requests returned 401. Both queue tables were verified with forced RLS; an unrelated actor saw zero worker/job rows. Browser database roles cannot execute the queue RPC, and the restricted executor cannot register workers. Completed queue inputs were verified scrubbed.
+
+The same code was deployed to the main public service, and the worker was switched to it with a hidden user-level Windows login shortcut. Public HTML and database-backed health returned 200. The existing interrupted investigation was resumed normally: **Gemini had recovered and completed both stages in 12.69 seconds**, saving a fresh assessment. This is not claimed as a naturally occurring production failover. Existing evidence and witness records were unchanged; stored original bytes passed their SHA-256 checks. Financial policy/action counts remained zero. The earlier release remains recoverable because the migration is additive.
