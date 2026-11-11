@@ -5,8 +5,6 @@ their hash and preserved in the case/audit; a failed reader never loses a file.
 """
 import asyncio
 import base64
-import copy
-import hashlib
 import os
 from pathlib import Path
 import subprocess

@@ -21,7 +21,7 @@ from domain import CaseInput, EvidenceInput, AnalyzeInput
 from evidence_io import extract_file
 from fixtures import evidence
 import investigator
-from investigator import investigate, ModelError, MODEL
+from investigator import ModelError, MODEL
 from saas_store import repo, SESSION
 import saas_auth as auth
 from store import digest, now, uid

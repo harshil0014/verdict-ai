@@ -4,18 +4,15 @@ Only the pre-provisioned merchant can opt in. Current scope is full buyer
 concession for explicitly attested, unfulfilled VERDICT test orders. Other
 evidence remains investigable, but cannot be promoted to fulfillment proof.
 """
-import asyncio
 from contextlib import suppress
 from decimal import Decimal, InvalidOperation
 import os
-import re
-from urllib.parse import urlsplit
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 import saas_auth as auth
 from saas_store import repo, SESSION
 from paypal import PayPal, PayPalError, BASE, allowed
-from payment_records import fetch_records, ReadBudget, safe_id
+from payment_records import fetch_records, ReadBudget
 from saas_paypal import authorized_connection, provider_client, payment_summary, project, prepare_import
 from store import digest, now
 

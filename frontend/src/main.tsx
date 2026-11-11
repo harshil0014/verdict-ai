@@ -1,5 +1,5 @@
 import {ReadingPreference, ExtractionDetails} from "./evidence-reading";
-import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
+import { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ReactFlow,
@@ -12,7 +12,6 @@ import {
 import {
   ArrowUpRight,
   ArrowRight,
-  ArrowLeft,
   Search,
   Plus,
   FolderOpen,
@@ -27,13 +26,11 @@ import {
   LoaderCircle,
   X,
   Link2,
-  Check,
   AlertTriangle,
   LogOut,
   ScanLine,
   Inbox,
   Send,
-  Eye,
   RefreshCw,
   Scale,
   CheckCircle2,
@@ -51,7 +48,6 @@ import {
   EvidenceRequestAction,
   CaseTimeline,
   CurrencyField,
-  Money,
   humanError,
 } from "./experience";
 import "./experience.css";
@@ -1089,7 +1085,6 @@ function App() {
           )}
           <div className="page-heading">
             <div>
-              <span className="eyebrow">EVIDENCE BEFORE CERTAINTY</span>
               <h1>
                 Your investigations<span>.</span>
               </h1>
@@ -1347,17 +1342,7 @@ function App() {
                     />
                     {me.role === "member" && (
                       <Suspense fallback={null}>
-                        <DeliveryLocation
-                          current={current}
-                          api={api}
-                          changed={refresh}
-                          onSource={(id: string) => {
-                            setSource(
-                              current.evidence.find((e) => e.id === id) || null,
-                            );
-                            setClaim(null);
-                          }}
-                        />
+                        <DeliveryLocation current={current} />
                       </Suspense>
                     )}
                     <details className="investigation-deep">
@@ -1887,7 +1872,7 @@ function App() {
                         text="Add evidence and run an investigation first."
                       />
                     )}
-                    {current.delivery_location && <Suspense fallback={null}><DeliveryLocationDiagnostics current={current} api={api} changed={refresh} onSource={(id) => {
+                    {current.delivery_location && <Suspense fallback={null}><DeliveryLocationDiagnostics current={current} onSource={(id) => {
                         setSource(current.evidence.find((e) => e.id === id) || null); setClaim(null);
                       }} /></Suspense>}
                     {current.mode === "paypal_sandbox_saas" ? (
@@ -2617,7 +2602,6 @@ function App() {
             )}
             {modal === "integrations" && me.role !== "member" && (
               <>
-                <span className="eyebrow">TRUTHFUL OPERATIONAL BOUNDARIES</span>
                 <h2>Settings.</h2>
                 <div className="integration-row">
                   <strong>PayPal</strong>

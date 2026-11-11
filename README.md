@@ -1,35 +1,24 @@
-# VERDICT — The Missing Witness
+# VERDICT
 
-**Find the evidence that changes the picture.**
+VERDICT is a private workspace for investigating payment disputes. It preserves original evidence, compares competing accounts and identifies what additional evidence could clarify a case. [Open the live demo](https://verdict-ai-harshil0014.onrender.com/)
 
-VERDICT is a multi-user investigation workspace. Create a private case, preserve original records, compare competing accounts with Gemini, inspect the source graph and collect targeted witness responses. Routine evidence reading, research, address comparison and reassessment run automatically; consequential external actions require their separate authorization.
+## Features
 
-**Add the evidence. VERDICT investigates and prepares the next step.** The [simplified product experience](docs/PRODUCT_EXPERIENCE.md) leads with a source-linked assessment and one useful next step. Maps, witness responses and reassessment run automatically where authorized; graphs and technical records stay available under details. Explicit external-address permission is managed once in account Settings until revoked, and temporary interruptions use durable bounded recovery.
+- **Case workspaces** with registration, recovery keys, source citations, evidence graphs and an audit timeline.
+- **Document reading** for images, scanned and searchable PDFs, text and JSON. Tesseract OCR preserves uncertainty alongside the original file.
+- **Automatic investigation and reassessment** using Gemini 3.1 Flash-Lite, with Gemini 3.5 Flash-Lite as the backup. Both stages validate structured responses and tie claims to preserved passages.
+- **Witness requests** with scoped, expiring response links. New evidence and replies trigger reassessment.
+- **Public evidence research** that preserves accessible source snapshots and retrieval provenance.
+- **Delivery location comparison** using source-backed address descriptions, optional Photon lookups and Leaflet maps with OpenStreetMap tiles. [Location controls](docs/DELIVERY_LOCATION.md)
+- **PayPal Sandbox import** for an authorized test merchant, with dispute, capture and order records linked to the private case. Sandbox financial actions require a separate, bounded merchant policy. [Integration guide](docs/PAYPAL.md)
 
-[Open VERDICT](https://verdict-ai-harshil0014.onrender.com) · [Source](https://github.com/harshil0014/verdict-ai) · [Architecture](docs/ARCHITECTURE.md) · [Security](docs/SECURITY.md) · [Setup and deployment](docs/DEPLOYMENT.md) · [Acceptance evidence](docs/SAAS_ACCEPTANCE.md)
+## Architecture
 
-## The account application
-
-- Public username/password registration and sign-in, Argon2id password hashing, revocable opaque sessions and a one-time recovery key. No shared login, judge code or fictional case seeds.
-- Cloud PostgreSQL is the **primary** store for accounts, sessions, cases, original file bytes, investigations, witness responses, tokens, jobs and audit records. Account mode has no SQLite fallback.
-- Session-derived ownership and forced database row-level security isolate cases, files, requests, audits and jobs. No database secret reaches the browser.
-- An empty private workspace with own-case onboarding. Upload images, scanned or digital PDFs, TXT and JSON. Document reading runs automatically; inspect uncertain transcription and download stored originals with SHA-256 integrity checks.
-- Evidence submission starts a durable automatic investigation. VERDICT follows up to three safe literal public references, preserves actual HTML/PDF snapshots and refreshes the Gemini investigation without a separate approval or reassessment click. PDF hyperlink annotations are included. Review the graph, source passages, conclusions and consequential actions; pause automatic work per case when needed.
-- [Original-publisher recovery](docs/SOURCE_RECOVERY.md) searches by a public neutral citation when a supported CanLII/BCCRT decision is inaccessible. Only actual publisher content with a matching indexed citation is adopted; the original refusal and provenance remain visible. Other courts and arbitrary document matching are not yet supported.
-- Real Gemini extraction and separate semantic-support/classification review. Mechanical citation checks reject missing sources/quotations. Prior analysis remains visible while new evidence is investigated; failures preserve saved records and show a retryable status.
-- Restricted seven-day, single-response witness links. Reply, original file, case state and audit event commit together. Links can be withdrawn or marked reported unavailable. No automatic email is sent; token possession does not verify identity.
-- Revision checks, durable investigation leases, JSON export and an integrity-checked audit trail. Logout and recovery revoke cloud sessions.
-- Public URL evidence and autonomous document discovery: official Google URL Context, free Tavily keyless search and Wikimedia/Crossref discovery preserve accessible original snapshots with permanent provenance. Collected sources remain unreviewed, not authenticated facts. Current pages never establish a past policy merely by being retrieved. [Automatic workflow](docs/AUTOMATIC_INVESTIGATION.md) · [Providers and controls](docs/PUBLIC_RESEARCH.md). Google paid Search grounding remains disabled.
-- [Account-scoped PayPal sandbox import](docs/SAAS_PAYPAL.md) for an explicitly authorized test merchant: provider-populated private cases, preserved dispute/capture/order snapshots, payment linkage, separate payment/disputed amounts, automatic investigation and idempotent sync. Public merchant onboarding remains disabled. Optional, deliberately enabled Sandbox autonomy is restricted to merchant-attested unfulfilled VERDICT test orders, with hard limits and no automatic retry of uncertain financial writes. The existing test dispute has a pending refund and has not been newly refunded by this release. [Document reading and autonomy: verified scope and limits](docs/AUTONOMOUS_RESOLUTION.md).
-- [Smart Delivery Location Verification](docs/DELIVERY_LOCATION.md): automatic source-backed destination comparison, authorized real Photon/OSM geocoding, interactive Leaflet maps, explicit versus inferred PINs and precision-aware outcomes. External lookup defaults off; one-time account authorization covers existing and future eligible cases, and revocation caps older case permissions. Local address comparison always works without external disclosure. Map estimates do not prove delivery.
-
-Free beta limits: 50 cases, 20 MB of originals and 10 investigation attempts/account/day; 5 MB/file and 40 sources/case. Shared capacity limits can refuse new work while retaining existing data. Free compute may sleep. This is a functioning beta, not an uptime, accuracy or disaster-recovery certification.
-
-Investigations try Gemini 3.1 Flash-Lite first and can switch to Gemini 3.5 Flash-Lite after a temporary provider failure or an unusable response. Both models receive the same context and use the same source checks.
+React, TypeScript and Vite provide the frontend. FastAPI serves the API and built frontend from one origin. Supabase PostgreSQL stores accounts, files, investigations and durable jobs, with server-side ownership checks and row-level security. A Docker image runs the application on Render. [Architecture](docs/ARCHITECTURE.md) · [Security](docs/SECURITY.md)
 
 ## Local setup
 
-Python 3.13, Node 22 and Tesseract are used in CI. Docker installs Tesseract; local image/scanned-PDF reading requires Tesseract with English data on PATH (or TESSERACT_CMD). Apply the timestamped SaaS migrations in `supabase/migrations` in filename order to your own Supabase project. The earlier `001_private_snapshots.sql` is only for the optional legacy mirror.
+Install Python 3.13, Node.js 22, and Tesseract with English language data. Use a dedicated Supabase project and apply the timestamped SQL migrations in filename order before starting the app. The optional legacy snapshot migration is documented in the deployment guide. [Migrations and deployment](docs/DEPLOYMENT.md)
 
 ```powershell
 git clone https://github.com/harshil0014/verdict-ai.git
@@ -40,52 +29,45 @@ cd frontend
 npm.cmd ci
 npm.cmd run build
 cd ..
-# Fresh checkout only: copy backend/.env.example to backend/.env.
-# Set SUPABASE_URL, SUPABASE_SECRET_KEY, GEMINI_API_KEY and a random
-# VERDICT_AUTH_PEPPER with at least 24 characters. Never commit secrets.
+Copy-Item backend/.env.example backend/.env
+```
+
+Run the copy command on a fresh checkout. Fill in the server credentials in `backend/.env` before starting the account app. Keep this file private.
+
+| Setting | Purpose |
+| --- | --- |
+| `SUPABASE_URL`, `SUPABASE_SECRET_KEY` | Dedicated Supabase project and server-only key |
+| `VERDICT_AUTH_PEPPER` | Stable random secret of at least 24 characters |
+| `GEMINI_API_KEY` | Server-only Gemini key |
+| `GEMINI_MODEL` | Primary model, defaults to `gemini-3.1-flash-lite` |
+| `VERDICT_PUBLIC_HOST`, `VERDICT_SECURE_COOKIES` | Allowed host and HTTPS cookie settings |
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `VERDICT_PAYPAL_DEMO_OWNER_ID`, `VERDICT_PAYPAL_DEMO_MERCHANT_ID` | Optional authorized Sandbox connection |
+| `TESSERACT_CMD` | Optional path to Tesseract when it is outside PATH |
+
+```powershell
 cd backend
 .venv/Scripts/python.exe -m uvicorn saas_app:app --host 127.0.0.1 --port 8000 --no-access-log
 ```
 
-Open `http://127.0.0.1:8000/`, register and save your recovery key in a password manager. No email is collected; there is no email reset or claim of verified email ownership. On HTTPS set `VERDICT_SECURE_COOKIES=true` and `VERDICT_PUBLIC_HOST` to the exact hostname. Never overwrite existing private credentials.
+Open `http://127.0.0.1:8000/`, register, and save the recovery key. On macOS or Linux, use `backend/.venv/bin/python` from the repository root, `.venv/bin/python` inside `backend/`, and `npm` in place of `npm.cmd`.
+
+## Testing
+
+Run from the repository root:
 
 ```powershell
 backend/.venv/Scripts/python.exe -m pytest
-backend/.venv/Scripts/python.exe scripts/saas_acceptance.py --base http://127.0.0.1:8000 --phase prepare
-# Restart the SaaS application, then:
-backend/.venv/Scripts/python.exe scripts/saas_acceptance.py --base http://127.0.0.1:8000 --phase verify
+cd frontend
+npm.cmd test
+npm.cmd run build
 ```
 
-The acceptance runner registers two independent accounts normally, uploads synthetic evidence, calls real Gemini and tests witness replies, isolation and logout. Credentials stay in ignored runtime state. `--base` targets a deployed instance sharing the same primary database; verify compares original bytes, analysis digest, witness state and audit hashes after restart/deploy. [Exact results and limitations](docs/SAAS_ACCEPTANCE.md). Two automated actors do not mean two humans completed usability testing.
+GitHub Actions also builds and checks the Docker container. The live acceptance tools require an isolated test environment and may create test records. [Testing guide](docs/SAAS_ACCEPTANCE.md) · [Evaluation methodology and results](docs/EVALUATION.md)
 
-For public evidence, submit a document containing its public references. Retrieval, preservation and investigation happen automatically. **Evidence** shows uploads and discovered sources together, including URLs, hashes and review status. **Investigation** and **Timeline** retain progress, failures and provider reports. The optional **Find more evidence** action accepts another URL or public search question without adding another case tab. Search needs no provider account/card/key; shared throttling can limit discovery. Optional Google URL Context uses the existing Gemini key. The [automatic Moffatt acceptance runner](scripts/automatic_investigation_acceptance.py) makes no analyze, approval, search or retry calls. [Behavior, recovery and limits](docs/AUTOMATIC_INVESTIGATION.md).
+## Deployment
 
-## Preserved sandbox integration
-
-The separate `app:app` operator build retains the PayPal sandbox adapter, read-only capture/order acquisition, local launcher and fictional exploration. It does not share account workspaces. Docker selects account mode with `VERDICT_APP_MODULE=saas_app:app`; its compatibility default remains `app:app` so the previous release is recoverable.
-
-An actual USD 1.00 sandbox order was approved and captured once; its buyer-created inquiry was imported with verified payment linkage. Unchanged snapshots deduplicate and changed snapshots preserve history. Two individually approved notes submissions were rejected with `EVIDENCE_TYPE_IS_NOT_ALLOWED`; successful submission remains unverified. No fulfillment evidence was invented. [Capability ledger](docs/PAYPAL.md) · [Acquisition](docs/PAYMENT_ACQUISITION.md).
-
-**Only the explicitly authorized first-party test merchant can use the account-connected sandbox integration.** Public merchant onboarding and financial actions are not enabled. No live merchant capability, automatic refund or delivery verification is claimed. The legacy release branch and private configuration remain recoverable. [Authorization and privacy boundaries](docs/SAAS_PAYPAL.md).
-
-## Evaluation and capture
-
-The frozen authored 30-case pilot tied the checklist baseline at **28/30**. The custody set also tied. These small synthetic evaluations do not establish superiority or real dispute outcomes. [Evaluation](docs/EVALUATION.md) · [Custody evaluation](docs/CUSTODY_EVALUATION.md).
-
-![Account landing page on the public SaaS service](docs/screenshots/account-landing-public.jpg)
-
-![Private account investigation using synthetic test evidence](docs/screenshots/account-investigation-public.jpg)
-
-Actual browser captures of the account application. The investigation uses explicitly synthetic user-authored evidence and real Gemini calls. [Mobile landing](docs/screenshots/account-landing-mobile.jpg) · [Earlier operator capture](docs/screenshots/fictional-investigation.png). Browser checks and remaining acceptance phases are recorded in the ledger.
+Build the included Dockerfile and set `VERDICT_APP_MODULE=saas_app:app` for the account application. Configure the server environment and use `/api/health` to verify database connectivity. [Deployment and recovery](docs/DEPLOYMENT.md)
 
 ## License
 
-Original code is MIT. Dependencies retain their licenses and notices in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `third_party/`. Gemini, PayPal and Supabase services have separate terms. Read the [security limits](docs/SECURITY.md) before using sensitive records.
-
-Automatic address recovery: [implementation and real API verification](docs/GEOCODING_RECOVERY.md). The ordinary location view now shows only the completed map and distance; full mapping diagnostics and accuracy labels remain in Advanced review. [Current comparison rules and verification](docs/INVISIBLE_LOCATION.md). No PIN is required in address mode.
-
-Evidence uploads accept images and scanned PDFs as well as text. Reading runs automatically, preserves the original and labels uncertain transcription. Optional Gemini image reading requires a remembered, revocable account permission. [Architecture, setup limits and actual evaluation](docs/AUTONOMOUS_RESOLUTION.md).
-
-Autonomous investigation experience: [current behavior, privacy and release verification](docs/AUTONOMOUS_EXPERIENCE.md). Evidence requests are prepared with the analysis; sharing a private response link is separate from investigation and does not send a message.
-
-Completed location comparisons now display [only a map and distance](docs/MAP_DISTANCE_VIEW.md) in the normal investigation: `<200 m` below the configured default threshold, and the measured separation above it. Technical diagnostics remain in Findings.
+VERDICT is released under the [MIT License](LICENSE). [Third-party notices](THIRD_PARTY_NOTICES.md) cover bundled dependencies, map attribution and provider terms.

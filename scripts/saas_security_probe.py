@@ -4,7 +4,6 @@ Uses a separate synthetic test account, never provider/payment actions. Raw
 credentials and identifiers stay in ignored runtime; report contains booleans.
 """
 import argparse
-import asyncio
 from datetime import datetime, timezone
 import json
 from pathlib import Path

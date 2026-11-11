@@ -10,7 +10,7 @@ import random
 import re
 from urllib.parse import urlsplit
 from fastapi import HTTPException
-from public_web import normalize_url, RetrievalError
+from public_web import RetrievalError
 from saas_store import repo, SESSION
 from research_routes import URLInput, budget, stage_url, collect_draft
 from case_investigation import run_investigation

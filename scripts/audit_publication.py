@@ -3,7 +3,6 @@
 Uses exact local private values plus generic credential signatures. Pair this with
 an independent Gitleaks scan. Ignored local runtime is inventoried, never exported.
 """
-import hashlib
 import json
 import re
 import subprocess

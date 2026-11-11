@@ -1,6 +1,6 @@
 """Serial, checkpointed model comparison. No PayPal actions. Labels never sent to a model."""
 
-import sys, os, json, asyncio, re, time, argparse
+import sys, json, asyncio, re, argparse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]

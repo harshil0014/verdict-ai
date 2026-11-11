@@ -1,4 +1,3 @@
-import React from 'react';
 export function CaseNavigation({tab,evidenceCount,witnessCount,onSelect}: {
   tab:string;evidenceCount:number;witnessCount:number;onSelect:(tab:string)=>void;
 }) {

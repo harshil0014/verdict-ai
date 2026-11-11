@@ -1,4 +1,4 @@
-import React, {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {AlertTriangle,ArrowRight,FileText,Globe,LoaderCircle,ShieldCheck,X,Search} from 'lucide-react';
 import {evidenceDiscoveries,researchActivity,safeSourceUrl} from './research-records';
 import './research.css';

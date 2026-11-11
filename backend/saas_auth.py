@@ -3,7 +3,7 @@ import asyncio
 import hashlib
 import secrets
 import os
-from fastapi import HTTPException, Request, Response
+from fastapi import HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from pwdlib import PasswordHash
 from saas_store import repo, SESSION

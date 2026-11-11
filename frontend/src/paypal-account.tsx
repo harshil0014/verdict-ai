@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowDownToLine, RefreshCw, ShieldCheck } from "lucide-react";
+import { ArrowDownToLine, RefreshCw } from "lucide-react";
 import "./paypal-account.css";
 import {SandboxAutonomy} from './autonomous-resolution';
 

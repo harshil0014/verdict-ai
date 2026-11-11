@@ -145,7 +145,6 @@ Python dependencies are installed from PyPI according to backend/requirements.lo
 
 ## Publication license review
 
-The optional local-model worker uses separately installed [Ollama](https://github.com/ollama/ollama) (MIT), [IBM Granite 4 Micro](https://huggingface.co/ibm-granite/granite-4.0-micro) (Apache-2.0) and [Hugging Face Tokenizers](https://github.com/huggingface/tokenizers) (Apache-2.0). These projects retain their upstream notices. No model weights, Ollama binaries or tokenizer artifacts are redistributed here. The worker's HTTPX dependency is BSD-3-Clause and is also part of the existing application dependency review. Review upstream terms before substituting a model. [Integration and verification](docs/OLLAMA_FALLBACK.md).
 
 All 90 installed npm packages were inspected: 71 MIT, 14 ISC, 2 Apache-2.0, 2 BSD-3-Clause and 1 CC-BY-4.0 data package. The 86 upstream license files available at package roots are preserved above, with generated-bundle dependencies retaining their package notices. The CC-BY-4.0 data belongs to caniuse-lite; credit the [caniuse-lite contributors and upstream data](https://github.com/browserslist/caniuse-lite). No vendor UI assets or competitor application source were copied.
 

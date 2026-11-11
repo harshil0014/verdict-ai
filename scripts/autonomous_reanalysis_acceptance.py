@@ -5,7 +5,6 @@ action, provider operation, manual analyze request or automatic upload retry.
 """
 import argparse
 from datetime import datetime,timezone
-import hashlib
 import json
 from pathlib import Path
 import httpx

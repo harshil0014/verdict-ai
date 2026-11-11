@@ -1,7 +1,6 @@
 """Documented no-key APIs only. No SERP scraping, billing keys or cap evasion."""
 from datetime import datetime,timezone
 from urllib.parse import urlsplit,unquote
-import re
 import httpx
 from public_web import normalize_url,RetrievalError
 from saas_store import repo

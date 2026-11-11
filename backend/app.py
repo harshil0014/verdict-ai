@@ -1,4 +1,4 @@
-import os, json, time, secrets, hashlib, io, asyncio, subprocess, sys
+import os, json, time, secrets, hashlib, asyncio, subprocess, sys
 from pathlib import Path
 from typing import Literal
 from dotenv import load_dotenv
@@ -18,7 +18,6 @@ from fastapi import (
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from pypdf import PdfReader
 import store
 from store import now, uid, digest, canon, connect
 from domain import EvidenceInput, CaseInput, AnalyzeInput, ActionInput, ExecuteInput

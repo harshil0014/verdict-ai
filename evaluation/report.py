@@ -1,6 +1,6 @@
 """Recompute a transparent development report from frozen model outputs."""
 
-import json, re, sys, statistics, copy
+import json, sys, statistics, copy
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]

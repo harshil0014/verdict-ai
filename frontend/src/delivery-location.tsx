@@ -3,7 +3,6 @@ import type { Map as LeafletMapType } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./delivery-location.css";
 
-type API = (path: string, method?: string, body?: any) => Promise<any>;
 const labels: any = {
   off: "Local comparison only",
   area_only: "PIN-code area lookup",
@@ -117,9 +116,7 @@ const locationMessages: Record<string, string> = {
   "LOCATION MISMATCH": "Delivery address doesn't match",
   UNVERIFIED: "Couldn't verify delivery address",
 };
-export function DeliveryLocation({
-  current, api, changed, onSource,
-}: { current: any; api: API; changed: () => Promise<void>; onSource: (id: string) => void }) {
+export function DeliveryLocation({ current }: { current: any }) {
   const record = current.delivery_location;
   if (!record || record.version < 3 || current.analysis_stale ||
     ["queued", "running"].includes(current.automation?.state) || mapAuthorization(current) === "off") return null;
@@ -157,7 +154,7 @@ function mapAuthorization(current: any) {
 }
 
 export function LocationTechnicalRecord(props: {
-  current: any; api: API; changed: () => Promise<void>; onSource: (id: string) => void;
+  current: any; onSource: (id: string) => void;
 }) {
   const [open, setOpen] = React.useState(false);
   React.useEffect(() => setOpen(false), [props.current.id]);
@@ -169,13 +166,9 @@ export function LocationTechnicalRecord(props: {
 
 export function DeliveryLocationDiagnostics({
   current,
-  api,
-  changed,
   onSource,
 }: {
   current: any;
-  api: API;
-  changed: () => Promise<void>;
   onSource: (id: string) => void;
 }) {
   const record = current.delivery_location;
