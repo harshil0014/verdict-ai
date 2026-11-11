@@ -1,5 +1,7 @@
 # Local fallback for Gemini interruptions
 
+Historical record. The local worker has been retired and investigations now use Gemini 3.5 Flash-Lite as the backup model.
+
 Gemini remains the primary investigation and semantic-support model. When it fails, an enabled, recently connected local worker can process the same complete system instructions, case payload and JSON schema. The normal citation, structured-value, semantic-support and source-graph checks still run. The provider and pinned model digest are recorded per stage; mixed-provider investigations are identified honestly.
 
 The current operator installation uses **IBM Granite 4 Micro, `granite4:3b`**, an Apache-2.0 model, through the existing local Ollama installation. No model weights, credentials or case records are distributed with this repository. Model choice follows actual tests on the operator's RTX 3050 6 GB laptop, rather than a claim of parity with Gemini. See the [model publisher](https://huggingface.co/ibm-granite/granite-4.0-micro), [Ollama model package](https://ollama.com/library/granite4:3b) and [official structured-output API](https://docs.ollama.com/capabilities/structured-outputs).

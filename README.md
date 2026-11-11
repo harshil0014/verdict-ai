@@ -25,7 +25,7 @@ VERDICT is a multi-user investigation workspace. Create a private case, preserve
 
 Free beta limits: 50 cases, 20 MB of originals and 10 investigation attempts/account/day; 5 MB/file and 40 sources/case. Shared capacity limits can refuse new work while retaining existing data. Free compute may sleep. This is a functioning beta, not an uptime, accuracy or disaster-recovery certification.
 
-An optional [private Ollama fallback](docs/OLLAMA_FALLBACK.md) can complete investigations when Gemini fails. The operator's registered workspace uses the existing local Granite 4 3B model with the complete original context and normal source checks. The laptop must be awake and online; oversized contexts are refused, not shortened. Other users' cases are not sent to that computer, and local-model findings do not enable automatic financial execution. No paid inference service is enabled.
+Investigations try Gemini 3.1 Flash-Lite first and can switch to Gemini 3.5 Flash-Lite after a temporary provider failure or an unusable response. Both models receive the same context and use the same source checks.
 
 ## Local setup
 
