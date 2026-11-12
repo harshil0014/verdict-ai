@@ -18,6 +18,7 @@ from payment_records import active_sources
 from saas_store import repo
 import saas_auth as auth
 from store import digest,now
+from address_queries import prepare_queries, VERSION as QUERY_VERSION
 
 VERSION=4
 LOOKUP_VERSION=2
@@ -471,7 +472,7 @@ async def verify_case(case_id):
     account=await repo.rpc('experience:preferences')
     settings=effective_authorization(body,account)
     inputs={'evidence':[(s['id'],s.get('sha256') or digest(s['text'].encode())) for s in sources],'authorization':settings}
-    key=digest({'version':VERSION,**inputs,'proximity_tolerance_m':proximity_tolerance()})
+    key=digest({'version':VERSION,**inputs,'proximity_tolerance_m':proximity_tolerance(),'query_preparation_version':QUERY_VERSION})
     old=body.get('delivery_location',{})
     retry_due=old.get('retry_at') and datetime.fromisoformat(old['retry_at'])<=datetime.now(timezone.utc)
     if old.get('input_digest')==key and not retry_due:return old
@@ -488,6 +489,13 @@ async def verify_case(case_id):
             if found:mentions=found;extraction='Gemini extraction with deterministic source anchoring'
         except ModelError:extraction_error='Model address extraction unavailable; retained deterministic source-label extraction.'
     cache=old.get('lookup_cache',{}).copy();mode=settings.get('mode','off');queries=0;pending=[]
+    preparation_cache=copy.deepcopy(old.get('query_preparation_cache',{}))
+    eligible={}
+    if mode=='address' and not reuse:
+        for m in mentions:
+            lookup=lookup_query(m,mode) if m['role']!='other' and not documented_gps(m) else None
+            if lookup and lookup[1]=='address':eligible[m['id']]=lookup[0]
+    prepared=await prepare_queries(eligible,preparation_cache) if eligible else {}
     for m in mentions:
         if reuse:continue
         m['geocode']=documented_gps(m) or {'status':'not_authorized','detail':'External lookup is off. Evidence is still compared locally.'}
@@ -496,7 +504,10 @@ async def verify_case(case_id):
             m['geocode']={'status':'insufficient_lookup_detail','detail':'No suitable source-supplied Indian PIN for area mode, or no safe relevant address. The full address has not been shared.'}
         if m['geocode'].get('status')=='resolved' or not lookup:continue
         query,kind=lookup
-        pending.append({'mention':m,'original':query,'kind':kind,'plan':lookup_plan(query,kind),'attempts':[],'best':None})
+        proposal=prepared.get(m['id'])
+        if proposal:m['query_preparation']=proposal
+        search=proposal['query'] if proposal else query
+        pending.append({'mention':m,'original':query,'match_address':search,'kind':kind,'plan':lookup_plan(search,kind),'attempts':[],'best':None})
     # Round robin: every relevant address gets its initial lookup before one
     # difficult address spends the shared bounded budget on alternatives.
     while pending:
@@ -517,7 +528,7 @@ async def verify_case(case_id):
         # A broader query must still satisfy ALL geographic and identity
         # constraints in the original address, not just its shortened query.
         if result.get('raw_response') and kind=='address':
-            checked=photon_result(json.loads(result['raw_response']),query,kind,m.get('explicit_postcode'),address=item['original'])
+            checked=photon_result(json.loads(result['raw_response']),query,kind,m.get('explicit_postcode'),address=item['match_address'])
             result={k:v for k,v in result.items() if k in ('raw_response','response_sha256','retrieved_at','query','cached')}|checked
         item['attempts'].append({'query':query,'scope':scope,'status':result['status'],
             'response_sha256':result.get('response_sha256'),'retrieved_at':result.get('retrieved_at')})
@@ -535,11 +546,16 @@ async def verify_case(case_id):
         chosen=result if result['status']=='ambiguous' else (item['best'] or result)
         chosen['attempts']=item['attempts'];chosen['original_query']=item['original']
         chosen['fallback_used']=len(item['attempts'])>1 or chosen.get('match_scope') in ('parent_campus','parent_street')
+        if chosen.get('status')=='resolved' and m.get('query_preparation',{}).get('spelling_proposal'):
+            chosen['precision']='site'
+            chosen['uncertainty_m']=max(1000,chosen.get('uncertainty_m') or 0)
+            chosen['accuracy_label']='Approximate map result using a model-proposed spelling; original address identity is unverified.'
         if item['best'] and result['status']!='resolved':chosen['refinement_status']=result['status']
         m['geocode']=chosen
     pairs=pair_mentions(mentions);comparisons=[compare_pair(a,b) for a,b in pairs]
     record={'version':VERSION,'input_digest':key,'checked_at':now(),'extraction':extraction,'extraction_error':extraction_error,
         'mentions':mentions,'comparisons':comparisons,'lookup_cache':dict(list(cache.items())[-16:]),
+        'query_preparation_cache':dict(list(preparation_cache.items())[-16:]),
         'status':('LOCATION MISMATCH' if any(c['status']=='LOCATION MISMATCH' for c in comparisons) else comparisons[0]['status']) if len(comparisons)==1 or any(c['status']=='LOCATION MISMATCH' for c in comparisons) else 'UNVERIFIED',
         'limitations':[DISCLAIMER]+([] if pairs else ['A unique intended/reported-delivery pair is not established; multiple or unrelated addresses are not compared automatically.']),
         'authorization_mode':mode,'provider':PROVIDER,'new_provider_queries':queries,'comparison_only_upgrade':reuse,'proximity_tolerance_m':proximity_tolerance()}

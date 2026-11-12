@@ -119,6 +119,8 @@ def test_real_http_failure_preserves_no_fabricated_coordinates(monkeypatch,statu
     assert r['status']=='provider_unavailable' and r['http_status']==status and 'lat' not in r
 
 def fake_repo(monkeypatch,mode='off'):
+    async def no_preparation(*a,**k):return {}
+    monkeypatch.setattr(dl,'prepare_queries',no_preparation)
     a=evidence('Buyer','Intended PIN code: 400076','buyer');b=evidence('Carrier','Delivery destination PIN code: 400078','carrier')
     case={'id':'case','evidence':[a,b],'revision':2,'analysis':None,'location_authorization':{'mode':mode}}
     calls=[]
