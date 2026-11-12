@@ -8,7 +8,7 @@ from domain import StrictModel
 from investigator import generate, ModelError
 from store import digest, now
 
-VERSION = 1
+VERSION = 2
 ALIASES = {'iit': 'Indian Institute of Technology', 'iim': 'Indian Institute of Management',
            'nit': 'National Institute of Technology', 'rly': 'railway', 'stn': 'station',
            'rd': 'road', 'apt': 'apartment', 'univ': 'university'}
@@ -51,12 +51,16 @@ def validated_query(address, proposal):
     if UNSAFE.search(proposal.query):
         return None
     edited = words(address)
+    original = edited.copy()
+    changed = set()
     segments = [words(part) for part in address.split(',')]
     spelling = False
     for change in proposal.corrections:
         before, after = words(change.original), words(change.replacement)
-        if len(before) != 1 or edited.count(before[0]) != 1 or not after or before == after:
+        if (len(before) != 1 or original.count(before[0]) != 1 or before[0] in changed
+                or edited.count(before[0]) != 1 or not after or before == after):
             return None
+        changed.add(before[0])
         alias = words(ALIASES.get(before[0], '')) == after
         if not alias:
             if len(after) != 1 or not minor_typo(before[0], after[0]):
